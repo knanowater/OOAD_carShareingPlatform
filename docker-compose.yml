@@ -1,0 +1,18 @@
+# docker-compose.yml
+services:
+    db:
+        image: mysql:9.0 # 사용할 MySQL 이미지 버전 (최신 안정 버전 권장)
+        container_name: mysql_db_container # 컨테이너 이름 (선택 사항)
+        ports:
+            - "3306:3306" # 호스트 PC의 3306 포트와 컨테이너의 3306 포트를 연결
+        environment:
+            MYSQL_ROOT_PASSWORD: soowong0915* # 루트 비밀번호 (보안상 복잡하게 설정)
+            MYSQL_DATABASE: db # 생성할 데이터베이스 이름
+            MYSQL_USER: nanowater # 생성할 사용자 이름
+            MYSQL_PASSWORD: soowong0915* # 생성할 사용자의 비밀번호 (보안상 복잡하게 설정)
+        volumes:
+            - ./mysql-data:/var/lib/mysql # 데이터 영속성을 위해 호스트 폴더와 컨테이너 내부 폴더를 연결
+        restart: unless-stopped # 컨테이너가 비정상 종료되면 재시작 (서버 재부팅 시는 제외)
+
+volumes:
+    mysql-data: # 위에서 사용한 볼륨 정의
