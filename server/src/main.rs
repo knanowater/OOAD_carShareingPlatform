@@ -1,6 +1,9 @@
 #[macro_use]
 extern crate rocket;
 
+#[macro_use]
+extern crate rocket_include_static_resources;
+
 mod auth;
 
 use auth::{login, logout, signup};
@@ -12,6 +15,10 @@ use sqlx::MySqlPool;
 use sqlx::mysql::MySqlPoolOptions;
 use std::env;
 use std::path::Path;
+
+static_response_handler! {
+    "/favicon.ico" => favicon => "favicon",
+}
 
 #[tokio::main]
 async fn main() -> Result<(), sqlx::Error> {
@@ -33,9 +40,11 @@ async fn main() -> Result<(), sqlx::Error> {
 
     // Rocket 서버 실행
     rocket::build()
+        .attach(static_resources_initializer!("favicon" => "../favicon.ico",))
         .mount(
             "/",
             routes![
+                favicon,
                 index,
                 login_page,
                 signup_page,
