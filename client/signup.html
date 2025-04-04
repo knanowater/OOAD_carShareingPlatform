@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="ko">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>DriveShare - 회원가입</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+        <style>
+            .signup-bg {
+                background: linear-gradient(135deg, rgba(59, 130, 246, 0.9) 0%, rgba(37, 99, 235, 0.9) 100%),
+                    url("https://images.unsplash.com/photo-1503376780353-7e6692767b70?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80");
+                background-size: cover;
+                background-position: center;
+            }
+            .signup-card {
+                box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            }
+            .input-field:focus-within {
+                border-color: #3b82f6;
+                box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+            }
+        </style>
+    </head>
+    <body class="font-sans antialiased text-gray-800">
+        <!-- 헤더 영역 -->
+        <header class="bg-white shadow-sm sticky top-0 z-50">
+            <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+                <div class="flex items-center" onclick="location.href='/'" style="cursor: pointer">
+                    <i class="fas fa-car text-blue-600 text-3xl mr-2"></i>
+                    <span class="text-2xl font-bold text-blue-600">DriveShare</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- 회원가입 메인 섹션 -->
+        <main class="min-h-screen flex items-center justify-center p-4 signup-bg">
+            <div class="w-full max-w-md">
+                <!-- 회원가입 카드 -->
+                <div class="bg-white rounded-xl p-8 signup-card">
+                    <div class="text-center mb-6">
+                        <h1 class="text-3xl font-bold text-gray-800 mb-2">DriveShare 회원가입</h1>
+                        <p class="text-gray-600">간단한 정보 입력으로 시작해보세요</p>
+                    </div>
+
+                    <!-- 회원가입 폼 -->
+                    <form id="signupForm">
+                        <!-- 기본 정보 섹션 -->
+                        <div class="mb-4">
+                            <label for="name" class="block text-gray-700 text-sm font-medium mb-2">이름</label>
+                            <div class="input-field relative flex items-center border border-gray-300 rounded-lg overflow-hidden transition">
+                                <i class="fas fa-user text-gray-400 ml-3"></i>
+                                <input type="text" id="name" placeholder="이름을 입력하세요" class="w-full py-3 px-3 focus:outline-none" autocomplete="off" />
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="email" class="block text-gray-700 text-sm font-medium mb-2">이메일 주소</label>
+                            <div class="input-field relative flex items-center border border-gray-300 rounded-lg overflow-hidden transition">
+                                <i class="fas fa-envelope text-gray-400 ml-3"></i>
+                                <input type="email" id="email" placeholder="이메일 주소를 입력하세요" class="w-full py-3 px-3 focus:outline-none" autocomplete="off" />
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="password" class="block text-gray-700 text-sm font-medium mb-2">비밀번호</label>
+                            <div class="input-field relative flex items-center border border-gray-300 rounded-lg overflow-hidden transition">
+                                <i class="fas fa-lock text-gray-400 ml-3"></i>
+                                <input type="password" id="password" placeholder="비밀번호를 입력하세요" class="w-full py-3 px-3 focus:outline-none" autocomplete="off" />
+                                <button type="button" class="text-gray-400 mr-3" id="togglePassword">
+                                    <i class="far fa-eye"></i>
+                                </button>
+                            </div>
+                            <div class="mt-2 text-xs text-gray-500">
+                                <p id="length" class="flex items-center"><i class="fas fa-check-circle mr-1 text-red-500"></i> 최소 8자 이상</p>
+                                <p id="letter" class="flex items-center"><i class="fas fa-check-circle mr-1 text-red-500"></i> 영문 포함</p>
+                                <p id="number" class="flex items-center"><i class="fas fa-check-circle mr-1 text-red-500"></i> 숫자 포함</p>
+                            </div>
+                        </div>
+
+                        <div class="mb-6">
+                            <label for="confirmPassword" class="block text-gray-700 text-sm font-medium mb-2">비밀번호 확인</label>
+                            <div class="input-field relative flex items-center border border-gray-300 rounded-lg overflow-hidden transition">
+                                <i class="fas fa-lock text-gray-400 ml-3"></i>
+                                <input type="password" id="confirmPassword" placeholder="비밀번호를 다시 입력하세요" class="w-full py-3 px-3 focus:outline-none" autocomplete="off" />
+                            </div>
+                        </div>
+
+                        <div class="mb-6">
+                            <label class="flex items-start">
+                                <input type="checkbox" class="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded" />
+                                <span class="ml-2 block text-sm text-gray-700">
+                                    <span
+                                        >DriveShare의 <a href="#" class="text-blue-600 hover:underline">이용약관</a> 및 <a href="#" class="text-blue-600 hover:underline">개인정보 처리방침</a>에
+                                        동의합니다</span
+                                    >
+                                </span>
+                            </label>
+                        </div>
+
+                        <button type="submit" class="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition">회원 가입 하기</button>
+                    </form>
+                </div>
+
+                <!-- 추가 정보 -->
+                <div class="mt-6 text-center text-white">
+                    <p class="text-sm">이미 계정이 있으신가요? <a href="/login" class="font-medium hover:underline">로그인</a></p>
+                </div>
+            </div>
+        </main>
+
+        <!-- 푸터 영역 -->
+        <footer class="bg-gray-100 py-6">
+            <div class="container mx-auto px-4">
+                <div class="flex flex-col md:flex-row justify-between items-center">
+                    <div class="flex items-center mb-4 md:mb-0">
+                        <i class="fas fa-car text-blue-600 text-xl mr-2"></i>
+                        <span class="text-lg font-bold text-gray-800">DriveShare</span>
+                    </div>
+                    <div class="flex space-x-6">
+                        <a href="#" class="text-gray-600 hover:text-gray-900 text-sm">이용약관</a>
+                        <a href="#" class="text-gray-600 hover:text-gray-900 text-sm">개인정보처리방침</a>
+                        <a href="#" class="text-gray-600 hover:text-gray-900 text-sm">고객센터</a>
+                    </div>
+                </div>
+                <div class="mt-4 text-center md:text-left text-gray-500 text-sm">© 2023 DriveShare Inc. All rights reserved.</div>
+            </div>
+        </footer>
+
+        <script>
+            // 비밀번호 보기/숨기기 토글
+            const togglePassword = document.querySelector("#togglePassword");
+            const password = document.querySelector("#password");
+
+            togglePassword.addEventListener("click", function () {
+                const type = password.getAttribute("type") === "password" ? "text" : "password";
+                password.setAttribute("type", type);
+
+                if (type === "password") {
+                    this.innerHTML = '<i class="far fa-eye"></i>';
+                } else {
+                    this.innerHTML = '<i class="far fa-eye-slash"></i>';
+                }
+            });
+
+            // 비밀번호 유효성 검사
+            password.addEventListener("input", function () {
+                const value = this.value;
+                const lengthValid = value.length >= 8;
+                const letterValid = /[a-zA-Z]/.test(value);
+                const numberValid = /[0-9]/.test(value);
+
+                document.getElementById("length").style.color = lengthValid ? "#3b82f6" : "#6b7280";
+                document.getElementById("letter").style.color = letterValid ? "#3b82f6" : "#6b7280";
+                document.getElementById("number").style.color = numberValid ? "#3b82f6" : "#6b7280";
+
+                if (!lengthValid) {
+                    document.getElementById("length").innerHTML = '<i class="fas fa-times-circle mr-1 text-red-500"></i> 최소 8자 이상';
+                } else {
+                    document.getElementById("length").innerHTML = '<i class="fas fa-check-circle mr-1 text-blue-500"></i> 최소 8자 이상';
+                }
+
+                if (!letterValid) {
+                    document.getElementById("letter").innerHTML = '<i class="fas fa-times-circle mr-1 text-red-500"></i> 영문 포함';
+                } else {
+                    document.getElementById("letter").innerHTML = '<i class="fas fa-check-circle mr-1 text-blue-500"></i> 영문 포함';
+                }
+
+                if (!numberValid) {
+                    document.getElementById("number").innerHTML = '<i class="fas fa-times-circle mr-1 text-red-500"></i> 숫자 포함';
+                } else {
+                    document.getElementById("number").innerHTML = '<i class="fas fa-check-circle mr-1 text-blue-500"></i> 숫자 포함';
+                }
+            });
+
+            // 폼 제출 시 유효성 검사
+            document.getElementById("signupForm").addEventListener("submit", function (e) {
+                e.preventDefault();
+
+                const name = document.getElementById("name").value;
+                const email = document.getElementById("email").value;
+                const password = document.getElementById("password").value;
+                const confirmPassword = document.getElementById("confirmPassword").value;
+                const termsChecked = document.querySelector('input[type="checkbox"]').checked;
+
+                // 간단한 유효성 검사
+                if (!name || !email || !password || !confirmPassword) {
+                    alert("모든 필드를 입력해주세요.");
+                    return;
+                }
+
+                if (password !== confirmPassword) {
+                    alert("비밀번호가 일치하지 않습니다.");
+                    return;
+                }
+
+                if (!termsChecked) {
+                    alert("이용약관에 동의해주세요.");
+                    return;
+                }
+
+                // 서버로 회원가입 정보 전송
+                const userData = {
+                    name: name,
+                    email: email,
+                    password: password,
+                };
+
+                fetch("/api/signup", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify(userData),
+                })
+                    .then((response) => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+                        return response.json();
+                    })
+                    .then((data) => {
+                        if (data.status === "success") {
+                            alert("회원가입이 완료되었습니다!");
+                            location.href = "/login";
+                        } else if (data.status === "error") {
+                            alert(`회원가입에 실패했습니다: ${data.message}`);
+                        } else {
+                            alert("알 수 없는 응답을 받았습니다.");
+                            console.error("알 수 없는 응답:", data);
+                        }
+                    })
+                    .catch((error) => {
+                        alert("회원가입 요청 중 오류가 발생했습니다. 다시 시도해주세요.");
+                        console.error("Fetch 오류:", error);
+                    });
+            });
+        </script>
+    </body>
+</html>

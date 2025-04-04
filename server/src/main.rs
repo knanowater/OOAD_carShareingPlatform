@@ -5,11 +5,13 @@ mod auth;
 
 use auth::{login, logout, signup};
 use dotenvy::dotenv;
+use rocket::fs::NamedFile;
 use rocket::serde::json::Json;
-use server::{CarInfo, add_car};
+use server::{CarInfo, add_car, update_car};
 use sqlx::MySqlPool;
 use sqlx::mysql::MySqlPoolOptions;
 use std::env;
+use std::path::Path;
 
 #[tokio::main]
 async fn main() -> Result<(), sqlx::Error> {
@@ -31,7 +33,20 @@ async fn main() -> Result<(), sqlx::Error> {
 
     // Rocket 서버 실행
     rocket::build()
-        .mount("/", routes![add_car_endpoint, signup, login, logout])
+        .mount(
+            "/",
+            routes![
+                index,
+                login_page,
+                signup_page,
+                list_page,
+                add_car_endpoint,
+                update_car_endpoint,
+                signup,
+                login,
+                logout
+            ],
+        )
         .manage(pool)
         .launch()
         .await
@@ -40,9 +55,43 @@ async fn main() -> Result<(), sqlx::Error> {
     Ok(())
 }
 
+#[get("/")]
+async fn index() -> Option<NamedFile> {
+    NamedFile::open(Path::new("../client/index.html"))
+        .await
+        .ok()
+}
+
+#[get("/login")]
+async fn login_page() -> Option<NamedFile> {
+    NamedFile::open(Path::new("../client/login.html"))
+        .await
+        .ok()
+}
+
+#[get("/signup")]
+async fn signup_page() -> Option<NamedFile> {
+    NamedFile::open(Path::new("../client/signup.html"))
+        .await
+        .ok()
+}
+
+#[get("/list")]
+async fn list_page() -> Option<NamedFile> {
+    NamedFile::open(Path::new("../client/list.html")).await.ok()
+}
+
 #[post("/add_car", format = "json", data = "<car_info>")]
 async fn add_car_endpoint(car_info: Json<CarInfo>, pool: &rocket::State<MySqlPool>) -> String {
     match add_car(pool, car_info.into_inner()).await {
+        Ok(message) => message,
+        Err(error) => error,
+    }
+}
+
+#[post("/update_car", format = "json", data = "<car_info>")]
+async fn update_car_endpoint(car_info: Json<CarInfo>, pool: &rocket::State<MySqlPool>) -> String {
+    match update_car(pool, car_info.into_inner()).await {
         Ok(message) => message,
         Err(error) => error,
     }
