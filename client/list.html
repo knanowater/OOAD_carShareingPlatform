@@ -484,6 +484,55 @@
         </footer>
 
         <script>
+            function base64UrlDecode(base64Url) {
+                const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+                const decodedData = atob(base64);
+                try {
+                    return decodeURIComponent(
+                        decodedData
+                            .split("")
+                            .map((c) => {
+                                return "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2);
+                            })
+                            .join("")
+                    );
+                } catch (e) {
+                    console.error("디코딩 중 오류 발생:", e);
+                    return decodedData;
+                }
+            }
+
+            // JWT 디코딩
+            window.addEventListener("DOMContentLoaded", () => {
+                const token = localStorage.getItem("token");
+                const loginButtonContainer = document.querySelector(".flex.items-center.space-x-4");
+
+                if (token) {
+                    try {
+                        const payloadBase64Url = token.split(".")[1];
+                        const payloadJson = base64UrlDecode(payloadBase64Url);
+                        const payload = JSON.parse(payloadJson);
+                        const username = payload.name;
+
+                        loginButtonContainer.innerHTML = `
+                <span class="text-gray-600 font-medium">안녕하세요, ${username}님</span>
+                <button class="px-4 py-2 rounded-full bg-red-600 text-white hover:bg-red-700 transition" onclick="logout()">로그아웃</button>
+            `;
+                    } catch (error) {
+                        console.error("JWT 디코딩 실패:", error);
+                        alert("로그인 정보를 불러오는 데 실패했습니다.");
+                    }
+                } else {
+                    loginButtonContainer.innerHTML = `
+            <button class="px-4 py-2 rounded-full bg-blue-600 text-white hover:bg-blue-700 transition" onclick="location.href='/login'">로그인 / 회원가입</button>
+        `;
+                }
+            });
+            // 로그아웃 함수
+            function logout() {
+                localStorage.removeItem("token");
+                location.reload();
+            }
             // 필터 칩 클릭 이벤트
             document.querySelectorAll(".filter-chip").forEach((chip) => {
                 chip.addEventListener("click", function () {
@@ -503,23 +552,6 @@
                     this.classList.add("text-white");
                     this.classList.remove("bg-gray-100");
                     this.classList.remove("text-gray-800");
-                });
-            });
-
-            // 찜하기 하트 아이콘 토글
-            document.querySelectorAll(".heart-icon").forEach((icon) => {
-                icon.addEventListener("click", function (e) {
-                    e.preventDefault();
-                    const heart = this.querySelector("i");
-                    if (heart.classList.contains("far")) {
-                        heart.classList.remove("far");
-                        heart.classList.add("fas");
-                        heart.classList.add("text-red-500");
-                    } else {
-                        heart.classList.remove("fas");
-                        heart.classList.remove("text-red-500");
-                        heart.classList.add("far");
-                    }
                 });
             });
 
