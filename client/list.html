@@ -181,7 +181,7 @@
                     <!-- 정렬 및 결과 수 -->
                     <div class="bg-white rounded-lg shadow p-4 mb-6 flex flex-col sm:flex-row justify-between items-center">
                         <div class="mb-3 sm:mb-0">
-                            <span class="text-gray-600">총 <span class="font-bold text-blue-600">24</span>대의 차량</span>
+                            <span class="text-gray-600">총 <span class="font-bold text-blue-600" id="totalCarsCount">24</span>대의 차량</span>
                         </div>
                         <div class="flex items-center">
                             <span class="text-gray-600 mr-2">정렬:</span>
@@ -196,223 +196,7 @@
                     </div>
 
                     <!-- 차량 그리드 -->
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                        <!-- 차량 카드 1 -->
-                        <div class="bg-white rounded-xl shadow-md overflow-hidden car-card transition duration-300">
-                            <div class="relative">
-                                <img
-                                    src="https://images.unsplash.com/photo-1541899481282-d53bffe3c35d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80"
-                                    alt="Tesla Model 3"
-                                    class="w-full h-48 object-cover"
-                                />
-                                <button class="absolute top-3 right-3 text-white heart-icon">
-                                    <i class="far fa-heart text-2xl"></i>
-                                </button>
-                                <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4">
-                                    <span class="text-white text-sm bg-blue-600 px-2 py-1 rounded">즉시 예약 가능</span>
-                                </div>
-                            </div>
-                            <div class="p-4">
-                                <div class="flex justify-between items-start">
-                                    <div>
-                                        <h3 class="font-bold text-lg">Tesla Model 3</h3>
-                                        <p class="text-gray-600 text-sm">2022년식 • 전기 • 오토</p>
-                                    </div>
-                                    <div class="flex items-center">
-                                        <i class="fas fa-star text-yellow-400 mr-1"></i>
-                                        <span class="font-medium">4.9</span>
-                                        <span class="text-gray-400 ml-1">(24)</span>
-                                    </div>
-                                </div>
-                                <div class="mt-4 flex justify-between items-center">
-                                    <div>
-                                        <p class="text-gray-500 text-sm">하루 기준</p>
-                                        <p class="font-bold text-blue-600">120,000원</p>
-                                    </div>
-                                    <button class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">예약하기</button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- 차량 카드 2 -->
-                        <div class="bg-white rounded-xl shadow-md overflow-hidden car-card transition duration-300">
-                            <div class="relative">
-                                <img
-                                    src="https://images.unsplash.com/photo-1494976388531-d1058494cdd8?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80"
-                                    alt="BMW 5 Series"
-                                    class="w-full h-48 object-cover"
-                                />
-                                <button class="absolute top-3 right-3 text-white heart-icon">
-                                    <i class="far fa-heart text-2xl"></i>
-                                </button>
-                                <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4">
-                                    <span class="text-white text-sm bg-green-600 px-2 py-1 rounded">특가 할인중</span>
-                                </div>
-                            </div>
-                            <div class="p-4">
-                                <div class="flex justify-between items-start">
-                                    <div>
-                                        <h3 class="font-bold text-lg">BMW 520d</h3>
-                                        <p class="text-gray-600 text-sm">2021년식 • 디젤 • 오토</p>
-                                    </div>
-                                    <div class="flex items-center">
-                                        <i class="fas fa-star text-yellow-400 mr-1"></i>
-                                        <span class="font-medium">4.8</span>
-                                        <span class="text-gray-400 ml-1">(18)</span>
-                                    </div>
-                                </div>
-                                <div class="mt-4 flex justify-between items-center">
-                                    <div>
-                                        <p class="text-gray-500 text-sm">하루 기준</p>
-                                        <p class="font-bold text-blue-600">
-                                            <span class="line-through text-gray-400 mr-2">150,000원</span>
-                                            130,000원
-                                        </p>
-                                    </div>
-                                    <button class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">예약하기</button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- 차량 카드 3 -->
-                        <div class="bg-white rounded-xl shadow-md overflow-hidden car-card transition duration-300">
-                            <div class="relative">
-                                <img
-                                    src="https://images.unsplash.com/photo-1503376780353-7e6692767b70?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80"
-                                    alt="Porsche 911"
-                                    class="w-full h-48 object-cover"
-                                />
-                                <button class="absolute top-3 right-3 text-white heart-icon">
-                                    <i class="far fa-heart text-2xl"></i>
-                                </button>
-                            </div>
-                            <div class="p-4">
-                                <div class="flex justify-between items-start">
-                                    <div>
-                                        <h3 class="font-bold text-lg">Porsche 911 Carrera</h3>
-                                        <p class="text-gray-600 text-sm">2023년식 • 가솔린 • 오토</p>
-                                    </div>
-                                    <div class="flex items-center">
-                                        <i class="fas fa-star text-yellow-400 mr-1"></i>
-                                        <span class="font-medium">5.0</span>
-                                        <span class="text-gray-400 ml-1">(12)</span>
-                                    </div>
-                                </div>
-                                <div class="mt-4 flex justify-between items-center">
-                                    <div>
-                                        <p class="text-gray-500 text-sm">하루 기준</p>
-                                        <p class="font-bold text-blue-600">250,000원</p>
-                                    </div>
-                                    <button class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">예약하기</button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- 차량 카드 4 -->
-                        <div class="bg-white rounded-xl shadow-md overflow-hidden car-card transition duration-300">
-                            <div class="relative">
-                                <img
-                                    src="https://images.unsplash.com/photo-1542362567-b07e54358753?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80"
-                                    alt="Hyundai Tucson"
-                                    class="w-full h-48 object-cover"
-                                />
-                                <button class="absolute top-3 right-3 text-white heart-icon">
-                                    <i class="far fa-heart text-2xl"></i>
-                                </button>
-                            </div>
-                            <div class="p-4">
-                                <div class="flex justify-between items-start">
-                                    <div>
-                                        <h3 class="font-bold text-lg">Hyundai Tucson</h3>
-                                        <p class="text-gray-600 text-sm">2022년식 • 가솔린 • 오토</p>
-                                    </div>
-                                    <div class="flex items-center">
-                                        <i class="fas fa-star text-yellow-400 mr-1"></i>
-                                        <span class="font-medium">4.7</span>
-                                        <span class="text-gray-400 ml-1">(32)</span>
-                                    </div>
-                                </div>
-                                <div class="mt-4 flex justify-between items-center">
-                                    <div>
-                                        <p class="text-gray-500 text-sm">하루 기준</p>
-                                        <p class="font-bold text-blue-600">90,000원</p>
-                                    </div>
-                                    <button class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">예약하기</button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- 차량 카드 5 -->
-                        <div class="bg-white rounded-xl shadow-md overflow-hidden car-card transition duration-300">
-                            <div class="relative">
-                                <img
-                                    src="https://images.unsplash.com/photo-1553440569-bcc63803a83d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1025&q=80"
-                                    alt="Kia Carnival"
-                                    class="w-full h-48 object-cover"
-                                />
-                                <button class="absolute top-3 right-3 text-white heart-icon">
-                                    <i class="far fa-heart text-2xl"></i>
-                                </button>
-                                <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4">
-                                    <span class="text-white text-sm bg-blue-600 px-2 py-1 rounded">즉시 예약 가능</span>
-                                </div>
-                            </div>
-                            <div class="p-4">
-                                <div class="flex justify-between items-start">
-                                    <div>
-                                        <h3 class="font-bold text-lg">Kia Carnival</h3>
-                                        <p class="text-gray-600 text-sm">2021년식 • 디젤 • 오토</p>
-                                    </div>
-                                    <div class="flex items-center">
-                                        <i class="fas fa-star text-yellow-400 mr-1"></i>
-                                        <span class="font-medium">4.6</span>
-                                        <span class="text-gray-400 ml-1">(28)</span>
-                                    </div>
-                                </div>
-                                <div class="mt-4 flex justify-between items-center">
-                                    <div>
-                                        <p class="text-gray-500 text-sm">하루 기준</p>
-                                        <p class="font-bold text-blue-600">110,000원</p>
-                                    </div>
-                                    <button class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">예약하기</button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- 차량 카드 6 -->
-                        <div class="bg-white rounded-xl shadow-md overflow-hidden car-card transition duration-300">
-                            <div class="relative">
-                                <img
-                                    src="https://images.unsplash.com/photo-1580274455191-1c62238fa333?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1064&q=80"
-                                    alt="Mercedes-Benz E-Class"
-                                    class="w-full h-48 object-cover"
-                                />
-                                <button class="absolute top-3 right-3 text-white heart-icon">
-                                    <i class="far fa-heart text-2xl"></i>
-                                </button>
-                            </div>
-                            <div class="p-4">
-                                <div class="flex justify-between items-start">
-                                    <div>
-                                        <h3 class="font-bold text-lg">Mercedes-Benz E300</h3>
-                                        <p class="text-gray-600 text-sm">2022년식 • 가솔린 • 오토</p>
-                                    </div>
-                                    <div class="flex items-center">
-                                        <i class="fas fa-star text-yellow-400 mr-1"></i>
-                                        <span class="font-medium">4.9</span>
-                                        <span class="text-gray-400 ml-1">(19)</span>
-                                    </div>
-                                </div>
-                                <div class="mt-4 flex justify-between items-center">
-                                    <div>
-                                        <p class="text-gray-500 text-sm">하루 기준</p>
-                                        <p class="font-bold text-blue-600">180,000원</p>
-                                    </div>
-                                    <button class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">예약하기</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" id="car-grid"></div>
 
                     <!-- 페이지네이션 -->
                     <div class="mt-8 flex justify-center">
@@ -501,33 +285,6 @@
                     return decodedData;
                 }
             }
-
-            // JWT 디코딩
-            window.addEventListener("DOMContentLoaded", () => {
-                const token = localStorage.getItem("token");
-                const loginButtonContainer = document.querySelector(".flex.items-center.space-x-4");
-
-                if (token) {
-                    try {
-                        const payloadBase64Url = token.split(".")[1];
-                        const payloadJson = base64UrlDecode(payloadBase64Url);
-                        const payload = JSON.parse(payloadJson);
-                        const username = payload.name;
-
-                        loginButtonContainer.innerHTML = `
-                <span class="text-gray-600 font-medium">안녕하세요, ${username}님</span>
-                <button class="px-4 py-2 rounded-full bg-red-600 text-white hover:bg-red-700 transition" onclick="logout()">로그아웃</button>
-            `;
-                    } catch (error) {
-                        console.error("JWT 디코딩 실패:", error);
-                        alert("로그인 정보를 불러오는 데 실패했습니다.");
-                    }
-                } else {
-                    loginButtonContainer.innerHTML = `
-            <button class="px-4 py-2 rounded-full bg-blue-600 text-white hover:bg-blue-700 transition" onclick="location.href='/login'">로그인 / 회원가입</button>
-        `;
-                }
-            });
             // 로그아웃 함수
             function logout() {
                 localStorage.removeItem("token");
@@ -566,6 +323,117 @@
                     this.style.transform = "";
                     this.style.boxShadow = "";
                 });
+            });
+
+            async function loadCars(startIndex = 0) {
+                try {
+                    const response = await fetch(`/api/cars?start=${startIndex}`);
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    const data = await response.json();
+                    const cars = data.cars;
+                    const totalCars = data.total;
+                    const carGrid = document.getElementById("car-grid");
+                    const carCountSpan = document.querySelector("#totalCarsCount");
+
+                    if (startIndex === 0 && carGrid) {
+                        carGrid.innerHTML = ""; // 처음 로드 시 기존 내용 비우기
+                    }
+
+                    if (carCountSpan) {
+                        carCountSpan.textContent = totalCars;
+                    }
+
+                    if (startIndex === 0 && carGrid) {
+                        carGrid.innerHTML = "";
+                    }
+
+                    if (carGrid && cars && cars.length > 0) {
+                        cars.forEach((car) => {
+                            const carCardHTML = `
+                            <div class="bg-white rounded-xl shadow-md overflow-hidden car-card transition duration-300">
+                                <div class="relative">
+                                    <img
+                                        src="${car.image_url || "https://placehold.co/600x400"}"
+                                        class="w-full h-48 object-cover"
+                                    />
+                                    <button class="absolute top-3 right-3 text-white heart-icon">
+                                        <i class="far fa-heart text-2xl"></i>
+                                    </button>
+                                </div>
+                                <div class="p-4">
+                                    <div class="flex justify-between items-start">
+                                        <div>
+                                            <h3 class="font-bold text-lg">${car.name || "차량 이름 없음"}</h3>
+                                            <p class="text-gray-600 text-sm">${car.year || "연식 정보 없음"}년식 • ${car.fuel_type || "연료 정보 없음"} • ${car.transmission || "변속기 정보 없음"}</p>
+                                        </div>
+                                    </div>
+                                    <div class="mt-4 flex justify-between items-center">
+                                        <div>
+                                            <p class="text-gray-500 text-sm">하루 기준</p>
+                                            <p class="font-bold text-blue-600">${car.daily_rate ? car.daily_rate.toLocaleString() + "원" : "가격 정보 없음"}</p>
+                                        </div>
+                                        <button class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">예약하기</button>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                            carGrid.innerHTML += carCardHTML;
+                        });
+                        // 다음 페이지 로드 버튼 (예시)
+                        if (cars.length === 6) {
+                            const nextButton = document.createElement("button");
+                            nextButton.textContent = "더 보기";
+                            nextButton.classList.add("px-4", "py-2", "bg-gray-200", "rounded-md", "mt-4");
+                            nextButton.addEventListener("click", () => {
+                                loadCars(startIndex + 6);
+                                nextButton.remove(); // "더 보기" 버튼을 누르면 제거 (원하는 동작에 따라 수정)
+                            });
+                            carGrid.appendChild(nextButton);
+                        }
+                    } else if (startIndex === 0 && carGrid) {
+                        carGrid.innerHTML = "<p>차량 정보가 없습니다.</p>";
+                    } else if (cars.length === 0 && startIndex > 0 && carGrid) {
+                        // 더 이상 차량 정보가 없을 경우 메시지 표시 또는 버튼 제거
+                        const message = document.createElement("p");
+                        message.textContent = "더 이상 차량 정보가 없습니다.";
+                        carGrid.appendChild(message);
+                    }
+                } catch (error) {
+                    console.error("차량 정보를 가져오는 중 오류 발생:", error);
+                    const carGrid = document.getElementById("car-grid");
+                    if (carGrid && startIndex === 0) {
+                        carGrid.innerHTML = "<p>차량 정보를 가져오는 데 실패했습니다.</p>";
+                    }
+                }
+            }
+
+            window.addEventListener("DOMContentLoaded", () => {
+                // JWT 디코딩
+                {
+                    const token = localStorage.getItem("token");
+                    const loginButtonContainer = document.querySelector(".flex.items-center.space-x-4");
+
+                    if (token) {
+                        try {
+                            const payloadBase64Url = token.split(".")[1];
+                            const payloadJson = base64UrlDecode(payloadBase64Url);
+                            const payload = JSON.parse(payloadJson);
+                            const username = payload.name;
+
+                            loginButtonContainer.innerHTML = `<span class="text-gray-600 font-medium">안녕하세요, ${username}님</span><button class="px-4 py-2 rounded-full bg-red-600 text-white hover:bg-red-700 transition" onclick="logout()">로그아웃</button>`;
+                        } catch (error) {
+                            console.error("JWT 디코딩 실패:", error);
+                            alert("로그인 정보를 불러오는 데 실패했습니다.");
+                        }
+                    } else {
+                        loginButtonContainer.innerHTML = `<button class="px-4 py-2 rounded-full bg-blue-600 text-white hover:bg-blue-700 transition" onclick="location.href='/login'">로그인 / 회원가입</button>`;
+                    }
+                }
+                {
+                    loadCars(0);
+                }
             });
         </script>
     </body>
