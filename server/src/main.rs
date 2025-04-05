@@ -8,9 +8,12 @@ mod auth;
 
 use auth::{login, logout, signup};
 use dotenvy::dotenv;
+use rocket::State;
 use rocket::fs::NamedFile;
 use rocket::serde::json::Json;
+use serde::Serialize;
 use server::{CarInfo, add_car, update_car};
+use sqlx::FromRow;
 use sqlx::MySqlPool;
 use sqlx::mysql::MySqlPoolOptions;
 use std::env;
@@ -53,7 +56,8 @@ async fn main() -> Result<(), sqlx::Error> {
                 update_car_endpoint,
                 signup,
                 login,
-                logout
+                logout,
+                get_cars
             ],
         )
         .manage(pool)
@@ -103,5 +107,50 @@ async fn update_car_endpoint(car_info: Json<CarInfo>, pool: &rocket::State<MySql
     match update_car(pool, car_info.into_inner()).await {
         Ok(message) => message,
         Err(error) => error,
+    }
+}
+
+#[derive(Serialize)]
+pub struct CarListResponse {
+    total: usize,
+    cars: Vec<CarInfo>,
+}
+
+#[get("/api/cars?<start>")]
+pub async fn get_cars(pool: &State<MySqlPool>, start: Option<usize>) -> Json<CarListResponse> {
+    let start_index = start.unwrap_or(0); // 시작 번호가 없으면 0부터 시작
+    let limit = 6;
+
+    let total_result = sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM cars")
+        .fetch_one(pool.inner())
+        .await;
+
+    let cars_result = sqlx::query_as::<_, CarInfo>(
+        "SELECT plate_number, manufacture, name, year, fuel_type, transmission, seat_num, daily_rate, status, connected_with, image_url FROM cars LIMIT ? OFFSET ?"
+    )
+    .bind(limit as u64) // LIMIT는 u64 타입이어야 할 수 있습니다.
+    .bind(start_index as u64) // OFFSET도 u64 타입이어야 할 수 있습니다.
+    .fetch_all(pool.inner())
+    .await;
+
+    match (total_result, cars_result) {
+        (Ok(total), Ok(cars)) => Json(CarListResponse {
+            total: total as usize,
+            cars,
+        }),
+        (Err(e), _) => {
+            eprintln!("Error fetching car count: {}", e);
+            Json(CarListResponse {
+                total: 0,
+                cars: Vec::new(),
+            })
+        }
+        (_, Err(e)) => {
+            eprintln!("Error fetching cars: {}", e);
+            Json(CarListResponse {
+                total: 0,
+                cars: Vec::new(),
+            })
+        }
     }
 }
