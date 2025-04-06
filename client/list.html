@@ -6,6 +6,19 @@
         <title>DriveShare - 차량 찾기</title>
         <script src="https://cdn.tailwindcss.com"></script>
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+        <link
+            rel="stylesheet"
+            href="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/15.8.1/nouislider.css"
+            integrity="sha512-MKxcSu/LDtbIYHBNAWUQwfB3iVoG9xeMCm32QV5hZ/9lFaQZJVaXfz9aFa0IZExWzCpm7OWvp9zq9gVip/nLMg=="
+            crossorigin="anonymous"
+            referrerpolicy="no-referrer"
+        />
+        <script
+            src="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/15.8.1/nouislider.min.js"
+            integrity="sha512-g/feAizmeiVKSwvfW0Xk3ZHZqv5Zs8PEXEBKzL15pM0SevEvoX8eJ4yFWbqakvRj7vtw1Q97bLzEpG2IVWX0Mg=="
+            crossorigin="anonymous"
+            referrerpolicy="no-referrer"
+        ></script>
         <style>
             .search-hero {
                 background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)),
@@ -124,55 +137,49 @@
                     <div class="bg-white rounded-lg shadow p-6 sticky top-24 filter-section overflow-y-auto max-h-[calc(100vh-120px)]">
                         <h2 class="text-xl font-bold mb-6">필터</h2>
 
-                        <!-- 가격 범위 -->
                         <div class="mb-6">
                             <h3 class="font-medium mb-3">가격 범위</h3>
-                            <div class="px-2">
-                                <input type="range" min="0" max="200" value="100" class="w-full price-range" />
-                            </div>
+                            <div class="price-slider"></div>
                             <div class="flex justify-between mt-2 text-sm text-gray-600">
-                                <span>0원</span>
-                                <span>200,000원+</span>
+                                <span class="price-min-value">0원</span>
+                                <span class="price-max-value">200,000원</span>
                             </div>
                         </div>
 
-                        <!-- 차량 유형 -->
                         <div class="mb-6">
                             <h3 class="font-medium mb-3">차량 유형</h3>
                             <div class="space-y-2">
-                                <button class="filter-chip active-filter">전체</button>
-                                <button class="filter-chip">세단</button>
-                                <button class="filter-chip">SUV</button>
-                                <button class="filter-chip">승합차</button>
-                                <button class="filter-chip">스포츠카</button>
-                                <button class="filter-chip">전기차</button>
-                                <button class="filter-chip">수입차</button>
+                                <button class="filter-chip active-filter px-3 py-1 rounded-md">전체</button>
+                                <button class="filter-chip px-3 py-1 rounded-md">세단</button>
+                                <button class="filter-chip px-3 py-1 rounded-md">SUV</button>
+                                <button class="filter-chip px-3 py-1 rounded-md">승합차</button>
+                                <button class="filter-chip px-3 py-1 rounded-md">스포츠카</button>
+                                <button class="filter-chip px-3 py-1 rounded-md">전기차</button>
+                                <button class="filter-chip px-3 py-1 rounded-md">수입차</button>
                             </div>
                         </div>
 
-                        <!-- 연료 유형 -->
                         <div class="mb-6">
                             <h3 class="font-medium mb-3">연료 유형</h3>
                             <div class="space-y-2">
-                                <button class="filter-chip active-filter">전체</button>
-                                <button class="filter-chip">가솔린</button>
-                                <button class="filter-chip">디젤</button>
-                                <button class="filter-chip">LPG</button>
-                                <button class="filter-chip">전기</button>
-                                <button class="filter-chip">하이브리드</button>
+                                <button class="filter-chip active-filter px-3 py-1 rounded-md">전체</button>
+                                <button class="filter-chip px-3 py-1 rounded-md">가솔린</button>
+                                <button class="filter-chip px-3 py-1 rounded-md">디젤</button>
+                                <button class="filter-chip px-3 py-1 rounded-md">LPG</button>
+                                <button class="filter-chip px-3 py-1 rounded-md">전기</button>
+                                <button class="filter-chip px-3 py-1 rounded-md">하이브리드</button>
                             </div>
                         </div>
 
-                        <!-- 변속기 -->
                         <div class="mb-6">
                             <h3 class="font-medium mb-3">변속기</h3>
                             <div class="space-y-2">
-                                <button class="filter-chip active-filter">전체</button>
-                                <button class="filter-chip">오토</button>
-                                <button class="filter-chip">수동</button>
+                                <button class="filter-chip active-filter px-3 py-1 rounded-md">전체</button>
+                                <button class="filter-chip px-3 py-1 rounded-md">자동</button>
+                                <button class="filter-chip px-3 py-1 rounded-md">수동</button>
                             </div>
                         </div>
-                        <button class="w-full py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium rounded-lg transition">필터 초기화</button>
+                        <button class="w-full py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium rounded-lg transition" id="reset-filter-button">필터 초기화</button>
                     </div>
                 </aside>
 
@@ -181,16 +188,15 @@
                     <!-- 정렬 및 결과 수 -->
                     <div class="bg-white rounded-lg shadow p-4 mb-6 flex flex-col sm:flex-row justify-between items-center">
                         <div class="mb-3 sm:mb-0">
-                            <span class="text-gray-600">총 <span class="font-bold text-blue-600" id="totalCarsCount">24</span>대의 차량</span>
+                            <span class="text-gray-600">총 <span class="font-bold text-blue-600" id="totalCarsCount">0</span>대의 차량</span>
                         </div>
                         <div class="flex items-center">
                             <span class="text-gray-600 mr-2">정렬:</span>
                             <select class="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                <option>추천순</option>
+                                <option>이름순</option>
                                 <option>가격 낮은순</option>
                                 <option>가격 높은순</option>
                                 <option>평점 높은순</option>
-                                <option>리뷰 많은순</option>
                             </select>
                         </div>
                     </div>
@@ -281,7 +287,6 @@
                             .join("")
                     );
                 } catch (e) {
-                    console.error("디코딩 중 오류 발생:", e);
                     return decodedData;
                 }
             }
@@ -293,22 +298,68 @@
             // 필터 칩 클릭 이벤트
             document.querySelectorAll(".filter-chip").forEach((chip) => {
                 chip.addEventListener("click", function () {
-                    // 같은 그룹 내 다른 칩들의 active 클래스 제거
-                    const parent = this.parentElement;
-                    parent.querySelectorAll(".filter-chip").forEach((c) => {
-                        c.classList.remove("active-filter");
-                        c.classList.remove("bg-blue-600");
-                        c.classList.remove("text-white");
-                        c.classList.add("bg-gray-100");
-                        c.classList.add("text-gray-800");
-                    });
+                    const filterTypeElement = this.parentElement.previousElementSibling;
+                    const filterTypeRaw = filterTypeElement ? filterTypeElement.textContent.trim() : null;
+                    let filterType = null;
+                    switch (filterTypeRaw) {
+                        case "차량 유형":
+                            filterType = "carType";
+                            break;
+                        case "연료 유형":
+                            filterType = "fuelType";
+                            break;
+                        case "변속기":
+                            filterType = "transmission";
+                            break;
+                    }
 
-                    // 클릭한 칩에 active 클래스 추가
-                    this.classList.add("active-filter");
-                    this.classList.add("bg-blue-600");
-                    this.classList.add("text-white");
-                    this.classList.remove("bg-gray-100");
-                    this.classList.remove("text-gray-800");
+                    const filterValue = this.textContent.trim();
+                    const isAllButton = filterValue === "전체";
+                    const parentElement = this.parentElement;
+
+                    if (filterType) {
+                        if (isAllButton) {
+                            currentFilters[filterType] = [];
+                            this.classList.add("active-filter", "bg-blue-600", "text-white");
+                            this.classList.remove("bg-gray-100", "text-gray-800");
+                            parentElement.querySelectorAll(".filter-chip").forEach((c) => {
+                                if (c !== this) {
+                                    c.classList.remove("active-filter", "bg-blue-600", "text-white");
+                                    c.classList.add("bg-gray-100", "text-gray-800");
+                                }
+                            });
+                        } else {
+                            const allButton = parentElement.querySelector(".filter-chip:first-child");
+                            if (allButton && allButton.textContent === "전체") {
+                                allButton.classList.remove("active-filter", "bg-blue-600", "text-white");
+                                allButton.classList.add("bg-gray-100", "text-gray-800");
+                            }
+
+                            const index = currentFilters[filterType].indexOf(filterValue);
+                            if (index > -1) {
+                                currentFilters[filterType].splice(index, 1);
+                                this.classList.remove("active-filter", "bg-blue-600", "text-white");
+                                this.classList.add("bg-gray-100", "text-gray-800");
+                            } else {
+                                currentFilters[filterType].push(filterValue);
+                                this.classList.add("active-filter", "bg-blue-600", "text-white");
+                                this.classList.remove("bg-gray-100", "text-gray-800");
+                            }
+                        }
+                        applyFilters();
+
+                        // 필터 그룹에 선택된 필터가 없으면 "전체" 버튼 활성화
+                        setTimeout(() => {
+                            // applyFilters 이후 currentFilters 상태가 반영되도록 약간의 지연
+                            if (currentFilters[filterType] && currentFilters[filterType].length === 0) {
+                                const allButton = parentElement.querySelector(".filter-chip:first-child");
+                                if (allButton) {
+                                    allButton.classList.add("active-filter", "bg-blue-600", "text-white");
+                                    allButton.classList.remove("bg-gray-100", "text-gray-800");
+                                }
+                            }
+                        }, 10);
+                    }
                 });
             });
 
@@ -325,21 +376,148 @@
                 });
             });
 
-            async function loadCars(startIndex = 0) {
+            const sortSelect = document.querySelector(".flex.items-center > select"); // 정렬 select 요소 선택
+            const carGrid = document.getElementById("car-grid");
+            let currentSort = "";
+
+            sortSelect.addEventListener("change", () => {
+                currentSort = sortSelect.value;
+                loadCarsWithFiltersAndSorting(0, currentSort, currentFilters); // 정렬 기준 및 필터 함께 전달하며 첫 페이지 로드
+            });
+
+            const priceSlider = document.querySelector(".price-slider");
+            const priceMinValueSpan = document.querySelector(".price-min-value");
+            const priceMaxValueSpan = document.querySelector(".price-max-value");
+            const filterChips = document.querySelectorAll(".filter-chip");
+            const resetButton = document.querySelector("#reset-filter-button");
+
+            let currentFilters = {
+                minPrice: 0,
+                maxPrice: 200000, // 초기 최댓값 설정
+                carType: [],
+                fuelType: [],
+                transmission: [],
+            };
+
+            // noUiSlider 초기화
+            if (priceSlider) {
+                noUiSlider.create(priceSlider, {
+                    start: [0, 200000], // 초기 최소값, 최대값 설정
+                    connect: true,
+                    range: {
+                        min: 0,
+                        max: 200000,
+                    },
+                    step: 1000, // 가격 단위 (선택 사항)
+                    format: {
+                        to: function (value) {
+                            return value.toLocaleString();
+                        },
+                        from: function (value) {
+                            return Number(value.replace(/,/g, ""));
+                        },
+                    },
+                });
+
+                // 슬라이더 값 변경 이벤트 리스너
+                priceSlider.noUiSlider.on("update", function (values, handle) {
+                    currentFilters.minPrice = Number(values[0].replace(/,/g, ""));
+                    currentFilters.maxPrice = Number(values[1].replace(/,/g, ""));
+                    priceMinValueSpan.textContent = `${values[0]}원`;
+                    priceMaxValueSpan.textContent = `${values[1]}원`;
+                    applyFilters();
+                });
+            }
+
+            // 필터 초기화 버튼 이벤트 리스너
+            resetButton.addEventListener("click", () => {
+                console.log("reset");
+                currentFilters = { minPrice: 0, maxPrice: 200000, carType: [], fuelType: [], transmission: [] };
+                priceSlider.noUiSlider.set([0, 200000]);
+                priceMinValueSpan.textContent = "0원";
+                priceMaxValueSpan.textContent = "200,000원";
+                document.querySelectorAll(".filter-section > div").forEach((filterGroup) => {
+                    const filterTypeTitle = filterGroup.querySelector("h3.font-medium.mb-3")?.textContent;
+                    const filterKey = filterTypeTitle?.replace(" ", "");
+                    const allButton = filterGroup.querySelector(".filter-chip");
+                    if (allButton && allButton.textContent === "전체") {
+                        allButton.classList.add("active-filter", "bg-blue-600", "text-white");
+                        allButton.classList.remove("bg-gray-100", "text-gray-800");
+                        if (filterKey && currentFilters.hasOwnProperty(filterKey.charAt(0).toLowerCase() + filterKey.slice(1))) {
+                            currentFilters[filterKey.charAt(0).toLowerCase() + filterKey.slice(1)] = [];
+                        }
+                    } else if (allButton) {
+                        allButton.classList.remove("active-filter", "bg-blue-600", "text-white");
+                        allButton.classList.add("bg-gray-100", "text-gray-800");
+                    }
+                    filterGroup.querySelectorAll(".filter-chip").forEach((chip) => {
+                        if (chip.textContent !== "전체") {
+                            chip.classList.remove("active-filter", "bg-blue-600", "text-white");
+                            chip.classList.add("bg-gray-100", "text-gray-800");
+                        }
+                    });
+                });
+                applyFilters();
+            });
+
+            function applyFilters() {
+                loadCarsWithFiltersAndSorting(0, currentSort, currentFilters);
+            }
+
+            async function loadCarsWithFiltersAndSorting(startIndex = 0, sort = "", filters = currentFilters) {
+                let apiUrl = `/api/cars?start=${startIndex}`;
+                if (sort) {
+                    let sortParam = "";
+                    switch (sort) {
+                        case "가격 낮은순":
+                            sortParam = "daily_rate_asc";
+                            break;
+                        case "가격 높은순":
+                            sortParam = "daily_rate_desc";
+                            break;
+                        case "평점 높은순":
+                            sortParam = "rating_desc";
+                            break;
+                        default: // 이름순 (기본 정렬)
+                            sortParam = "name_asc";
+                            break;
+                    }
+                    if (sortParam) {
+                        apiUrl += `&sort=${sortParam}`;
+                    }
+                }
+
+                if (filters.minPrice !== 0) {
+                    apiUrl += `&min_daily_rate=${filters.minPrice}`;
+                }
+                if (filters.maxPrice !== 200000) {
+                    apiUrl += `&max_daily_rate=${filters.maxPrice}`;
+                }
+
+                // 차량 유형 필터 추가
+                if (filters.carType.length > 0) {
+                    apiUrl += `&car_type=${filters.carType.join(",")}`;
+                }
+
+                // 연료 유형 필터 추가 (기존 코드에 있다면 확인)
+                if (filters.fuelType.length > 0) {
+                    apiUrl += `&fuel_type=${filters.fuelType.join(",")}`;
+                }
+
+                // 변속기 필터 추가 (기존 코드에 있다면 확인)
+                if (filters.transmission.length > 0) {
+                    apiUrl += `&transmission=${filters.transmission.join(",")}`;
+                }
+
                 try {
-                    const response = await fetch(`/api/cars?start=${startIndex}`);
+                    const response = await fetch(apiUrl);
                     if (!response.ok) {
                         throw new Error(`HTTP error! status: ${response.status}`);
                     }
                     const data = await response.json();
                     const cars = data.cars;
                     const totalCars = data.total;
-                    const carGrid = document.getElementById("car-grid");
-                    const carCountSpan = document.querySelector("#totalCarsCount");
-
-                    if (startIndex === 0 && carGrid) {
-                        carGrid.innerHTML = ""; // 처음 로드 시 기존 내용 비우기
-                    }
+                    const carCountSpan = document.querySelector(".text-gray-600 > .font-bold.text-blue-600");
 
                     if (carCountSpan) {
                         carCountSpan.textContent = totalCars;
@@ -352,59 +530,69 @@
                     if (carGrid && cars && cars.length > 0) {
                         cars.forEach((car) => {
                             const carCardHTML = `
-                            <div class="bg-white rounded-xl shadow-md overflow-hidden car-card transition duration-300">
-                                <div class="relative">
-                                    <img
-                                        src="${car.image_url || "https://placehold.co/600x400"}"
-                                        class="w-full h-48 object-cover"
-                                    />
-                                    <button class="absolute top-3 right-3 text-white heart-icon">
-                                        <i class="far fa-heart text-2xl"></i>
-                                    </button>
+                    <div class="bg-white rounded-xl shadow-md overflow-hidden car-card transition duration-300">
+                        <div class="relative">
+                            <img
+                                src="${car.image_url || "https://placehold.co/600x400"}"
+                                class="w-full h-48 object-cover"
+                            />
+                            <button class="absolute top-3 right-3 text-white heart-icon">
+                                <i class="far fa-heart text-2xl"></i>
+                            </button>
+                        </div>
+                        <div class="p-4">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <h3 class="font-bold text-lg">${car.manufacture || "회사 정보 없음"} ${car.name || "차량 이름 없음"}</h3>
+                                    <p class="text-gray-600 text-sm">${car.year || "연식 정보 없음"}년식 • ${car.fuel_type || "연료 정보 없음"} • ${car.transmission || "변속기 정보 없음"}</p>
                                 </div>
-                                <div class="p-4">
-                                    <div class="flex justify-between items-start">
-                                        <div>
-                                            <h3 class="font-bold text-lg">${car.name || "차량 이름 없음"}</h3>
-                                            <p class="text-gray-600 text-sm">${car.year || "연식 정보 없음"}년식 • ${car.fuel_type || "연료 정보 없음"} • ${car.transmission || "변속기 정보 없음"}</p>
-                                        </div>
-                                    </div>
-                                    <div class="mt-4 flex justify-between items-center">
-                                        <div>
-                                            <p class="text-gray-500 text-sm">하루 기준</p>
-                                            <p class="font-bold text-blue-600">${car.daily_rate ? car.daily_rate.toLocaleString() + "원" : "가격 정보 없음"}</p>
-                                        </div>
-                                        <button class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">예약하기</button>
-                                    </div>
+                                <div class="flex items-center">
+                                    <i class="fas fa-star text-yellow-400 mr-1"></i>
+                                    <span class="font-medium">${car.rating !== null && car.rating !== undefined ? car.rating.toFixed(1) : "평점 정보 없음"}</span>
                                 </div>
                             </div>
-                        `;
+                            <div class="mt-4 flex justify-between items-center">
+                                <div>
+                                    <p class="text-gray-500 text-sm">하루 기준</p>
+                                    <p class="font-bold text-blue-600">${car.daily_rate ? car.daily_rate.toLocaleString() + "원" : "가격 정보 없음"}</p>
+                                </div>
+                                ${
+                                    car.status === "Unavailable"
+                                        ? `<button class="px-4 py-2 bg-gray-400 text-white rounded-lg cursor-not-allowed" disabled>예약 불가</button>`
+                                        : `<button class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">예약하기</button>`
+                                }
+                            </div>
+                        </div>
+                    </div>
+                `;
                             carGrid.innerHTML += carCardHTML;
                         });
-                        // 다음 페이지 로드 버튼 (예시)
+
                         if (cars.length === 6) {
                             const nextButton = document.createElement("button");
                             nextButton.textContent = "더 보기";
                             nextButton.classList.add("px-4", "py-2", "bg-gray-200", "rounded-md", "mt-4");
                             nextButton.addEventListener("click", () => {
-                                loadCars(startIndex + 6);
-                                nextButton.remove(); // "더 보기" 버튼을 누르면 제거 (원하는 동작에 따라 수정)
+                                loadCarsWithFiltersAndSorting(startIndex + 6, currentSort);
+                                nextButton.remove();
                             });
                             carGrid.appendChild(nextButton);
+                        } else if (cars.length < 6 && startIndex > 0 && carGrid) {
+                            const message = document.createElement("p");
+                            message.textContent = "더 이상 차량 정보가 없습니다.";
+                            carGrid.appendChild(message);
                         }
                     } else if (startIndex === 0 && carGrid) {
                         carGrid.innerHTML = "<p>차량 정보가 없습니다.</p>";
-                    } else if (cars.length === 0 && startIndex > 0 && carGrid) {
-                        // 더 이상 차량 정보가 없을 경우 메시지 표시 또는 버튼 제거
-                        const message = document.createElement("p");
-                        message.textContent = "더 이상 차량 정보가 없습니다.";
-                        carGrid.appendChild(message);
                     }
                 } catch (error) {
-                    console.error("차량 정보를 가져오는 중 오류 발생:", error);
                     const carGrid = document.getElementById("car-grid");
                     if (carGrid && startIndex === 0) {
                         carGrid.innerHTML = "<p>차량 정보를 가져오는 데 실패했습니다.</p>";
+                    }
+                    const carCountSpan = document.querySelector(".text-gray-600 > .font-bold.text-blue-600");
+                    if (carCountSpan) {
+                        carCountSpan.textContent = "Error";
                     }
                 }
             }
@@ -414,25 +602,31 @@
                 {
                     const token = localStorage.getItem("token");
                     const loginButtonContainer = document.querySelector(".flex.items-center.space-x-4");
-
-                    if (token) {
-                        try {
-                            const payloadBase64Url = token.split(".")[1];
-                            const payloadJson = base64UrlDecode(payloadBase64Url);
-                            const payload = JSON.parse(payloadJson);
-                            const username = payload.name;
-
-                            loginButtonContainer.innerHTML = `<span class="text-gray-600 font-medium">안녕하세요, ${username}님</span><button class="px-4 py-2 rounded-full bg-red-600 text-white hover:bg-red-700 transition" onclick="logout()">로그아웃</button>`;
-                        } catch (error) {
-                            console.error("JWT 디코딩 실패:", error);
-                            alert("로그인 정보를 불러오는 데 실패했습니다.");
-                        }
-                    } else {
-                        loginButtonContainer.innerHTML = `<button class="px-4 py-2 rounded-full bg-blue-600 text-white hover:bg-blue-700 transition" onclick="location.href='/login'">로그인 / 회원가입</button>`;
-                    }
+                    // ...
                 }
+                // 자동차 목록 로딩 및 초기 필터 UI 설정
                 {
-                    loadCars(0);
+                    document.querySelectorAll(".filter-section > div").forEach((filterGroup) => {
+                        const filterTypeTitle = filterGroup.querySelector("h3.font-medium.mb-3")?.textContent;
+                        const filterKey = filterTypeTitle?.replace(" ", "");
+                        const allButton = filterGroup.querySelector(".filter-chip");
+                        if (allButton && allButton.textContent === "전체") {
+                            allButton.classList.add("active-filter", "bg-blue-600", "text-white");
+                            if (filterKey && currentFilters.hasOwnProperty(filterKey.charAt(0).toLowerCase() + filterKey.slice(1))) {
+                                currentFilters[filterKey.charAt(0).toLowerCase() + filterKey.slice(1)] = [];
+                            }
+                        } else if (allButton) {
+                            allButton.classList.remove("active-filter", "bg-blue-600", "text-white");
+                            allButton.classList.add("bg-gray-100", "text-gray-800");
+                        }
+                        filterGroup.querySelectorAll(".filter-chip").forEach((chip) => {
+                            if (chip.textContent !== "전체") {
+                                chip.classList.remove("active-filter", "bg-blue-600", "text-white");
+                                chip.classList.add("bg-gray-100", "text-gray-800");
+                            }
+                        });
+                    });
+                    loadCarsWithFiltersAndSorting(0, currentSort, currentFilters);
                 }
             });
         </script>

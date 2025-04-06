@@ -9,11 +9,11 @@ mod auth;
 use auth::{login, logout, signup};
 use dotenvy::dotenv;
 use rocket::State;
+use rocket::form::FromForm;
 use rocket::fs::NamedFile;
 use rocket::serde::json::Json;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use server::{CarInfo, add_car, update_car};
-use sqlx::FromRow;
 use sqlx::MySqlPool;
 use sqlx::mysql::MySqlPoolOptions;
 use std::env;
@@ -116,24 +116,101 @@ pub struct CarListResponse {
     cars: Vec<CarInfo>,
 }
 
-#[get("/api/cars?<start>")]
-pub async fn get_cars(pool: &State<MySqlPool>, start: Option<usize>) -> Json<CarListResponse> {
-    let start_index = start.unwrap_or(0); // 시작 번호가 없으면 0부터 시작
+#[derive(FromForm, Deserialize)]
+pub struct CarQuery {
+    start: Option<usize>,
+    sort: Option<String>,
+    min_daily_rate: Option<i32>,
+    max_daily_rate: Option<i32>,
+    car_type: Option<String>,
+    fuel_type: Option<String>,
+    transmission: Option<String>,
+}
+
+#[get("/api/cars?<query..>")]
+pub async fn get_cars(pool: &State<MySqlPool>, query: CarQuery) -> Json<CarListResponse> {
+    let start_index = query.start.unwrap_or(0);
     let limit = 6;
+    let sort_by = query.sort.unwrap_or_else(|| "plate_number ASC".to_string());
+    let min_price = query.min_daily_rate;
+    let max_price = query.max_daily_rate;
+    let car_types: Option<Vec<String>> = query
+        .car_type
+        .map(|s| s.split(',').map(String::from).collect());
+    let fuel_types: Option<Vec<String>> = query
+        .fuel_type
+        .map(|s| s.split(',').map(String::from).collect());
+    let transmissions: Option<Vec<String>> = query
+        .transmission
+        .map(|s| s.split(',').map(String::from).collect());
 
-    let total_result = sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM cars")
-        .fetch_one(pool.inner())
-        .await;
+    let mut where_clauses = Vec::new();
+    let mut query_params: Vec<String> = Vec::new(); // 구체적인 String 타입 사용
 
-    let cars_result = sqlx::query_as::<_, CarInfo>(
-        "SELECT plate_number, manufacture, name, year, fuel_type, transmission, seat_num, daily_rate, status, connected_with, image_url FROM cars LIMIT ? OFFSET ?"
-    )
-    .bind(limit as u64) // LIMIT는 u64 타입이어야 할 수 있습니다.
-    .bind(start_index as u64) // OFFSET도 u64 타입이어야 할 수 있습니다.
-    .fetch_all(pool.inner())
-    .await;
+    if let Some(min) = min_price {
+        where_clauses.push("daily_rate >= ?".to_string());
+        query_params.push(min.to_string());
+    }
+    if let Some(max) = max_price {
+        where_clauses.push("daily_rate <= ?".to_string());
+        query_params.push(max.to_string());
+    }
 
-    match (total_result, cars_result) {
+    if let Some(types) = &car_types {
+        if !types.is_empty() {
+            let placeholders = vec!["?"; types.len()].join(",");
+            where_clauses.push(format!("car_type IN ({})", placeholders));
+            query_params.extend(types.iter().cloned());
+        }
+    }
+    if let Some(fuels) = &fuel_types {
+        if !fuels.is_empty() {
+            let placeholders = vec!["?"; fuels.len()].join(",");
+            where_clauses.push(format!("fuel_type IN ({})", placeholders));
+            query_params.extend(fuels.iter().cloned());
+        }
+    }
+    if let Some(trans) = &transmissions {
+        if !trans.is_empty() {
+            let placeholders = vec!["?"; trans.len()].join(",");
+            where_clauses.push(format!("transmission IN ({})", placeholders));
+            query_params.extend(trans.iter().cloned());
+        }
+    }
+
+    let where_clause = if !where_clauses.is_empty() {
+        format!("WHERE {}", where_clauses.join(" AND "))
+    } else {
+        String::new()
+    };
+
+    let count_sql = format!("SELECT COUNT(*) FROM cars {}", where_clause);
+    let mut count_query = sqlx::query_scalar::<_, i64>(&count_sql);
+    for param in &query_params {
+        count_query = count_query.bind(param);
+    }
+    let count_result = count_query.fetch_one(pool.inner()).await;
+
+    let order_by_clause = match sort_by.as_str() {
+        "daily_rate_asc" => "ORDER BY daily_rate ASC",
+        "daily_rate_desc" => "ORDER BY daily_rate DESC",
+        "rating_desc" => "ORDER BY rating DESC",
+        _ => "ORDER BY name ASC",
+    };
+
+    let sql = format!(
+        "SELECT plate_number, manufacture, name, year, car_type, fuel_type, transmission, seat_num, daily_rate, rating, status, connected_with, image_url FROM cars {} {} LIMIT ? OFFSET ?",
+        where_clause, order_by_clause
+    );
+
+    let mut cars_query = sqlx::query_as::<_, CarInfo>(&sql);
+    for param in &query_params {
+        cars_query = cars_query.bind(param);
+    }
+    cars_query = cars_query.bind(limit as u64).bind(start_index as u64);
+    let cars_result = cars_query.fetch_all(pool.inner()).await;
+
+    match (count_result, cars_result) {
         (Ok(total), Ok(cars)) => Json(CarListResponse {
             total: total as usize,
             cars,

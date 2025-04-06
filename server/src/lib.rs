@@ -11,10 +11,12 @@ pub struct CarInfo {
     manufacture: String,
     name: String,
     year: u16,
+    car_type: String,
     fuel_type: String,
     transmission: String,
     seat_num: u8,
     daily_rate: f64,
+    rating: f64,
     status: String,
     connected_with: Option<String>,
     image_url: Option<String>,
@@ -34,6 +36,9 @@ impl CarInfo {
     fn set_year(&mut self, year: u16) {
         self.year = year;
     }
+    fn set_car_type(&mut self, car_type: String) {
+        self.car_type = car_type;
+    }
     fn set_fuel_type(&mut self, fuel_type: String) {
         self.fuel_type = fuel_type;
     }
@@ -45,6 +50,9 @@ impl CarInfo {
     }
     fn set_daily_rate(&mut self, daily_rate: f64) {
         self.daily_rate = daily_rate;
+    }
+    fn set_rating(&mut self, rating: f64) {
+        self.rating = rating;
     }
     fn set_status(&mut self, status: String) {
         self.status = status;
@@ -69,6 +77,9 @@ impl CarInfo {
     pub fn year(&self) -> u16 {
         self.year
     }
+    pub fn car_type(&self) -> &str {
+        &self.car_type
+    }
     pub fn fuel_type(&self) -> &str {
         &self.fuel_type
     }
@@ -80,6 +91,9 @@ impl CarInfo {
     }
     pub fn daily_rate(&self) -> f64 {
         self.daily_rate
+    }
+    pub fn rating(&self) -> f64 {
+        self.rating
     }
     pub fn status(&self) -> &str {
         &self.status
@@ -99,10 +113,12 @@ impl FromRow<'_, MySqlRow> for CarInfo {
             manufacture: String::new(),
             name: String::new(),
             year: 0,
+            car_type: String::new(),
             fuel_type: String::new(),
             transmission: String::new(),
             seat_num: 0,
             daily_rate: 0.0,
+            rating: 0.0,
             status: String::new(),
             connected_with: None,
             image_url: None,
@@ -112,10 +128,12 @@ impl FromRow<'_, MySqlRow> for CarInfo {
         car_info.set_manufacture(row.try_get("manufacture")?);
         car_info.set_name(row.try_get("name")?);
         car_info.set_year(row.try_get("year")?);
+        car_info.set_car_type(row.try_get("car_type")?);
         car_info.set_fuel_type(row.try_get("fuel_type")?);
         car_info.set_transmission(row.try_get("transmission")?);
         car_info.set_seat_num(row.try_get("seat_num")?);
         car_info.set_daily_rate(row.try_get("daily_rate")?);
+        car_info.set_rating(row.try_get("rating")?);
         car_info.set_status(row.try_get("status")?);
         car_info.set_connected_with(row.try_get("connected_with").ok());
         car_info.set_image_url(row.try_get("image_url").ok());
@@ -141,8 +159,8 @@ pub async fn add_car(pool: &MySqlPool, info: CarInfo) -> Result<String, String> 
         Ok(None) => {
             // plate_number가 존재하지 않으므로 차량 추가 진행
             let query = r#"
-                INSERT INTO cars (plate_number, manufacture, name, year, fuel_type, transmission, seat_num, daily_rate, status, connected_with, image_url)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO cars (plate_number, manufacture, name, year, car_type, fuel_type, transmission, seat_num, daily_rate, rating, status, connected_with, image_url)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             "#;
 
             let result = sqlx::query(query)
@@ -150,10 +168,12 @@ pub async fn add_car(pool: &MySqlPool, info: CarInfo) -> Result<String, String> 
                 .bind(&info.manufacture)
                 .bind(&info.name)
                 .bind(&info.year)
+                .bind(&info.car_type)
                 .bind(&info.fuel_type)
                 .bind(&info.transmission)
                 .bind(&info.seat_num)
                 .bind(&info.daily_rate)
+                .bind(&info.rating)
                 .bind(&info.status)
                 .bind(&info.connected_with)
                 .bind(&info.image_url)
@@ -182,7 +202,7 @@ pub async fn update_car(pool: &MySqlPool, info: CarInfo) -> Result<String, Strin
             // 차량이 존재하므로 업데이트 수행
             let query = r#"
                 UPDATE cars
-                SET manufacture = ?, name = ?, year = ?, fuel_type = ?, transmission = ?, seat_num = ?, daily_rate = ?, status = ?, connected_with = ?, image_url = ?
+                SET manufacture = ?, name = ?, year = ?, car_type = ?, fuel_type = ?, transmission = ?, seat_num = ?, daily_rate = ?, rating = ?, status = ?, connected_with = ?, image_url = ?
                 WHERE plate_number = ?
             "#;
 
@@ -191,10 +211,12 @@ pub async fn update_car(pool: &MySqlPool, info: CarInfo) -> Result<String, Strin
                 .bind(&info.manufacture)
                 .bind(&info.name)
                 .bind(&info.year)
+                .bind(&info.car_type)
                 .bind(&info.fuel_type)
                 .bind(&info.transmission)
                 .bind(&info.seat_num)
                 .bind(&info.daily_rate)
+                .bind(&info.rating)
                 .bind(&info.status)
                 .bind(&info.connected_with)
                 .bind(&info.image_url)
