@@ -160,7 +160,7 @@ pub async fn add_car(pool: &MySqlPool, info: CarInfo) -> Result<String, String> 
             // plate_number가 존재하지 않으므로 차량 추가 진행
             let query = r#"
                 INSERT INTO cars (plate_number, manufacture, name, year, car_type, fuel_type, transmission, seat_num, daily_rate, rating, status, connected_with, image_url)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             "#;
 
             let result = sqlx::query(query)
