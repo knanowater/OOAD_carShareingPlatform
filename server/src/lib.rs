@@ -1,4 +1,4 @@
-use bcrypt::{DEFAULT_COST, hash, verify};
+use bcrypt::{DEFAULT_COST, hash, verify as bcrypt_verify};
 use serde::{Deserialize, Serialize};
 use sqlx::mysql::MySqlQueryResult;
 use sqlx::mysql::MySqlRow;
@@ -245,6 +245,7 @@ pub struct User {
     pub name: String,
     pub email: String,
     pub password: String,
+    pub role: String,
 }
 
 // 응답 구조체 (auth.rs 에서 사용)
@@ -281,7 +282,7 @@ pub async fn find_user_by_email(pool: &MySqlPool, email: &str) -> Result<Option<
     // 사용자 메일로 사용자 검색
     let user = sqlx::query_as!(
         User,
-        "SELECT name, id, email, password FROM users WHERE email = ?",
+        "SELECT name, id, email, password, role FROM users WHERE email = ?",
         email
     )
     .fetch_optional(pool)
@@ -290,7 +291,6 @@ pub async fn find_user_by_email(pool: &MySqlPool, email: &str) -> Result<Option<
     Ok(user)
 }
 
-pub fn verify_password(password: &str, hashed_password: &str) -> bool {
-    // 해시된 비밀번호와 입력된 비밀번호 비교
-    verify(password, hashed_password).unwrap_or(false)
+pub fn verify_password(provided_password: &str, stored_password: &str) -> bool {
+    bcrypt_verify(provided_password, stored_password).unwrap_or(false)
 }

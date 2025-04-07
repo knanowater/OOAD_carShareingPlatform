@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="ko">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>DriveShare 관리자 대시보드</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+        <style>
+            .sidebar {
+                transition: all 0.3s;
+            }
+            .sidebar-collapsed {
+                width: 70px;
+            }
+            .sidebar-collapsed .sidebar-text {
+                display: none;
+            }
+            .sidebar-collapsed .logo-text {
+                display: none;
+            }
+            .sidebar-collapsed .menu-item {
+                justify-content: center;
+            }
+            .content-area {
+                transition: all 0.3s;
+            }
+            .content-expanded {
+                margin-left: 70px;
+            }
+            .chart-container {
+                height: 300px;
+            }
+            .status-badge {
+                font-size: 12px;
+                padding: 3px 8px;
+                border-radius: 12px;
+            }
+            .available {
+                background-color: #d1fae5;
+                color: #065f46;
+            }
+            .reserved {
+                background-color: #bfdbfe;
+                color: #1e40af;
+            }
+            .maintenance {
+                background-color: #fee2e2;
+                color: #b91c1c;
+            }
+            .in-use {
+                background-color: #fef3c7;
+                color: #92400e;
+            }
+            .animated-bg {
+                animation: pulse 2s infinite;
+            }
+            @keyframes pulse {
+                0% {
+                    opacity: 1;
+                }
+                50% {
+                    opacity: 0.5;
+                }
+                100% {
+                    opacity: 1;
+                }
+            }
+        </style>
+    </head>
+    <body id="admin-dashboard-content" class="bg-gray-100 font-sans" style="display: none">
+        <div class="flex h-screen overflow-hidden">
+            <!-- 사이드바 -->
+            <div class="sidebar bg-indigo-800 text-white w-64 flex flex-col sidebar">
+                <!-- 로고 영역 -->
+                <div class="p-4 flex items-center space-x-2 border-b border-indigo-700">
+                    <i class="fas fa-car text-indigo-300 text-2xl mr-2"></i>
+                    <span class="logo-text text-xl font-bold" onclick="location.href='/'" style="cursor: pointer">DriveShare</span
+                    ><span class="logo-text text-xl font-bold" onclick="location.href='/admin'" style="cursor: pointer">Admin</span>
+                </div>
+                <!-- 메뉴 -->
+                <div class="flex-1 overflow-y-auto py-4">
+                    <div class="px-4 space-y-1">
+                        <a href="#" class="menu-item flex items-center space-x-3 px-3 py-3 rounded-lg bg-indigo-900 text-white">
+                            <i class="fas fa-tachometer-alt"></i>
+                            <span class="sidebar-text">대시보드</span>
+                        </a>
+                        <a href="#" class="menu-item flex items-center space-x-3 px-3 py-3 rounded-lg hover:bg-indigo-700 text-indigo-200">
+                            <i class="fas fa-car"></i>
+                            <span class="sidebar-text">차량 관리</span>
+                        </a>
+                        <a href="#" class="menu-item flex items-center space-x-3 px-3 py-3 rounded-lg hover:bg-indigo-700 text-indigo-200">
+                            <i class="fas fa-calendar-check"></i>
+                            <span class="sidebar-text">예약 관리</span>
+                        </a>
+                        <a href="#" class="menu-item flex items-center space-x-3 px-3 py-3 rounded-lg hover:bg-indigo-700 text-indigo-200">
+                            <i class="fas fa-users"></i>
+                            <span class="sidebar-text">회원 관리</span>
+                        </a>
+                        <a href="#" class="menu-item flex items-center space-x-3 px-3 py-3 rounded-lg hover:bg-indigo-700 text-indigo-200">
+                            <i class="fas fa-chart-line"></i>
+                            <span class="sidebar-text">통계 분석</span>
+                        </a>
+                        <a href="#" class="menu-item flex items-center space-x-3 px-3 py-3 rounded-lg hover:bg-indigo-700 text-indigo-200">
+                            <i class="fas fa-cog"></i>
+                            <span class="sidebar-text">시스템 설정</span>
+                        </a>
+                    </div>
+
+                    <div class="px-4 mt-8">
+                        <div class="border-t border-indigo-700 pt-4">
+                            <a href="#" class="menu-item flex items-center space-x-3 px-3 py-3 rounded-lg hover:bg-indigo-700 text-indigo-200">
+                                <i class="fas fa-question-circle"></i>
+                                <span class="sidebar-text">도움말</span>
+                            </a>
+                            <a href="#" class="menu-item flex items-center space-x-3 px-3 py-3 rounded-lg hover:bg-indigo-700 text-indigo-200">
+                                <i class="fas fa-sign-out-alt"></i>
+                                <span class="sidebar-text">로그아웃</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 사이드바 접기 버튼 -->
+                <div class="p-4 border-t border-indigo-700 flex justify-end">
+                    <button id="toggleSidebar" class="text-indigo-300 hover:text-white">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 메인 콘텐츠 영역 -->
+            <div class="content-area flex-1 overflow-auto">
+                <!-- 상단 네비게이션 -->
+                <header class="bg-white shadow-sm">
+                    <div class="px-6 py-4 flex items-center justify-between">
+                        <div class="flex items-center space-x-4">
+                            <h1 class="text-2xl font-bold text-gray-800">대시보드</h1>
+                        </div>
+
+                        <div class="flex items-center space-x-4">
+                            <div class="relative">
+                                <button class="p-2 rounded-full hover:bg-gray-100">
+                                    <i class="fas fa-bell text-gray-500"></i>
+                                    <span class="absolute top-0 right-0 h-2 w-2 rounded-full bg-red-500"></span>
+                                </button>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <div class="h-8 w-8 rounded-full bg-indigo-500 flex items-center justify-center text-white font-semibold">AD</div>
+                                <span class="text-gray-700">관리자</span>
+                            </div>
+                        </div>
+                    </div>
+                </header>
+
+                <!-- 메인 콘텐츠 -->
+                <main class="p-6">
+                    <!-- 요약 카드 -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                        <div class="bg-white rounded-lg shadow p-6">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-gray-500">전체 차량</p>
+                                    <h3 class="text-2xl font-bold">42</h3>
+                                </div>
+                                <div class="p-3 rounded-full bg-indigo-100 text-indigo-600">
+                                    <i class="fas fa-car text-xl"></i>
+                                </div>
+                            </div>
+                            <div class="mt-4">
+                                <span class="text-green-500 text-sm font-semibold">+2.5%</span>
+                                <span class="text-gray-500 text-sm ml-2">지난달 대비</span>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg shadow p-6">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-gray-500">활성 예약</p>
+                                    <h3 class="text-2xl font-bold">18</h3>
+                                </div>
+                                <div class="p-3 rounded-full bg-blue-100 text-blue-600">
+                                    <i class="fas fa-calendar-check text-xl"></i>
+                                </div>
+                            </div>
+                            <div class="mt-4">
+                                <span class="text-green-500 text-sm font-semibold">+15%</span>
+                                <span class="text-gray-500 text-sm ml-2">지난주 대비</span>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg shadow p-6">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-gray-500">이용 회원</p>
+                                    <h3 class="text-2xl font-bold">156</h3>
+                                </div>
+                                <div class="p-3 rounded-full bg-green-100 text-green-600">
+                                    <i class="fas fa-users text-xl"></i>
+                                </div>
+                            </div>
+                            <div class="mt-4">
+                                <span class="text-green-500 text-sm font-semibold">+8.2%</span>
+                                <span class="text-gray-500 text-sm ml-2">지난달 대비</span>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg shadow p-6">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-gray-500">월 수익</p>
+                                    <h3 class="text-2xl font-bold">₩12,450,000</h3>
+                                </div>
+                                <div class="p-3 rounded-full bg-purple-100 text-purple-600">
+                                    <i class="fas fa-won-sign text-xl"></i>
+                                </div>
+                            </div>
+                            <div class="mt-4">
+                                <span class="text-green-500 text-sm font-semibold">+22%</span>
+                                <span class="text-gray-500 text-sm ml-2">지난달 대비</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 차트와 주요 정보 -->
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                        <!-- 이용 현황 차트 -->
+                        <div class="bg-white rounded-lg shadow p-6 lg:col-span-2">
+                            <div class="flex items-center justify-between mb-4">
+                                <h2 class="text-lg font-semibold">주간 이용 현황</h2>
+                                <div class="flex space-x-2">
+                                    <button class="px-3 py-1 text-xs bg-indigo-100 text-indigo-700 rounded">일간</button>
+                                    <button class="px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded">주간</button>
+                                    <button class="px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded">월간</button>
+                                </div>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="usageChart"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- 차량 상태 -->
+                        <div class="bg-white rounded-lg shadow p-6">
+                            <h2 class="text-lg font-semibold mb-4">차량 상태</h2>
+                            <div class="space-y-4">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center">
+                                        <div class="h-3 w-3 rounded-full bg-green-500 mr-2"></div>
+                                        <span>이용 가능</span>
+                                    </div>
+                                    <span class="font-semibold">24</span>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center">
+                                        <div class="h-3 w-3 rounded-full bg-blue-500 mr-2"></div>
+                                        <span>예약 중</span>
+                                    </div>
+                                    <span class="font-semibold">10</span>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center">
+                                        <div class="h-3 w-3 rounded-full bg-yellow-500 mr-2"></div>
+                                        <span>이용 중</span>
+                                    </div>
+                                    <span class="font-semibold">6</span>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center">
+                                        <div class="h-3 w-3 rounded-full bg-red-500 mr-2"></div>
+                                        <span>점검 중</span>
+                                    </div>
+                                    <span class="font-semibold">2</span>
+                                </div>
+                            </div>
+
+                            <div class="mt-6">
+                                <h3 class="text-sm font-semibold text-gray-500 mb-2">인기 차종 TOP 3</h3>
+                                <div class="space-y-3">
+                                    <div class="flex items-center">
+                                        <span class="w-6 h-6 flex items-center justify-center bg-indigo-100 text-indigo-800 rounded-full text-xs font-bold mr-2">1</span>
+                                        <span>현대 아반떼</span>
+                                    </div>
+                                    <div class="flex items-center">
+                                        <span class="w-6 h-6 flex items-center justify-center bg-indigo-100 text-indigo-800 rounded-full text-xs font-bold mr-2">2</span>
+                                        <span>기아 K5</span>
+                                    </div>
+                                    <div class="flex items-center">
+                                        <span class="w-6 h-6 flex items-center justify-center bg-indigo-100 text-indigo-800 rounded-full text-xs font-bold mr-2">3</span>
+                                        <span>테슬라 모델 3</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 최근 예약 및 차량 목록 -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <!-- 최근 예약 -->
+                        <div class="bg-white rounded-lg shadow overflow-hidden">
+                            <div class="p-6 border-b">
+                                <h2 class="text-lg font-semibold">최근 예약</h2>
+                            </div>
+                            <div class="divide-y">
+                                <div class="p-4 hover:bg-gray-50 cursor-pointer">
+                                    <div class="flex items-center justify-between">
+                                        <div>
+                                            <p class="font-medium">#RES-20230615-001</p>
+                                            <p class="text-sm text-gray-500">김민수 • 2023-06-15 14:30</p>
+                                        </div>
+                                        <span class="px-3 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">확정</span>
+                                    </div>
+                                    <div class="mt-2 flex items-center text-sm">
+                                        <i class="fas fa-car text-gray-400 mr-2"></i>
+                                        <span>현대 아반떼 (2023)</span>
+                                    </div>
+                                </div>
+                                <div class="p-4 hover:bg-gray-50 cursor-pointer">
+                                    <div class="flex items-center justify-between">
+                                        <div>
+                                            <p class="font-medium">#RES-20230615-002</p>
+                                            <p class="text-sm text-gray-500">이지은 • 2023-06-15 16:45</p>
+                                        </div>
+                                        <span class="px-3 py-1 bg-green-100 text-green-800 text-xs rounded-full">이용 중</span>
+                                    </div>
+                                    <div class="mt-2 flex items-center text-sm">
+                                        <i class="fas fa-car text-gray-400 mr-2"></i>
+                                        <span>기아 K5 (2022)</span>
+                                    </div>
+                                </div>
+                                <div class="p-4 hover:bg-gray-50 cursor-pointer">
+                                    <div class="flex items-center justify-between">
+                                        <div>
+                                            <p class="font-medium">#RES-20230614-005</p>
+                                            <p class="text-sm text-gray-500">박준호 • 2023-06-14 09:15</p>
+                                        </div>
+                                        <span class="px-3 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full">대기 중</span>
+                                    </div>
+                                    <div class="mt-2 flex items-center text-sm">
+                                        <i class="fas fa-car text-gray-400 mr-2"></i>
+                                        <span>테슬라 모델 3 (2023)</span>
+                                    </div>
+                                </div>
+                                <div class="p-4 hover:bg-gray-50 cursor-pointer">
+                                    <div class="flex items-center justify-between">
+                                        <div>
+                                            <p class="font-medium">#RES-20230613-003</p>
+                                            <p class="text-sm text-gray-500">정수민 • 2023-06-13 11:20</p>
+                                        </div>
+                                        <span class="px-3 py-1 bg-purple-100 text-purple-800 text-xs rounded-full">완료</span>
+                                    </div>
+                                    <div class="mt-2 flex items-center text-sm">
+                                        <i class="fas fa-car text-gray-400 mr-2"></i>
+                                        <span>현대 코나 (2022)</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="p-4 border-t text-center">
+                                <a href="#" class="text-indigo-600 hover:text-indigo-800 text-sm font-medium">모든 예약 보기</a>
+                            </div>
+                        </div>
+
+                        <!-- 차량 목록 -->
+                        <div class="bg-white rounded-lg shadow overflow-hidden">
+                            <div class="p-6 border-b flex justify-between items-center">
+                                <h2 class="text-lg font-semibold">차량 목록</h2>
+                                <button class="px-3 py-1 bg-indigo-600 text-white text-sm rounded hover:bg-indigo-700">차량 추가</button>
+                            </div>
+                            <div class="divide-y">
+                                <div class="p-4 hover:bg-gray-50 cursor-pointer">
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center">
+                                            <div class="h-10 w-10 bg-gray-200 rounded-full flex items-center justify-center mr-3">
+                                                <i class="fas fa-car text-gray-500"></i>
+                                            </div>
+                                            <div>
+                                                <p class="font-medium">현대 아반떼</p>
+                                                <p class="text-sm text-gray-500">2023 • 서울 강남구</p>
+                                            </div>
+                                        </div>
+                                        <span class="status-badge available">이용 가능</span>
+                                    </div>
+                                </div>
+                                <div class="p-4 hover:bg-gray-50 cursor-pointer">
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center">
+                                            <div class="h-10 w-10 bg-gray-200 rounded-full flex items-center justify-center mr-3">
+                                                <i class="fas fa-car text-gray-500"></i>
+                                            </div>
+                                            <div>
+                                                <p class="font-medium">기아 K5</p>
+                                                <p class="text-sm text-gray-500">2022 • 서울 서초구</p>
+                                            </div>
+                                        </div>
+                                        <span class="status-badge in-use">이용 중</span>
+                                    </div>
+                                </div>
+                                <div class="p-4 hover:bg-gray-50 cursor-pointer">
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center">
+                                            <div class="h-10 w-10 bg-gray-200 rounded-full flex items-center justify-center mr-3">
+                                                <i class="fas fa-car text-gray-500"></i>
+                                            </div>
+                                            <div>
+                                                <p class="font-medium">테슬라 모델 3</p>
+                                                <p class="text-sm text-gray-500">2023 • 서울 용산구</p>
+                                            </div>
+                                        </div>
+                                        <span class="status-badge reserved">예약 중</span>
+                                    </div>
+                                </div>
+                                <div class="p-4 hover:bg-gray-50 cursor-pointer">
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center">
+                                            <div class="h-10 w-10 bg-gray-200 rounded-full flex items-center justify-center mr-3">
+                                                <i class="fas fa-car text-gray-500"></i>
+                                            </div>
+                                            <div>
+                                                <p class="font-medium">현대 코나</p>
+                                                <p class="text-sm text-gray-500">2022 • 서울 마포구</p>
+                                            </div>
+                                        </div>
+                                        <span class="status-badge maintenance">점검 중</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="p-4 border-t text-center">
+                                <a href="#" class="text-indigo-600 hover:text-indigo-800 text-sm font-medium">모든 차량 보기</a>
+                            </div>
+                        </div>
+                    </div>
+                </main>
+            </div>
+        </div>
+
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <script>
+            // 사이드바 토글 기능
+            document.getElementById("toggleSidebar").addEventListener("click", function () {
+                const sidebar = document.querySelector(".sidebar");
+                const content = document.querySelector(".content-area");
+
+                sidebar.classList.toggle("sidebar-collapsed");
+                content.classList.toggle("content-expanded");
+
+                // 아이콘 변경
+                const icon = this.querySelector("i");
+                if (sidebar.classList.contains("sidebar-collapsed")) {
+                    icon.classList.remove("fa-chevron-left");
+                    icon.classList.add("fa-chevron-right");
+                } else {
+                    icon.classList.remove("fa-chevron-right");
+                    icon.classList.add("fa-chevron-left");
+                }
+            });
+
+            async function checkAdminStatus() {
+                const token = localStorage.getItem("token");
+                const currentPath = window.location.pathname;
+
+                if (!token) {
+                    console.log("토큰이 없습니다. 로그인 페이지로 리다이렉트합니다.");
+                    window.location.href = "/login";
+                    return;
+                }
+
+                try {
+                    const response = await fetch("/api/isAdmin", {
+                        method: "GET",
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                            "Content-Type": "application/json",
+                        },
+                    });
+
+                    if (response.ok) {
+                        const isAdmin = await response.json();
+                        if (!isAdmin) {
+                            window.location.href = "/";
+                        } else {
+                            renderAdminDashboard();
+                        }
+                    } else if (response.status === 401) {
+                        localStorage.removeItem("token"); // 만료된 토큰 제거 (선택 사항)
+                        window.location.href = "/login";
+                    } else {
+                        // 서버 오류 발생 시 사용자에게 알림 또는 다른 처리
+                        alert("관리자 상태를 확인하는 데 실패했습니다. 잠시 후 다시 시도해주세요.");
+                    }
+                } catch (error) {
+                    alert("네트워크 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
+                }
+            }
+
+            function renderAdminDashboard() {
+                // 관리자 대시보드 콘텐츠를 화면에 표시하는 로직
+                const adminDashboardContent = document.getElementById("admin-dashboard-content");
+                if (adminDashboardContent) {
+                    adminDashboardContent.style.display = "block";
+                    // 추가적인 관리자 UI 업데이트 로직
+                }
+            }
+
+            document.addEventListener("DOMContentLoaded", function () {
+                // 관리자 확인
+                {
+                    checkAdminStatus();
+                }
+                // 차트 생성
+                {
+                    const ctx = document.getElementById("usageChart").getContext("2d");
+                    const usageChart = new Chart(ctx, {
+                        type: "line",
+                        data: {
+                            labels: ["월", "화", "수", "목", "금", "토", "일"],
+                            datasets: [
+                                {
+                                    label: "이용 건수",
+                                    data: [12, 19, 15, 22, 18, 25, 20],
+                                    borderColor: "rgb(79, 70, 229)",
+                                    backgroundColor: "rgba(79, 70, 229, 0.1)",
+                                    tension: 0.3,
+                                    fill: true,
+                                },
+                                {
+                                    label: "수익 (만원)",
+                                    data: [45, 60, 50, 75, 65, 90, 80],
+                                    borderColor: "rgb(168, 85, 247)",
+                                    backgroundColor: "rgba(168, 85, 247, 0.1)",
+                                    tension: 0.3,
+                                    fill: true,
+                                },
+                            ],
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    position: "top",
+                                },
+                                tooltip: {
+                                    mode: "index",
+                                    intersect: false,
+                                },
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                },
+                            },
+                        },
+                    });
+                }
+            });
+
+            // 알림 토글 기능
+            document.querySelector(".fa-bell").parentElement.addEventListener("click", function () {
+                // 알림 목록 표시 로직 추가 가능
+                alert("새 알림이 3건 있습니다.");
+            });
+        </script>
+    </body>
+</html>

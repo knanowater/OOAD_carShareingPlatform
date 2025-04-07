@@ -1,20 +1,24 @@
+use jsonwebtoken::{DecodingKey, Validation, decode};
 use jsonwebtoken::{EncodingKey, Header, encode};
+use rocket::http::Status;
+use rocket::request::{self, Outcome, Request};
 use rocket::serde::json::Json;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use server::{ApiResponse, create_user, find_user_by_email, verify_password};
 use sqlx::MySqlPool;
 use std::env;
 
-#[derive(Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 struct Claims {
     sub: String,   // 사용자 ID
     name: String,  // 사용자 이름
     email: String, // 사용자 이메일
+    role: String,  // 사용자 역할
     exp: usize,    // 만료 시간 (Unix timestamp)
 }
 
 // 회원 가입 요청을 처리하는 구조체
-#[derive(serde::Deserialize)]
+#[derive(Deserialize)]
 pub struct CreateUserRequest {
     pub name: String,
     pub email: String,
@@ -22,7 +26,7 @@ pub struct CreateUserRequest {
 }
 
 // 로그인 요청을 처리하는 구조체
-#[derive(serde::Deserialize)]
+#[derive(Deserialize)]
 pub struct LoginRequest {
     pub email: String,
     pub password: String,
@@ -96,6 +100,7 @@ pub async fn login(
                     sub: user.id.to_string(),
                     name: user.name,
                     email: user.email,
+                    role: user.role,
                     exp: expiration,
                 };
 
@@ -134,11 +139,56 @@ pub async fn login(
 
 // 로그아웃 엔드포인트
 #[get("/api/logout")]
-pub async fn logout() -> rocket::serde::json::Json<ApiResponse> {
+pub async fn logout() -> Json<ApiResponse> {
     // 로그아웃 로직은 필요에 따라 구현 (예: 세션 무효화)
     Json(ApiResponse {
         status: "success".to_string(),
         message: "Logout successful".to_string(),
         data: None,
     })
+}
+
+#[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]
+pub struct User {
+    pub id: i32,
+    pub name: String,
+    pub password: String,
+    pub email: String,
+    pub role: String,
+}
+
+pub struct AuthToken(Claims);
+
+#[rocket::async_trait]
+impl<'r> request::FromRequest<'r> for AuthToken {
+    type Error = Status;
+
+    async fn from_request(request: &'r Request<'_>) -> request::Outcome<Self, Self::Error> {
+        let token = request.headers().get_one("Authorization");
+
+        match token {
+            Some(token) => {
+                if !token.starts_with("Bearer ") {
+                    Outcome::Error((Status::Unauthorized, Status::Unauthorized))
+                } else {
+                    let jwt = token.trim_start_matches("Bearer ");
+
+                    let secret_key = env::var("JWT_SECRET")
+                        .expect("JWT_SECRET 환경 변수가 설정되지 않았습니다.");
+                    let decoding_key = DecodingKey::from_secret(secret_key.as_bytes());
+
+                    match decode::<Claims>(jwt, &decoding_key, &Validation::default()) {
+                        Ok(decoded) => Outcome::Success(AuthToken(decoded.claims)),
+                        Err(_) => Outcome::Error((Status::Unauthorized, Status::Unauthorized)),
+                    }
+                }
+            }
+            None => Outcome::Error((Status::Unauthorized, Status::Unauthorized)),
+        }
+    }
+}
+
+#[get("/api/isAdmin")]
+pub async fn is_admin(auth_token: AuthToken) -> Result<Json<bool>, Status> {
+    Ok(Json(auth_token.0.role.to_lowercase() == "admin"))
 }

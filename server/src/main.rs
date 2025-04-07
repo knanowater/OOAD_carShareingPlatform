@@ -6,7 +6,7 @@ extern crate rocket_include_static_resources;
 
 mod auth;
 
-use auth::{login, logout, signup};
+use auth::{is_admin, login, logout, signup};
 use dotenvy::dotenv;
 use rocket::State;
 use rocket::form::FromForm;
@@ -52,13 +52,19 @@ async fn main() -> Result<(), sqlx::Error> {
                 login_page,
                 signup_page,
                 list_page,
+                admin_dashboard,
                 add_car_endpoint,
                 update_car_endpoint,
                 signup,
                 login,
                 logout,
+                is_admin,
                 get_cars
             ],
+        )
+        .mount(
+            "/scripts",
+            rocket::fs::FileServer::from("../client/scripts"),
         )
         .manage(pool)
         .launch()
@@ -230,4 +236,11 @@ pub async fn get_cars(pool: &State<MySqlPool>, query: CarQuery) -> Json<CarListR
             })
         }
     }
+}
+
+#[get("/admin")]
+pub async fn admin_dashboard() -> Option<NamedFile> {
+    NamedFile::open(Path::new("../client/admin/dashboard.html"))
+        .await
+        .ok()
 }
