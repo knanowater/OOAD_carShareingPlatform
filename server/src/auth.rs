@@ -3,6 +3,7 @@ use rocket::serde::json::Json;
 use serde::Serialize;
 use server::{ApiResponse, create_user, find_user_by_email, verify_password};
 use sqlx::MySqlPool;
+use std::env;
 
 #[derive(Serialize)]
 struct Claims {
@@ -87,7 +88,7 @@ pub async fn login(
             if verify_password(&login_info.password, &user.password) {
                 // JWT 생성
                 let expiration = chrono::Utc::now()
-                    .checked_add_signed(chrono::Duration::hours(24))
+                    .checked_add_signed(chrono::Duration::hours(12))
                     .expect("valid timestamp")
                     .timestamp() as usize;
 
@@ -101,7 +102,7 @@ pub async fn login(
                 let token = encode(
                     &Header::default(),
                     &claims,
-                    &EncodingKey::from_secret("c3Vpc2Vp".as_ref()),
+                    &EncodingKey::from_secret(env::var("JWT_SECRET").unwrap().as_ref()),
                 )
                 .expect("Token creation failed");
 
