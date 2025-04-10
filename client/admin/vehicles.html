@@ -1,0 +1,970 @@
+<!DOCTYPE html>
+<html lang="ko">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>DriveShare 차량 관리</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+        <style>
+            .sidebar {
+                transition: all 0.3s;
+            }
+            .sidebar-collapsed {
+                width: 70px;
+            }
+            .sidebar-collapsed .sidebar-text {
+                display: none;
+            }
+            .sidebar-collapsed .logo-text {
+                display: none;
+            }
+            .sidebar-collapsed .menu-item {
+                justify-content: center;
+            }
+            .content-area {
+                transition: all 0.3s;
+            }
+            .content-expanded {
+                margin-left: 70px;
+            }
+            .car-card:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+            }
+            .status-badge {
+                font-size: 12px;
+                padding: 3px 8px;
+                border-radius: 12px;
+            }
+            .available {
+                background-color: #d1fae5;
+                color: #065f46;
+            }
+            .reserved {
+                background-color: #bfdbfe;
+                color: #1e40af;
+            }
+            .maintenance {
+                background-color: #fee2e2;
+                color: #b91c1c;
+            }
+            .in-use {
+                background-color: #fef3c7;
+                color: #92400e;
+            }
+            .car-image {
+                transition: transform 0.3s;
+            }
+            .car-image:hover {
+                transform: scale(1.05);
+            }
+            .modal {
+                transition: opacity 0.3s ease;
+            }
+            .modal-overlay {
+                background-color: rgba(0, 0, 0, 0.5);
+            }
+            .animate-fade-in {
+                animation: fadeIn 0.3s ease-out;
+            }
+            @keyframes fadeIn {
+                from {
+                    opacity: 0;
+                }
+                to {
+                    opacity: 1;
+                }
+            }
+            .search-input:focus {
+                outline: none;
+                box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2);
+            }
+        </style>
+    </head>
+    <body id="admin-content" class="bg-gray-100 font-sans" style="display: none">
+        <div class="flex h-screen overflow-hidden">
+            <!-- 사이드바 -->
+            <div class="sidebar bg-blue-800 text-white w-64 flex flex-col sidebar">
+                <!-- 로고 영역 -->
+                <div class="p-4 flex items-center space-x-2 border-b border-blue-700">
+                    <i class="fas fa-car text-blue-300 text-2xl mr-2"></i>
+                    <span class="logo-text text-xl font-bold" onclick="location.href='/'" style="cursor: pointer">DriveShare</span
+                    ><span class="logo-text text-xl font-bold" onclick="location.href='/admin/vehicles'" style="cursor: pointer">Admin</span>
+                </div>
+                <!-- 메뉴 -->
+                <div class="flex-1 overflow-y-auto py-4">
+                    <div class="px-4 space-y-1">
+                        <a href="/admin" class="menu-item flex items-center space-x-3 px-3 py-3 rounded-lg hover:bg-blue-700 text-blue-200">
+                            <i class="fas fa-tachometer-alt"></i>
+                            <span class="sidebar-text">대시보드</span>
+                        </a>
+                        <a href="/admin/vehicles" class="menu-item flex items-center space-x-3 px-3 py-3 rounded-lg bg-blue-900 text-white">
+                            <i class="fas fa-car"></i>
+                            <span class="sidebar-text">차량 관리</span>
+                        </a>
+                        <a href="/admin/reservations" class="menu-item flex items-center space-x-3 px-3 py-3 rounded-lg hover:bg-blue-700 text-blue-200">
+                            <i class="fas fa-calendar-check"></i>
+                            <span class="sidebar-text">예약 관리</span>
+                        </a>
+                        <a href="/admin/users" class="menu-item flex items-center space-x-3 px-3 py-3 rounded-lg hover:bg-blue-700 text-blue-200">
+                            <i class="fas fa-users"></i>
+                            <span class="sidebar-text">회원 관리</span>
+                        </a>
+                        <a href="/admin/analytics" class="menu-item flex items-center space-x-3 px-3 py-3 rounded-lg hover:bg-blue-700 text-blue-200">
+                            <i class="fas fa-chart-line"></i>
+                            <span class="sidebar-text">통계 분석</span>
+                        </a>
+                        <a href="/admin/settings" class="menu-item flex items-center space-x-3 px-3 py-3 rounded-lg hover:bg-blue-700 text-blue-200">
+                            <i class="fas fa-cog"></i>
+                            <span class="sidebar-text">시스템 설정</span>
+                        </a>
+                    </div>
+
+                    <div class="px-4 mt-8">
+                        <div class="border-t border-blue-700 pt-4">
+                            <a href="/" class="menu-item flex items-center space-x-3 px-3 py-3 rounded-lg hover:bg-blue-700 text-blue-200">
+                                <i class="fas fa-sign-out-alt"></i>
+                                <span class="sidebar-text">나가기</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 사이드바 접기 버튼 -->
+                <div class="p-4 border-t border-blue-700 flex justify-end">
+                    <button id="toggleSidebar" class="text-blue-300 hover:text-white">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 메인 콘텐츠 영역 -->
+            <div class="content-area flex-1 overflow-auto">
+                <!-- 상단 네비게이션 -->
+                <header class="bg-white shadow-sm">
+                    <div class="px-6 py-4 flex items-center justify-between">
+                        <div class="flex items-center space-x-4">
+                            <h1 class="text-2xl font-bold text-gray-800">차량 관리</h1>
+                        </div>
+                        <div class="flex items-center space-x-4">
+                            <div class="relative">
+                                <input
+                                    type="text"
+                                    placeholder="차량 검색..."
+                                    class="search-input pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                                />
+                                <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                            </div>
+                            <button id="addVehicleBtn" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center space-x-2">
+                                <i class="fas fa-plus"></i>
+                                <span>차량 추가</span>
+                            </button>
+                        </div>
+                    </div>
+                </header>
+
+                <!-- 메인 콘텐츠 -->
+                <main class="p-6">
+                    <!-- 필터 및 정렬 옵션 -->
+                    <div class="bg-white rounded-lg shadow p-4 mb-6">
+                        <div class="flex flex-wrap items-center justify-between">
+                            <div class="flex space-x-2 mb-2 md:mb-0">
+                                <button class="px-3 py-1 bg-blue-100 text-blue-700 rounded-lg text-sm filter-btn">전체</button>
+                                <button class="px-3 py-1 bg-gray-100 text-gray-700 rounded-lg text-sm filter-btn">이용 가능</button>
+                                <button class="px-3 py-1 bg-gray-100 text-gray-700 rounded-lg text-sm filter-btn">이용 불가</button>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <span class="text-sm text-gray-500">정렬:</span>
+                                <select class="border border-gray-300 rounded-lg px-3 py-1 text-sm focus:border-blue-500 focus:outline-none">
+                                    <option>이름순</option>
+                                    <option>가격 낮은순</option>
+                                    <option>가격 높은순</option>
+                                    <option>평점 높은순</option>
+                                    <option>평점 낮은순</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 차량 목록 -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="car-grid">
+                        <div class="bg-white rounded-lg shadow overflow-hidden hover:shadow-lg transition-shadow duration-300 border-2 border-dashed border-gray-300 flex items-center justify-center">
+                            <button class="flex flex-col items-center justify-center p-6 w-full h-full text-gray-400 hover:text-blue-600"></button>
+                        </div>
+                    </div>
+
+                    <!-- 페이지네이션 -->
+                    <div class="mt-6 flex justify-center" id="page-nav">
+                        <nav class="inline-flex rounded-md shadow">
+                            <a href="#" class="px-3 py-2 rounded-l-md border border-gray-300 bg-white text-gray-500 hover:bg-gray-50">
+                                <i class="fas fa-chevron-left"></i>
+                            </a>
+                            <a href="#" class="px-3 py-2 border-t border-b border-gray-300 bg-white text-blue-600 font-medium">1</a>
+                            <a href="#" class="px-3 py-2 border-t border-b border-gray-300 bg-white text-gray-500 hover:bg-gray-50">2</a>
+                            <a href="#" class="px-3 py-2 border-t border-b border-gray-300 bg-white text-gray-500 hover:bg-gray-50">3</a>
+                            <a href="#" class="px-3 py-2 border border-gray-300 bg-white text-gray-500 hover:bg-gray-50 rounded-r-md">
+                                <i class="fas fa-chevron-right"></i>
+                            </a>
+                        </nav>
+                    </div>
+                </main>
+            </div>
+        </div>
+
+        <!-- 차량추가 모달 -->
+        <div id="addVehicleModal" class="fixed inset-0 z-50 flex items-center justify-center hidden modal">
+            <div class="modal-overlay absolute inset-0 bg-black opacity-50"></div>
+            <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl relative z-10 animate-fade-in" style="max-height: 90vh; overflow: auto">
+                <div class="p-6">
+                    <div class="flex justify-between items-center border-b pb-4">
+                        <h3 class="text-xl font-bold text-gray-800">새 차량 추가</h3>
+                        <button id="closeAddVehicleModalBtn" class="text-gray-400 hover:text-gray-500">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="mt-6 space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">차량 모델</label>
+                                <input type="text" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500" id="name" />
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">제조사</label>
+                                <input type="text" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500" id="manufacture" />
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">연식</label>
+                                <input type="number" min="1950" max="2025" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500" id="year" />
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">차량 번호</label>
+                                <input
+                                    type="text"
+                                    placeholder="예: 12가 3456"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                    id="plate_number"
+                                />
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">일일 요금</label>
+                                <div class="relative">
+                                    <span class="absolute left-3 top-2.5">₩</span>
+                                    <input type="number" class="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500" id="daily_rate" />
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">차량 상태</label>
+                                <select class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500" id="status">
+                                    <option>이용 가능</option>
+                                    <option>이용 불가</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">위치</label>
+                            <input
+                                type="text"
+                                placeholder="예: 서울 강남구 역삼동"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                id="location"
+                            />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">차량 설명</label>
+                            <textarea rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500" id="description"></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">차량 이미지</label>
+                            <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
+                                <div class="space-y-1 text-center">
+                                    <div class="flex text-sm text-gray-600">
+                                        <label class="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none">
+                                            <span>파일 업로드</span>
+                                            <input type="file" class="sr-only" />
+                                        </label>
+                                        <p class="pl-1">또는 드래그 앤 드롭</p>
+                                    </div>
+                                    <p class="text-xs text-gray-500">PNG, JPG, GIF 최대 10MB</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">연료 타입</label>
+                                <select class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500" id="fuel_type">
+                                    <option>가솔린</option>
+                                    <option>디젤</option>
+                                    <option>전기</option>
+                                    <option>하이브리드</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">변속기</label>
+                                <select class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500" id="transmission">
+                                    <option>자동</option>
+                                    <option>수동</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">탑승 인원</label>
+                                <input type="number" min="1" max="10" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500" id="seat-num" />
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">차량 유형</label>
+                                <select class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500" id="car_type">
+                                    <option>세단</option>
+                                    <option>SUV</option>
+                                    <option>승합차</option>
+                                    <option>스포츠카</option>
+                                    <option>기타</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-6 pt-4 border-t flex justify-end space-x-3">
+                        <button
+                            id="cancelModalBtn"
+                            class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                            onclick='document.getElementById("addVehicleModal").classList.add("hidden");'
+                        >
+                            취소
+                        </button>
+                        <button class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700" onclick="addCar()">차량 등록</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 차량수정 모달 -->
+        <div id="updateVehicleModal" class="fixed inset-0 z-50 flex items-center justify-center hidden modal">
+            <div class="modal-overlay absolute inset-0 bg-black opacity-50"></div>
+            <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl relative z-10 animate-fade-in" style="max-height: 90vh; overflow: auto">
+                <div class="p-6">
+                    <div class="flex justify-between items-center border-b pb-4">
+                        <h3 class="text-xl font-bold text-gray-800">차량 수정</h3>
+                        <button id="closeUpdateVehicleModalBtn" class="text-gray-400 hover:text-gray-500">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="mt-6 space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">차량 모델</label>
+                                <input type="text" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500" id="update_name" />
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">제조사</label>
+                                <input type="text" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500" id="update_manufacture" />
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">연식</label>
+                                <input
+                                    type="number"
+                                    min="1950"
+                                    max="2025"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                    id="update_year"
+                                />
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">차량 번호</label>
+                                <input type="text" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500" id="update_plate_number" />
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">일일 요금</label>
+                                <div class="relative">
+                                    <span class="absolute left-3 top-2.5">₩</span>
+                                    <input type="number" class="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500" id="update_daily_rate" />
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">차량 상태</label>
+                                <select class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500" id="update_status">
+                                    <option>이용 가능</option>
+                                    <option>이용 불가</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">위치</label>
+                            <input
+                                type="text"
+                                placeholder="예: 서울 강남구 역삼동"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                id="update_location"
+                            />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">차량 설명</label>
+                            <textarea rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500" id="update_description"></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">차량 이미지</label>
+                            <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
+                                <div class="space-y-1 text-center">
+                                    <div class="flex text-sm text-gray-600">
+                                        <label class="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none">
+                                            <span>파일 업로드</span>
+                                            <input type="file" class="sr-only" />
+                                        </label>
+                                        <p class="pl-1">또는 드래그 앤 드롭</p>
+                                    </div>
+                                    <p class="text-xs text-gray-500">PNG, JPG, GIF 최대 10MB</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">연료 타입</label>
+                                <select class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500" id="update_fuel_type">
+                                    <option>가솔린</option>
+                                    <option>디젤</option>
+                                    <option>전기</option>
+                                    <option>하이브리드</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">변속기</label>
+                                <select class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500" id="update_transmission">
+                                    <option>자동</option>
+                                    <option>수동</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">탑승 인원</label>
+                                <input
+                                    type="number"
+                                    min="1"
+                                    max="10"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                    id="update_seat-num"
+                                />
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">차량 유형</label>
+                                <select class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500" id="update_car_type">
+                                    <option>세단</option>
+                                    <option>SUV</option>
+                                    <option>승합차</option>
+                                    <option>스포츠카</option>
+                                    <option>기타</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-6 pt-4 border-t flex justify-end space-x-3">
+                        <button
+                            id="cancelModalBtn"
+                            class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                            onclick='document.getElementById("updateVehicleModal").classList.add("hidden");'
+                        >
+                            취소
+                        </button>
+                        <button class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700" onclick="addCar()">차량 수정</button>
+                        <!--  수정 필요 !!!!-->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            // 사이드바 토글 기능
+            document.getElementById("toggleSidebar").addEventListener("click", function () {
+                const sidebar = document.querySelector(".sidebar");
+                const content = document.querySelector(".content-area");
+
+                sidebar.classList.toggle("sidebar-collapsed");
+                content.classList.toggle("content-expanded");
+
+                // 아이콘 변경
+                const icon = this.querySelector("i");
+                if (sidebar.classList.contains("sidebar-collapsed")) {
+                    icon.classList.remove("fa-chevron-left");
+                    icon.classList.add("fa-chevron-right");
+                    sidebar.style.width = "4rem";
+                } else {
+                    icon.classList.remove("fa-chevron-right");
+                    icon.classList.add("fa-chevron-left");
+                    sidebar.style.width = "16rem";
+                }
+            });
+
+            // 차량 카드 호버 시 애니메이션
+            document.querySelectorAll(".car-card").forEach((card) => {
+                card.addEventListener("mouseenter", function () {
+                    this.style.transform = "translateY(-5px)";
+                    this.style.boxShadow = "0 10px 25px -5px rgba(0, 0, 0, 0.1)";
+                });
+
+                card.addEventListener("mouseleave", function () {
+                    this.style.transform = "";
+                    this.style.boxShadow = "";
+                });
+            });
+
+            // 모달 열기
+            document.getElementById("addVehicleBtn").addEventListener("click", function () {
+                document.getElementById("addVehicleModal").classList.remove("hidden");
+            });
+
+            // 모달 닫기
+            document.getElementById("closeAddVehicleModalBtn").addEventListener("click", function () {
+                document.getElementById("addVehicleModal").classList.add("hidden");
+            });
+
+            // 모달 외부 클릭 시 닫기
+            document.getElementById("addVehicleModal").addEventListener("click", function (e) {
+                if (e.target === this) {
+                    this.classList.add("hidden");
+                }
+            });
+
+            // 상태 필터 버튼 활성화
+            document.querySelectorAll(".filter-btn").forEach((button) => {
+                if (button.textContent.includes("이용 가능") || button.textContent.includes("이용 불가")) {
+                    button.addEventListener("click", function () {
+                        document.querySelectorAll(".filter-btn").forEach((btn) => {
+                            btn.classList.remove("bg-blue-100", "text-blue-700");
+                            btn.classList.add("bg-gray-100", "text-gray-700");
+                        });
+
+                        this.classList.remove("bg-gray-100", "text-gray-700");
+                        this.classList.add("bg-blue-100", "text-blue-700");
+                        currentFilters.status = button.textContent;
+                        console.log(currentFilters);
+                        loadCarsWithFiltersAndSorting(0, currentSort, currentFilters);
+                    });
+                }
+            });
+
+            // 전체 필터 버튼 활성화
+            document.querySelectorAll(".filter-btn").forEach((button) => {
+                if (button.textContent.includes("전체")) {
+                    button.addEventListener("click", function () {
+                        document.querySelectorAll(".filter-btn").forEach((btn) => {
+                            btn.classList.remove("bg-blue-100", "text-blue-700");
+                            btn.classList.add("bg-gray-100", "text-gray-700");
+                        });
+
+                        this.classList.remove("bg-gray-100", "text-gray-700");
+                        this.classList.add("bg-blue-100", "text-blue-700");
+
+                        currentFilters.status = "";
+                        loadCarsWithFiltersAndSorting(0, currentSort, currentFilters);
+                    });
+                }
+            });
+
+            const sortSelect = document.querySelector(".flex.items-center > select"); // 정렬 select 요소 선택
+            const carGrid = document.getElementById("car-grid");
+            let currentSort = "";
+            let currentFilters = {
+                status: "",
+            };
+
+            sortSelect.addEventListener("change", () => {
+                currentSort = sortSelect.value;
+                loadCarsWithFiltersAndSorting(0, currentSort, currentFilters); // 정렬 기준 및 필터 함께 전달하며 첫 페이지 로드
+            });
+
+            let currentPage = 1;
+            const carsPerPage = 6;
+            let totalCars = 0;
+
+            function renderPagination(totalPages) {
+                const paginationNav = document.querySelector("#page-nav");
+                if (!paginationNav) return;
+                paginationNav.innerHTML = ""; // 기존 페이지 번호 제거
+
+                const prevButton = document.createElement("a");
+                prevButton.href = "#";
+                prevButton.classList.add("px-4", "py-2", "border", "border-gray-300", "bg-white", "text-gray-500", "hover:bg-gray-50", "rounded-l-md");
+                prevButton.innerHTML = '<i class="fas fa-chevron-left"></i>';
+                prevButton.addEventListener("click", (e) => {
+                    e.preventDefault();
+                    if (currentPage > 1) {
+                        currentPage--;
+                        loadCarsWithFiltersAndSorting((currentPage - 1) * carsPerPage, currentSort, currentFilters);
+                    }
+                });
+                paginationNav.appendChild(prevButton);
+
+                const maxVisiblePages = 5; // 최대로 보여줄 페이지 번호 개수
+                let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+                let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+                if (totalPages > maxVisiblePages && endPage === totalPages) {
+                    startPage = Math.max(1, endPage - maxVisiblePages + 1);
+                }
+
+                for (let i = startPage; i <= endPage; i++) {
+                    const pageLink = document.createElement("a");
+                    pageLink.href = "#";
+                    pageLink.textContent = i;
+                    pageLink.classList.add("px-4", "py-2", "border-t", "border-b", "border-gray-300", "bg-white", "text-gray-500", "hover:bg-gray-50");
+                    if (i === currentPage) {
+                        pageLink.classList.remove("text-gray-500", "hover:bg-gray-50");
+                        pageLink.classList.add("text-blue-600", "font-medium");
+                    }
+                    pageLink.addEventListener("click", (e) => {
+                        e.preventDefault();
+                        currentPage = i;
+                        loadCarsWithFiltersAndSorting((currentPage - 1) * carsPerPage, currentSort, currentFilters);
+                    });
+                    paginationNav.appendChild(pageLink);
+                }
+
+                const nextButton = document.createElement("a");
+                nextButton.href = "#";
+                nextButton.classList.add("px-4", "py-2", "border", "border-gray-300", "bg-white", "text-gray-500", "hover:bg-gray-50", "rounded-r-md");
+                nextButton.innerHTML = '<i class="fas fa-chevron-right"></i>';
+                nextButton.addEventListener("click", (e) => {
+                    e.preventDefault();
+                    if (currentPage < totalPages) {
+                        currentPage++;
+                        loadCarsWithFiltersAndSorting((currentPage - 1) * carsPerPage, currentSort, currentFilters);
+                    }
+                });
+                paginationNav.appendChild(nextButton);
+            }
+
+            async function loadCarsWithFiltersAndSorting(startIndex = 0, sort = "", filters = currentFilters) {
+                let apiUrl = `/api/cars?start=${startIndex}`;
+                if (sort) {
+                    let sortParam = "";
+                    switch (sort) {
+                        case "가격 낮은순":
+                            sortParam = "daily_rate_asc";
+                            break;
+                        case "가격 높은순":
+                            sortParam = "daily_rate_desc";
+                            break;
+                        case "평점 높은순":
+                            sortParam = "rating_desc";
+                            break;
+                        case "평점 낮은순":
+                            sortParam = "rating_asc";
+                            break;
+                        default: // 이름순 (기본 정렬)
+                            sortParam = "name_asc";
+                            break;
+                    }
+                    if (sortParam) {
+                        apiUrl += `&sort=${sortParam}`;
+                    }
+                }
+
+                if (filters.status.length > 0) {
+                    apiUrl += `&status=${filters.status === "이용 가능" ? "Available" : "Unavailable"}`;
+                }
+
+                try {
+                    const response = await fetch(apiUrl);
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    const data = await response.json();
+                    const cars = data.cars;
+                    totalCars = data.total;
+                    const carCountSpan = document.querySelector(".text-gray-600 > .font-bold.text-blue-600");
+
+                    if (carCountSpan) {
+                        carCountSpan.textContent = totalCars;
+                    }
+
+                    if (carGrid) {
+                        carGrid.innerHTML = ""; // 기존 차량 목록 초기화
+                        if (cars && cars.length > 0) {
+                            cars.forEach((car) => {
+                                const availabilityText = car.status === "Unavailable" ? "이용 불가" : "이용 가능";
+                                const availabilityClass = car.status === "Unavailable" ? "text-red-500" : "text-green-500";
+
+                                const carCardHTML = `
+                                  <div
+                                    class="bg-white rounded-xl shadow-md overflow-hidden car-card transition duration-300"
+                                    data-car-id="${car.id}"
+                                  >
+                                    <div class="relative">
+                                      <img
+                                        src="${car.image_url || "https://placehold.co/600x400"}"
+                                        class="w-full h-48 object-cover"
+                                      />
+                                      <div
+                                        class="absolute top-2 left-2 bg-white bg-opacity-80 rounded-md px-2 py-1 text-xs font-semibold ${availabilityClass}"
+                                      >
+                                        ${availabilityText}
+                                      </div>
+                                    </div>
+                                    <div class="p-4">
+                                      <div class="flex justify-between items-start">
+                                        <div>
+                                          <h3 class="font-bold text-lg">
+                                            ${car.manufacture || "회사 정보 없음"} ${car.name || "차량 이름 없음"}
+                                          </h3>
+                                          <p class="text-gray-600 text-sm">
+                                            ${car.year || "연식 정보 없음"}년식 • ${car.fuel_type || "연료 정보 없음"}
+                                            • ${car.transmission || "변속기 정보 없음"}
+                                          </p>
+                                        </div>
+                                        <div class="flex items-center">
+                                          <i class="fas fa-star text-yellow-400 mr-1"></i>
+                                          <span class="font-medium">
+                                            ${car.rating !== null && car.rating !== undefined ? car.rating.toFixed(1) : "평점 정보 없음"}
+                                          </span>
+                                        </div>
+                                      </div>
+                                      <div class="mt-4 flex justify-between items-center">
+                                        <div>
+                                          <p class="text-gray-500 text-sm">하루 기준</p>
+                                          <p class="font-bold text-blue-600">
+                                            ${car.daily_rate ? car.daily_rate.toLocaleString() + "원" : "가격 정보 없음"}
+                                          </p>
+                                        </div>
+                                        <div class="mt-4 pt-3 border-t flex justify-between">
+                                          <button
+                                            class="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center "
+                                          >
+                                            <i class="fas fa-edit mr-1 updateVehicleBtn"></i>
+                                          </button>
+                                          <button
+                                            class="text-red-600 hover:text-red-800 text-sm font-medium flex items-center "
+                                          >
+                                            <i class="fas fa-trash-alt mr-1 deleteVehicleBtn"></i>
+                                          </button>
+                                          <button
+                                            class="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center"
+                                          >
+                                            <i class="fas fa-info-circle mr-1 detailVehicleBtn"></i>
+                                          </button>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                `;
+                                carGrid.innerHTML += carCardHTML;
+                            });
+                        } else {
+                            carGrid.innerHtml = "차량 정보가 없습니다!";
+                        }
+                    }
+                    const totalPages = Math.ceil(totalCars / carsPerPage);
+                    renderPagination(totalPages); // 페이지 번호 UI 생성
+                } catch (error) {
+                    console.error("차량 정보를 가져오는 중 오류 발생:", error);
+                    if (carGrid) {
+                        carGrid.innerHTML = "<p>차량 정보를 가져오는 데 실패했습니다.</p>";
+                    }
+                    const carCountSpan = document.querySelector(".text-gray-600 > .font-bold.text-blue-600");
+                    if (carCountSpan) {
+                        carCountSpan.textContent = "Error";
+                    }
+                }
+            }
+            async function checkAdminStatus() {
+                const token = localStorage.getItem("token");
+                const currentPath = window.location.pathname;
+
+                if (!token) {
+                    console.log("토큰이 없습니다. 로그인 페이지로 리다이렉트합니다.");
+                    window.location.href = "/login";
+                    return;
+                }
+
+                try {
+                    const response = await fetch("/api/isAdmin", {
+                        method: "GET",
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                            "Content-Type": "application/json",
+                        },
+                    });
+
+                    if (response.ok) {
+                        const isAdmin = await response.json();
+                        if (!isAdmin) {
+                            window.location.href = "/";
+                        } else {
+                            renderAdminPage();
+                        }
+                    } else if (response.status === 401) {
+                        localStorage.removeItem("token");
+                        window.location.href = "/login";
+                    } else {
+                        // 서버 오류 발생 시 사용자에게 알림 또는 다른 처리
+                        alert("관리자 상태를 확인하는 데 실패했습니다. 잠시 후 다시 시도해주세요.");
+                    }
+                } catch (error) {
+                    alert("네트워크 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
+                }
+            }
+            function renderAdminPage() {
+                // 관리자 대시보드 콘텐츠를 화면에 표시하는 로직
+                const adminDashboardContent = document.getElementById("admin-content");
+                if (adminDashboardContent) {
+                    adminDashboardContent.style.display = "block";
+                }
+            }
+            function addCar() {
+                const plate_number = document.querySelector("#plate_number").value;
+                const manufacture = document.querySelector("#manufacture").value;
+                const name = document.querySelector("#name").value;
+                const year = parseInt(document.querySelector("#year").value, 10); // 문자열을 정수로 변환
+                const car_type = document.querySelector("#car_type").value;
+                const fuel_type = document.querySelector("#fuel_type").value;
+                const transmission = document.querySelector("#transmission").value;
+                const seat_num = parseInt(document.querySelector("#seat-num").value, 10); // 문자열을 정수로 변환
+                const daily_rate = parseInt(document.querySelector("#daily_rate").value, 10); // 문자열을 정수로 변환
+                const location = document.querySelector("#location").value;
+                const rating = 0.0;
+                const description = document.querySelector("#description").value;
+                const status = document.querySelector("#status").value;
+                const connected_With = "";
+                const image_url = "";
+
+                if (!plate_number || !manufacture || !name || isNaN(year) || !car_type || !fuel_type || !transmission || isNaN(seat_num) || isNaN(daily_rate) || !location || !status) {
+                    alert("모든 필드를 올바르게 입력해주세요. 연식, 좌석수, 일일 대여료는 숫자여야 합니다.");
+                    return;
+                }
+
+                const car_data = {
+                    plate_number: plate_number,
+                    manufacture: manufacture,
+                    name: name,
+                    year: year,
+                    car_type: car_type,
+                    fuel_type: fuel_type,
+                    transmission: transmission,
+                    seat_num: seat_num,
+                    daily_rate: daily_rate,
+                    location: location,
+                    description: description,
+                    status: status,
+                    rating: rating,
+                    connected_With: connected_With,
+                    image_url: image_url,
+                };
+
+                fetch("/api/add_car", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify(car_data),
+                })
+                    .then((response) => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+                        return response.text(); // 먼저 텍스트로 받기
+                    })
+                    .then((text) => {
+                        alert(text);
+                    })
+                    .catch((error) => {
+                        console.error("차량 추가 오류:", error);
+                        alert(`차량 추가에 실패했습니다: ${error.message}`);
+                    });
+            }
+
+            // 차량 삭제 함수
+            async function deleteCar(carId) {
+                try {
+                    const response = await fetch(`/api/cars/${carId}`, {
+                        method: "DELETE",
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+
+                    const result = await response.json();
+                    alert(result.message || "차량이 성공적으로 삭제되었습니다.");
+                    // 차량 목록 다시 로드
+                    loadCarsWithFiltersAndSorting(0, currentSort, currentFilters);
+                } catch (error) {
+                    console.error("차량 삭제 오류:", error);
+                    alert(`차량 삭제에 실패했습니다: ${error.message}`);
+                }
+            }
+
+            async function openupdateVehicleModal(carId) {
+                console.log(carId);
+                document.getElementById("updateVehicleModal").classList.remove("hidden");
+                currentCarId = carId;
+
+                try {
+                    const response = await fetch(`/api/cars/${carId}`);
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    const carData = await response.json();
+
+                    // 모달 폼에 데이터 채우기
+                    document.getElementById("update_plate_number").value = carData.plate_number;
+                    document.getElementById("update_manufacture").value = carData.manufacture;
+                    document.getElementById("update_name").value = carData.name;
+                    document.getElementById("update_year").value = carData.year;
+                    document.getElementById("update_car_type").value = carData.car_type;
+                    document.getElementById("update_fuel_type").value = carData.fuel_type;
+                    document.getElementById("update_transmission").value = carData.transmission;
+                    document.getElementById("update_seat-num").value = carData.seat_num;
+                    document.getElementById("update_daily_rate").value = carData.daily_rate;
+                    document.getElementById("update_location").value = carData.location;
+                    document.getElementById("update_description").value = carData.description;
+                    document.getElementById("update_status").value = carData.status;
+                } catch (error) {
+                    console.error("차량 정보 로딩 오류:", error);
+                    alert("차량 정보를 불러오는 데 실패했습니다.");
+                    closeUpdateCarModal();
+                }
+            }
+
+            function closeUpdateCarModal() {
+                document.getElementById("updateVehicleModal").classList.add("hidden");
+                currentCarId = null;
+                const updateCarForm = document.getElementById("updateCarForm");
+                if (updateCarForm) {
+                    updateCarForm.reset();
+                }
+            }
+
+            window.addEventListener("DOMContentLoaded", () => {
+                // 관리자 확인
+                {
+                    checkAdminStatus();
+                }
+                // 자동차 목록 로딩
+                {
+                    loadCarsWithFiltersAndSorting(0, currentSort, currentFilters);
+                }
+                // 자동차 수정 / 삭제 / 상세 정보
+                {
+                    // 이벤트 위임을 사용하여 수정, 삭제, 상세 정보 처리
+                    const carGrid = document.getElementById("car-grid");
+                    if (carGrid) {
+                        carGrid.addEventListener("click", function (event) {
+                            if (event.target.classList.contains("updateVehicleBtn")) {
+                                const carId = event.target.closest(".car-card").dataset.carId;
+                                document.getElementById("updateVehicleModal").classList.remove("hidden");
+                                document.getElementById("closeUpdateVehicleModalBtn").addEventListener("click", function () {
+                                    document.getElementById("updateVehicleModal").classList.add("hidden");
+                                });
+                                openupdateVehicleModal(carId);
+                            } else if (event.target.classList.contains("deleteVehicleBtn")) {
+                                const carId = event.target.closest(".car-card").dataset.carId;
+                                if (confirm("정말로 이 차량을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.")) {
+                                    deleteCar(carId);
+                                }
+                            } else if (event.target.classList.contains("detailVehicleBtn")) {
+                                const carId = event.target.closest(".car-card").dataset.carId;
+                                // 상세 정보 처리 (예: 페이지 이동)
+                                window.location.href = `/admin/vehicles/${carId}`;
+                            }
+                        });
+                    }
+                }
+            });
+        </script>
+    </body>
+</html>

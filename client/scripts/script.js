@@ -22,7 +22,7 @@ async function checkAndAddDashboardButton() {
     const response = await fetch("/api/isAdmin", {
         method: "GET",
         headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
+            Authorization: `Bearer ${localStorage.getItem("token") === null ? "" : localStorage.getItem("token")}`,
             "Content-Type": "application/json",
         },
     });
@@ -38,7 +38,6 @@ async function checkAndAddDashboardButton() {
             headerMenu.appendChild(dashboardLink);
         }
     }
-    headerMenu.style.display = "block";
 }
 
 window.addEventListener("DOMContentLoaded", () => {

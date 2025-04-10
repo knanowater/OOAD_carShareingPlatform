@@ -7,6 +7,7 @@ use sqlx::{FromRow, Row};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct CarInfo {
+    id: Option<i32>,
     plate_number: String,
     manufacture: String,
     name: String,
@@ -16,14 +17,18 @@ pub struct CarInfo {
     transmission: String,
     seat_num: u8,
     daily_rate: f64,
+    location: String,
     rating: f64,
+    description: String,
     status: String,
     connected_with: Option<String>,
     image_url: Option<String>,
 }
 
 impl CarInfo {
-    // 값을 설정하는 내부 메서드
+    pub fn id(&self) -> Option<i32> {
+        self.id
+    }
     fn set_plate_number(&mut self, plate_number: String) {
         self.plate_number = plate_number;
     }
@@ -109,6 +114,7 @@ impl CarInfo {
 impl FromRow<'_, MySqlRow> for CarInfo {
     fn from_row(row: &MySqlRow) -> Result<Self, sqlx::Error> {
         let mut car_info = CarInfo {
+            id: row.try_get("id").ok(),
             plate_number: String::new(),
             manufacture: String::new(),
             name: String::new(),
@@ -118,7 +124,9 @@ impl FromRow<'_, MySqlRow> for CarInfo {
             transmission: String::new(),
             seat_num: 0,
             daily_rate: 0.0,
+            location: String::new(),
             rating: 0.0,
+            description: String::new(),
             status: String::new(),
             connected_with: None,
             image_url: None,
@@ -151,16 +159,13 @@ pub async fn add_car(pool: &MySqlPool, info: CarInfo) -> Result<String, String> 
 
     match existing_car {
         Ok(Some(_)) => {
-            return Err(format!(
-                "Car with plate number '{}' already exists!",
-                info.plate_number
-            ));
+            return Err(format!("'{}' 차량은 이미 존재합니다!", info.plate_number));
         }
         Ok(None) => {
             // plate_number가 존재하지 않으므로 차량 추가 진행
             let query = r#"
-                INSERT INTO cars (plate_number, manufacture, name, year, car_type, fuel_type, transmission, seat_num, daily_rate, rating, status, connected_with, image_url)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO cars (plate_number, manufacture, name, year, car_type, fuel_type, transmission, seat_num, daily_rate, location, rating, description, status, connected_with, image_url)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             "#;
 
             let result = sqlx::query(query)
@@ -173,7 +178,9 @@ pub async fn add_car(pool: &MySqlPool, info: CarInfo) -> Result<String, String> 
                 .bind(&info.transmission)
                 .bind(&info.seat_num)
                 .bind(&info.daily_rate)
+                .bind(&info.location)
                 .bind(&info.rating)
+                .bind(&info.description)
                 .bind(&info.status)
                 .bind(&info.connected_with)
                 .bind(&info.image_url)
@@ -181,11 +188,11 @@ pub async fn add_car(pool: &MySqlPool, info: CarInfo) -> Result<String, String> 
                 .await;
 
             match result {
-                Ok(_) => Ok(format!("Car '{}' added successfully!", info.name)),
-                Err(e) => Err(format!("Failed to add car: {}", e)),
+                Ok(_) => Ok(format!("'{}' 이(가) 성공적으로 추가되었습니다!", info.name)),
+                Err(e) => Err(format!("차량 추가에 실패했습니다 ! : {}", e)),
             }
         }
-        Err(e) => Err(format!("Database error: {}", e)),
+        Err(e) => Err(format!("DB에러! : {}", e)),
     }
 }
 
@@ -207,7 +214,6 @@ pub async fn update_car(pool: &MySqlPool, info: CarInfo) -> Result<String, Strin
             "#;
 
             let result = sqlx::query(query)
-                .bind(&info.plate_number)
                 .bind(&info.manufacture)
                 .bind(&info.name)
                 .bind(&info.year)
@@ -220,6 +226,7 @@ pub async fn update_car(pool: &MySqlPool, info: CarInfo) -> Result<String, Strin
                 .bind(&info.status)
                 .bind(&info.connected_with)
                 .bind(&info.image_url)
+                .bind(&info.plate_number) // Add plate_number to the end
                 .execute(pool)
                 .await;
 

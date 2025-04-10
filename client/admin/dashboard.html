@@ -68,62 +68,58 @@
             }
         </style>
     </head>
-    <body id="admin-dashboard-content" class="bg-gray-100 font-sans" style="display: none">
+    <body id="admin-content" class="bg-gray-100 font-sans" style="display: none">
         <div class="flex h-screen overflow-hidden">
             <!-- 사이드바 -->
-            <div class="sidebar bg-indigo-800 text-white w-64 flex flex-col sidebar">
+            <div class="sidebar bg-blue-800 text-white w-64 flex flex-col sidebar">
                 <!-- 로고 영역 -->
-                <div class="p-4 flex items-center space-x-2 border-b border-indigo-700">
-                    <i class="fas fa-car text-indigo-300 text-2xl mr-2"></i>
+                <div class="p-4 flex items-center space-x-2 border-b border-blue-700">
+                    <i class="fas fa-car text-blue-300 text-2xl mr-2"></i>
                     <span class="logo-text text-xl font-bold" onclick="location.href='/'" style="cursor: pointer">DriveShare</span
                     ><span class="logo-text text-xl font-bold" onclick="location.href='/admin'" style="cursor: pointer">Admin</span>
                 </div>
                 <!-- 메뉴 -->
                 <div class="flex-1 overflow-y-auto py-4">
                     <div class="px-4 space-y-1">
-                        <a href="#" class="menu-item flex items-center space-x-3 px-3 py-3 rounded-lg bg-indigo-900 text-white">
+                        <a href="/admin" class="menu-item flex items-center space-x-3 px-3 py-3 rounded-lg bg-blue-900 text-white">
                             <i class="fas fa-tachometer-alt"></i>
                             <span class="sidebar-text">대시보드</span>
                         </a>
-                        <a href="#" class="menu-item flex items-center space-x-3 px-3 py-3 rounded-lg hover:bg-indigo-700 text-indigo-200">
+                        <a href="/admin/vehicles" class="menu-item flex items-center space-x-3 px-3 py-3 rounded-lg hover:bg-blue-700 text-blue-200">
                             <i class="fas fa-car"></i>
                             <span class="sidebar-text">차량 관리</span>
                         </a>
-                        <a href="#" class="menu-item flex items-center space-x-3 px-3 py-3 rounded-lg hover:bg-indigo-700 text-indigo-200">
+                        <a href="#" class="menu-item flex items-center space-x-3 px-3 py-3 rounded-lg hover:bg-blue-700 text-blue-200">
                             <i class="fas fa-calendar-check"></i>
                             <span class="sidebar-text">예약 관리</span>
                         </a>
-                        <a href="#" class="menu-item flex items-center space-x-3 px-3 py-3 rounded-lg hover:bg-indigo-700 text-indigo-200">
+                        <a href="#" class="menu-item flex items-center space-x-3 px-3 py-3 rounded-lg hover:bg-blue-700 text-blue-200">
                             <i class="fas fa-users"></i>
                             <span class="sidebar-text">회원 관리</span>
                         </a>
-                        <a href="#" class="menu-item flex items-center space-x-3 px-3 py-3 rounded-lg hover:bg-indigo-700 text-indigo-200">
+                        <a href="#" class="menu-item flex items-center space-x-3 px-3 py-3 rounded-lg hover:bg-blue-700 text-blue-200">
                             <i class="fas fa-chart-line"></i>
                             <span class="sidebar-text">통계 분석</span>
                         </a>
-                        <a href="#" class="menu-item flex items-center space-x-3 px-3 py-3 rounded-lg hover:bg-indigo-700 text-indigo-200">
+                        <a href="#" class="menu-item flex items-center space-x-3 px-3 py-3 rounded-lg hover:bg-blue-700 text-blue-200">
                             <i class="fas fa-cog"></i>
                             <span class="sidebar-text">시스템 설정</span>
                         </a>
                     </div>
 
                     <div class="px-4 mt-8">
-                        <div class="border-t border-indigo-700 pt-4">
-                            <a href="#" class="menu-item flex items-center space-x-3 px-3 py-3 rounded-lg hover:bg-indigo-700 text-indigo-200">
-                                <i class="fas fa-question-circle"></i>
-                                <span class="sidebar-text">도움말</span>
-                            </a>
-                            <a href="#" class="menu-item flex items-center space-x-3 px-3 py-3 rounded-lg hover:bg-indigo-700 text-indigo-200">
+                        <div class="border-t border-blue-700 pt-4">
+                            <a href="/" class="menu-item flex items-center space-x-3 px-3 py-3 rounded-lg hover:bg-blue-700 text-blue-200">
                                 <i class="fas fa-sign-out-alt"></i>
-                                <span class="sidebar-text">로그아웃</span>
+                                <span class="sidebar-text">나가기</span>
                             </a>
                         </div>
                     </div>
                 </div>
 
                 <!-- 사이드바 접기 버튼 -->
-                <div class="p-4 border-t border-indigo-700 flex justify-end">
-                    <button id="toggleSidebar" class="text-indigo-300 hover:text-white">
+                <div class="p-4 border-t border-blue-700 flex justify-end">
+                    <button id="toggleSidebar" class="text-blue-300 hover:text-white">
                         <i class="fas fa-chevron-left"></i>
                     </button>
                 </div>
@@ -136,19 +132,6 @@
                     <div class="px-6 py-4 flex items-center justify-between">
                         <div class="flex items-center space-x-4">
                             <h1 class="text-2xl font-bold text-gray-800">대시보드</h1>
-                        </div>
-
-                        <div class="flex items-center space-x-4">
-                            <div class="relative">
-                                <button class="p-2 rounded-full hover:bg-gray-100">
-                                    <i class="fas fa-bell text-gray-500"></i>
-                                    <span class="absolute top-0 right-0 h-2 w-2 rounded-full bg-red-500"></span>
-                                </button>
-                            </div>
-                            <div class="flex items-center space-x-2">
-                                <div class="h-8 w-8 rounded-full bg-indigo-500 flex items-center justify-center text-white font-semibold">AD</div>
-                                <span class="text-gray-700">관리자</span>
-                            </div>
                         </div>
                     </div>
                 </header>
@@ -163,7 +146,7 @@
                                     <p class="text-gray-500">전체 차량</p>
                                     <h3 class="text-2xl font-bold">42</h3>
                                 </div>
-                                <div class="p-3 rounded-full bg-indigo-100 text-indigo-600">
+                                <div class="p-3 rounded-full bg-blue-100 text-blue-600">
                                     <i class="fas fa-car text-xl"></i>
                                 </div>
                             </div>
@@ -229,7 +212,7 @@
                             <div class="flex items-center justify-between mb-4">
                                 <h2 class="text-lg font-semibold">주간 이용 현황</h2>
                                 <div class="flex space-x-2">
-                                    <button class="px-3 py-1 text-xs bg-indigo-100 text-indigo-700 rounded">일간</button>
+                                    <button class="px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded">일간</button>
                                     <button class="px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded">주간</button>
                                     <button class="px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded">월간</button>
                                 </div>
@@ -277,15 +260,15 @@
                                 <h3 class="text-sm font-semibold text-gray-500 mb-2">인기 차종 TOP 3</h3>
                                 <div class="space-y-3">
                                     <div class="flex items-center">
-                                        <span class="w-6 h-6 flex items-center justify-center bg-indigo-100 text-indigo-800 rounded-full text-xs font-bold mr-2">1</span>
+                                        <span class="w-6 h-6 flex items-center justify-center bg-blue-100 text-blue-800 rounded-full text-xs font-bold mr-2">1</span>
                                         <span>현대 아반떼</span>
                                     </div>
                                     <div class="flex items-center">
-                                        <span class="w-6 h-6 flex items-center justify-center bg-indigo-100 text-indigo-800 rounded-full text-xs font-bold mr-2">2</span>
+                                        <span class="w-6 h-6 flex items-center justify-center bg-blue-100 text-blue-800 rounded-full text-xs font-bold mr-2">2</span>
                                         <span>기아 K5</span>
                                     </div>
                                     <div class="flex items-center">
-                                        <span class="w-6 h-6 flex items-center justify-center bg-indigo-100 text-indigo-800 rounded-full text-xs font-bold mr-2">3</span>
+                                        <span class="w-6 h-6 flex items-center justify-center bg-blue-100 text-blue-800 rounded-full text-xs font-bold mr-2">3</span>
                                         <span>테슬라 모델 3</span>
                                     </div>
                                 </div>
@@ -355,7 +338,7 @@
                                 </div>
                             </div>
                             <div class="p-4 border-t text-center">
-                                <a href="#" class="text-indigo-600 hover:text-indigo-800 text-sm font-medium">모든 예약 보기</a>
+                                <a href="#" class="text-blue-600 hover:text-blue-800 text-sm font-medium">모든 예약 보기</a>
                             </div>
                         </div>
 
@@ -363,7 +346,7 @@
                         <div class="bg-white rounded-lg shadow overflow-hidden">
                             <div class="p-6 border-b flex justify-between items-center">
                                 <h2 class="text-lg font-semibold">차량 목록</h2>
-                                <button class="px-3 py-1 bg-indigo-600 text-white text-sm rounded hover:bg-indigo-700">차량 추가</button>
+                                <button class="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">차량 추가</button>
                             </div>
                             <div class="divide-y">
                                 <div class="p-4 hover:bg-gray-50 cursor-pointer">
@@ -424,7 +407,7 @@
                                 </div>
                             </div>
                             <div class="p-4 border-t text-center">
-                                <a href="#" class="text-indigo-600 hover:text-indigo-800 text-sm font-medium">모든 차량 보기</a>
+                                <a href="#" class="text-blue-600 hover:text-blue-800 text-sm font-medium">모든 차량 보기</a>
                             </div>
                         </div>
                     </div>
@@ -477,10 +460,10 @@
                         if (!isAdmin) {
                             window.location.href = "/";
                         } else {
-                            renderAdminDashboard();
+                            renderAdminPage();
                         }
                     } else if (response.status === 401) {
-                        localStorage.removeItem("token"); // 만료된 토큰 제거 (선택 사항)
+                        localStorage.removeItem("token");
                         window.location.href = "/login";
                     } else {
                         // 서버 오류 발생 시 사용자에게 알림 또는 다른 처리
@@ -491,12 +474,11 @@
                 }
             }
 
-            function renderAdminDashboard() {
+            function renderAdminPage() {
                 // 관리자 대시보드 콘텐츠를 화면에 표시하는 로직
-                const adminDashboardContent = document.getElementById("admin-dashboard-content");
+                const adminDashboardContent = document.getElementById("admin-content");
                 if (adminDashboardContent) {
                     adminDashboardContent.style.display = "block";
-                    // 추가적인 관리자 UI 업데이트 로직
                 }
             }
 
@@ -551,12 +533,6 @@
                         },
                     });
                 }
-            });
-
-            // 알림 토글 기능
-            document.querySelector(".fa-bell").parentElement.addEventListener("click", function () {
-                // 알림 목록 표시 로직 추가 가능
-                alert("새 알림이 3건 있습니다.");
             });
         </script>
     </body>

@@ -11,6 +11,7 @@ use dotenvy::dotenv;
 use rocket::State;
 use rocket::form::FromForm;
 use rocket::fs::NamedFile;
+use rocket::http::Status;
 use rocket::serde::json::Json;
 use serde::{Deserialize, Serialize};
 use server::{CarInfo, add_car, update_car};
@@ -53,13 +54,15 @@ async fn main() -> Result<(), sqlx::Error> {
                 signup_page,
                 list_page,
                 admin_dashboard,
+                car_management,
                 add_car_endpoint,
                 update_car_endpoint,
                 signup,
                 login,
                 logout,
                 is_admin,
-                get_cars
+                get_cars,
+                get_car_by_id,
             ],
         )
         .mount(
@@ -100,7 +103,7 @@ async fn list_page() -> Option<NamedFile> {
     NamedFile::open(Path::new("../client/list.html")).await.ok()
 }
 
-#[post("/add_car", format = "json", data = "<car_info>")]
+#[post("/api/add_car", format = "json", data = "<car_info>")]
 async fn add_car_endpoint(car_info: Json<CarInfo>, pool: &rocket::State<MySqlPool>) -> String {
     match add_car(pool, car_info.into_inner()).await {
         Ok(message) => message,
@@ -108,7 +111,7 @@ async fn add_car_endpoint(car_info: Json<CarInfo>, pool: &rocket::State<MySqlPoo
     }
 }
 
-#[post("/update_car", format = "json", data = "<car_info>")]
+#[post("/api/update_car", format = "json", data = "<car_info>")]
 async fn update_car_endpoint(car_info: Json<CarInfo>, pool: &rocket::State<MySqlPool>) -> String {
     match update_car(pool, car_info.into_inner()).await {
         Ok(message) => message,
@@ -131,6 +134,7 @@ pub struct CarQuery {
     car_type: Option<String>,
     fuel_type: Option<String>,
     transmission: Option<String>,
+    status: Option<String>,
 }
 
 #[get("/api/cars?<query..>")]
@@ -149,6 +153,7 @@ pub async fn get_cars(pool: &State<MySqlPool>, query: CarQuery) -> Json<CarListR
     let transmissions: Option<Vec<String>> = query
         .transmission
         .map(|s| s.split(',').map(String::from).collect());
+    let status: Option<String> = query.status;
 
     let mut where_clauses = Vec::new();
     let mut query_params: Vec<String> = Vec::new(); // 구체적인 String 타입 사용
@@ -184,6 +189,11 @@ pub async fn get_cars(pool: &State<MySqlPool>, query: CarQuery) -> Json<CarListR
         }
     }
 
+    if let Some(status) = &status {
+        where_clauses.push(format!("status IN (?)",)); // ? 플레이스홀더 사용
+        query_params.push(status.clone());
+    }
+
     let where_clause = if !where_clauses.is_empty() {
         format!("WHERE {}", where_clauses.join(" AND "))
     } else {
@@ -201,11 +211,12 @@ pub async fn get_cars(pool: &State<MySqlPool>, query: CarQuery) -> Json<CarListR
         "daily_rate_asc" => "ORDER BY daily_rate ASC",
         "daily_rate_desc" => "ORDER BY daily_rate DESC",
         "rating_desc" => "ORDER BY rating DESC",
+        "rating_asc" => "ORDER BY rating ASC",
         _ => "ORDER BY name ASC",
     };
 
     let sql = format!(
-        "SELECT plate_number, manufacture, name, year, car_type, fuel_type, transmission, seat_num, daily_rate, rating, status, connected_with, image_url FROM cars {} {} LIMIT ? OFFSET ?",
+        "SELECT id, plate_number, manufacture, name, year, car_type, fuel_type, transmission, seat_num, daily_rate, rating, status, connected_with, image_url FROM cars {} {} LIMIT ? OFFSET ?",
         where_clause, order_by_clause
     );
 
@@ -238,9 +249,41 @@ pub async fn get_cars(pool: &State<MySqlPool>, query: CarQuery) -> Json<CarListR
     }
 }
 
+#[get("/api/cars/<id>")]
+pub async fn get_car_by_id(
+    pool: &State<MySqlPool>,
+    id: i32,
+) -> Result<Json<CarInfo>, (Status, String)> {
+    let sql = "SELECT id, plate_number, manufacture, name, year, car_type, fuel_type, transmission, seat_num, daily_rate, rating, description, status, connected_with, image_url FROM cars WHERE id = ?";
+
+    let car_result = sqlx::query_as::<_, CarInfo>(sql)
+        .bind(id)
+        .fetch_optional(pool.inner())
+        .await;
+
+    match car_result {
+        Ok(Some(car)) => Ok(Json(car)),
+        Ok(None) => Err((Status::NotFound, format!("Car with ID {} not found", id))), // Corrected
+        Err(e) => {
+            eprintln!("Error fetching car with ID {}: {}", id, e);
+            Err((
+                Status::InternalServerError,
+                "Failed to fetch car".to_string(),
+            )) // Corrected
+        }
+    }
+}
+
 #[get("/admin")]
 pub async fn admin_dashboard() -> Option<NamedFile> {
     NamedFile::open(Path::new("../client/admin/dashboard.html"))
+        .await
+        .ok()
+}
+
+#[get("/admin/vehicles")]
+pub async fn car_management() -> Option<NamedFile> {
+    NamedFile::open(Path::new("../client/admin/vehicles.html"))
         .await
         .ok()
 }
