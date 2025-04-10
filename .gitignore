@@ -1,3 +1,4 @@
 */target
 .env
 /mysql-data
+docker-compose.yml
