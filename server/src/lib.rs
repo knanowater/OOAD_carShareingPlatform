@@ -19,7 +19,7 @@ pub struct CarInfo {
     daily_rate: f64,
     location: String,
     rating: f64,
-    description: String,
+    description: Option<String>,
     status: String,
     connected_with: Option<String>,
     image_url: Option<String>,
@@ -56,8 +56,14 @@ impl CarInfo {
     fn set_daily_rate(&mut self, daily_rate: f64) {
         self.daily_rate = daily_rate;
     }
+    fn set_location(&mut self, location: String) {
+        self.location = location;
+    }
     fn set_rating(&mut self, rating: f64) {
         self.rating = rating;
+    }
+    fn set_description(&mut self, description: Option<String>) {
+        self.description = description;
     }
     fn set_status(&mut self, status: String) {
         self.status = status;
@@ -97,8 +103,14 @@ impl CarInfo {
     pub fn daily_rate(&self) -> f64 {
         self.daily_rate
     }
+    pub fn location(&self) -> &str {
+        &self.location
+    }
     pub fn rating(&self) -> f64 {
         self.rating
+    }
+    pub fn description(&self) -> &Option<String> {
+        &self.description
     }
     pub fn status(&self) -> &str {
         &self.status
@@ -126,7 +138,7 @@ impl FromRow<'_, MySqlRow> for CarInfo {
             daily_rate: 0.0,
             location: String::new(),
             rating: 0.0,
-            description: String::new(),
+            description: None,
             status: String::new(),
             connected_with: None,
             image_url: None,
@@ -141,7 +153,9 @@ impl FromRow<'_, MySqlRow> for CarInfo {
         car_info.set_transmission(row.try_get("transmission")?);
         car_info.set_seat_num(row.try_get("seat_num")?);
         car_info.set_daily_rate(row.try_get("daily_rate")?);
+        car_info.set_location(row.try_get("location")?);
         car_info.set_rating(row.try_get("rating")?);
+        car_info.set_description(row.try_get("description")?);
         car_info.set_status(row.try_get("status")?);
         car_info.set_connected_with(row.try_get("connected_with").ok());
         car_info.set_image_url(row.try_get("image_url").ok());

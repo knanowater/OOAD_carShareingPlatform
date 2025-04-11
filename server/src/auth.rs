@@ -9,12 +9,12 @@ use sqlx::MySqlPool;
 use std::env;
 
 #[derive(Debug, Serialize, Deserialize)]
-struct Claims {
-    sub: String,   // 사용자 ID
-    name: String,  // 사용자 이름
-    email: String, // 사용자 이메일
-    role: String,  // 사용자 역할
-    exp: usize,    // 만료 시간 (Unix timestamp)
+pub struct Claims {
+    pub sub: String,   // 사용자 ID
+    pub name: String,  // 사용자 이름
+    pub email: String, // 사용자 이메일
+    pub role: String,  // 사용자 역할
+    pub exp: usize,    // 만료 시간 (Unix timestamp)
 }
 
 // 회원 가입 요청을 처리하는 구조체
@@ -157,8 +157,7 @@ pub struct User {
     pub role: String,
 }
 
-pub struct AuthToken(Claims);
-
+pub struct AuthToken(pub Claims);
 #[rocket::async_trait]
 impl<'r> request::FromRequest<'r> for AuthToken {
     type Error = Status;

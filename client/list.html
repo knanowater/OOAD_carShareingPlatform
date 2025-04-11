@@ -590,7 +590,7 @@
                                             ${
                                                 car.status === "Unavailable"
                                                     ? `<button class="px-4 py-2 bg-gray-400 text-white rounded-lg cursor-not-allowed" disabled>예약 불가</button>`
-                                                    : `<button class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">예약하기</button>`
+                                                    : `<button class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition" onclick="location.href='/reservation?id=${car.id}'">예약하기</button>`
                                             }
                                         </div>
                                     </div>

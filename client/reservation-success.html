@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="ko">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>DriveShare - 예약 완료</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script src="/scripts/script.js"></script>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+        <style>
+            .confetti {
+                position: fixed;
+                width: 10px;
+                height: 10px;
+                background-color: #f00;
+                opacity: 0;
+                z-index: 9999;
+                animation: confetti-fall 3s ease-in-out forwards;
+            }
+
+            @keyframes confetti-fall {
+                0% {
+                    transform: translateY(-100px) rotate(0deg);
+                    opacity: 1;
+                }
+                100% {
+                    transform: translateY(100vh) rotate(360deg);
+                    opacity: 0;
+                }
+            }
+
+            .checkmark {
+                width: 100px;
+                height: 100px;
+                border-radius: 50%;
+                display: block;
+                stroke-width: 5;
+                stroke: #4bb71b;
+                stroke-miterlimit: 10;
+                margin: 10% auto;
+                box-shadow: inset 0px 0px 0px #4bb71b;
+            }
+
+            .checkmark__circle {
+                stroke-dasharray: 166;
+                stroke-dashoffset: 166;
+                stroke-width: 5;
+                stroke-miterlimit: 10;
+                stroke: #4bb71b;
+                fill: none;
+                animation: stroke 0.6s cubic-bezier(0.65, 0, 0.45, 1) forwards;
+            }
+
+            .checkmark__check {
+                transform-origin: 50% 50%;
+                stroke-dasharray: 48;
+                stroke-dashoffset: 48;
+                animation: stroke 0.3s cubic-bezier(0.65, 0, 0.45, 1) 0.8s forwards;
+            }
+
+            @keyframes stroke {
+                100% {
+                    stroke-dashoffset: 0;
+                }
+            }
+
+            @keyframes scale {
+                0%,
+                100% {
+                    transform: none;
+                }
+                50% {
+                    transform: scale3d(1.1, 1.1, 1);
+                }
+            }
+
+            @keyframes fill {
+                100% {
+                    box-shadow: inset 0px 0px 0px 60px #4bb71b;
+                }
+            }
+
+            .timeline {
+                position: relative;
+                max-width: 500px;
+                margin: 0 auto;
+            }
+
+            .timeline::after {
+                content: "";
+                position: absolute;
+                width: 4px;
+                background-color: #e5e7eb;
+                top: 0;
+                bottom: 0;
+                left: 50%;
+                margin-left: -2px;
+            }
+
+            .timeline-item {
+                padding: 10px 40px;
+                position: relative;
+                width: 50%;
+                box-sizing: border-box;
+            }
+
+            .timeline-item::after {
+                content: "";
+                position: absolute;
+                width: 20px;
+                height: 20px;
+                background-color: white;
+                border: 4px solid #3b82f6;
+                border-radius: 50%;
+                top: 15px;
+                z-index: 1;
+            }
+
+            .left {
+                left: 0;
+            }
+
+            .right {
+                left: 50%;
+            }
+
+            .left::after {
+                right: -10px;
+            }
+
+            .right::after {
+                left: -10px;
+            }
+
+            .timeline-content {
+                padding: 20px;
+                background-color: white;
+                border-radius: 8px;
+                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            }
+
+            .right::after {
+                border-color: #10b981;
+            }
+        </style>
+    </head>
+    <body class="font-sans antialiased text-gray-800 bg-gray-50">
+        <!-- 헤더 영역 -->
+        <header class="bg-white shadow-sm sticky top-0 z-50">
+            <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+                <div class="flex items-center" onclick="location.href='/'" style="cursor: pointer">
+                    <i class="fas fa-car text-blue-600 text-3xl mr-2"></i>
+                    <span class="text-2xl font-bold text-blue-600">DriveShare</span>
+                </div>
+                <nav class="hidden md:flex space-x-8" id="header-menu">
+                    <a href="/" class="text-blue-600 font-medium">홈</a>
+                    <a href="/list" class="text-gray-600 hover:text-blue-600">차량 찾기</a>
+                    <a href="#" class="text-gray-600 hover:text-blue-600">이용 방법</a>
+                    <a href="#" class="text-gray-600 hover:text-blue-600">고객센터</a>
+                </nav>
+                <div class="flex items-center space-x-4">
+                    <button class="px-4 py-2 rounded-full bg-blue-600 text-white hover:bg-blue-700 transition" onclick="location.href='/login'">로그인 / 회원가입</button>
+                    <button class="md:hidden text-gray-600">
+                        <i class="fas fa-bars text-xl"></i>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- 메인 컨텐츠 -->
+        <main class="container mx-auto px-4 py-8">
+            <div class="max-w-4xl mx-auto bg-white rounded-xl shadow-md overflow-hidden">
+                <!-- 예약 완료 헤더 -->
+                <div class="bg-gradient-to-r from-blue-500 to-blue-600 p-8 text-center text-white">
+                    <h1 class="text-3xl font-bold mb-2">예약이 완료되었습니다!</h1>
+                    <p class="text-blue-100">호스트의 승인을 기다려주세요. 승인 후 결제가 진행됩니다.</p>
+                </div>
+
+                <!-- 예약 완료 내용 -->
+                <div class="p-8">
+                    <!-- 체크마크 애니메이션 -->
+                    <svg class="checkmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52">
+                        <circle class="checkmark__circle" cx="26" cy="26" r="25" fill="none" />
+                        <path class="checkmark__check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8" />
+                    </svg>
+
+                    <!-- 예약 정보 요약 -->
+                    <div class="bg-gray-50 rounded-lg p-6 mb-8">
+                        <h2 class="text-xl font-bold mb-4 text-center">예약 정보</h2>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- 차량 정보 -->
+                            <div class="flex items-start space-x-4">
+                                <img src="https://placehold.co/600x400" alt="차량 이미지" class="w-24 h-16 object-cover rounded-lg" />
+                                <div>
+                                    <h3 class="font-bold">2023 현대 그랜저</h3>
+                                    <p class="text-sm text-gray-600">대여 기간: 2023.11.15 ~ 2023.11.17 (2일)</p>
+                                    <p class="text-sm text-gray-600">픽업 위치: 서울시 강남구 테헤란로</p>
+                                </div>
+                            </div>
+
+                            <!-- 결제 정보 -->
+                            <div class="border-l border-gray-200 pl-4">
+                                <div class="flex justify-between mb-1">
+                                    <span class="text-gray-600">대여 요금</span>
+                                    <span class="font-medium">120,000원</span>
+                                </div>
+                                <div class="flex justify-between mb-1">
+                                    <span class="text-gray-600">서비스 수수료</span>
+                                    <span class="font-medium">12,000원</span>
+                                </div>
+                                <div class="flex justify-between mt-2 pt-2 border-t border-gray-200">
+                                    <span class="font-bold">총 결제 금액</span>
+                                    <span class="font-bold text-blue-600" id="total-price">132,000원</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 예약 진행 상태 -->
+                    <div class="mb-8">
+                        <h2 class="text-xl font-bold mb-6 text-center">예약 진행 상태</h2>
+
+                        <div class="timeline">
+                            <!-- 1단계: 예약 요청 완료 -->
+                            <div class="timeline-item left">
+                                <div class="timeline-content">
+                                    <div class="flex items-center">
+                                        <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+                                            <i class="fas fa-check text-blue-600"></i>
+                                        </div>
+                                        <div>
+                                            <h3 class="font-bold">예약 요청 완료</h3>
+                                            <p class="text-sm text-gray-600">2023.11.10 14:30</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 2단계: 호스트 승인 대기 -->
+                            <div class="timeline-item right">
+                                <div class="timeline-content">
+                                    <div class="flex items-center">
+                                        <div class="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center mr-3">
+                                            <i class="fas fa-clock text-gray-500"></i>
+                                        </div>
+                                        <div>
+                                            <h3 class="font-bold">호스트 승인 대기</h3>
+                                            <p class="text-sm text-gray-600">호스트가 24시간 내에 응답할 예정입니다</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 3단계: 결제 진행 -->
+                            <div class="timeline-item left">
+                                <div class="timeline-content">
+                                    <div class="flex items-center">
+                                        <div class="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center mr-3">
+                                            <i class="fas fa-credit-card text-gray-500"></i>
+                                        </div>
+                                        <div>
+                                            <h3 class="font-bold">결제 진행</h3>
+                                            <p class="text-sm text-gray-600">호스트 승인 후 자동 결제됩니다</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 4단계: 픽업 준비 -->
+                            <div class="timeline-item right">
+                                <div class="timeline-content">
+                                    <div class="flex items-center">
+                                        <div class="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center mr-3">
+                                            <i class="fas fa-car text-gray-500"></i>
+                                        </div>
+                                        <div>
+                                            <h3 class="font-bold">픽업 준비</h3>
+                                            <p class="text-sm text-gray-600">픽업 전 상세 안내가 전송됩니다</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 다음 단계 안내 -->
+                    <div class="bg-blue-50 rounded-lg p-6 mb-8">
+                        <h2 class="text-xl font-bold mb-4 text-center">다음 단계</h2>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div class="bg-white p-4 rounded-lg text-center">
+                                <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                                    <i class="fas fa-bell text-blue-600"></i>
+                                </div>
+                                <h3 class="font-bold mb-1">알림 확인</h3>
+                                <p class="text-sm text-gray-600">호스트의 승인 알림을 확인해주세요</p>
+                            </div>
+                            <div class="bg-white p-4 rounded-lg text-center">
+                                <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                                    <i class="fas fa-file-alt text-blue-600"></i>
+                                </div>
+                                <h3 class="font-bold mb-1">예약 확인서</h3>
+                                <p class="text-sm text-gray-600">이메일로 예약 확인서가 전송됩니다</p>
+                            </div>
+                            <div class="bg-white p-4 rounded-lg text-center">
+                                <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                                    <i class="fas fa-map-marked-alt text-blue-600"></i>
+                                </div>
+                                <h3 class="font-bold mb-1">픽업 안내</h3>
+                                <p class="text-sm text-gray-600">픽업 24시간 전 상세 안내 제공</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 액션 버튼 -->
+                    <div class="flex flex-col sm:flex-row justify-center gap-4">
+                        <button
+                            class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition flex items-center justify-center"
+                            onclick="location.href='/mypage/reservations'"
+                        >
+                            <i class="fas fa-list-ul mr-2"></i>예약 내역 확인
+                        </button>
+                        <button
+                            class="px-6 py-3 bg-white hover:bg-gray-100 text-gray-800 font-medium rounded-lg transition flex items-center justify-center border border-gray-300"
+                            onclick="location.href='/list'"
+                        >
+                            <i class="fas fa-car mr-2"></i>다른 차량 보기
+                        </button>
+                        <button
+                            class="px-6 py-3 bg-white hover:bg-gray-100 text-gray-800 font-medium rounded-lg transition flex items-center justify-center border border-gray-300"
+                            onclick="window.print()"
+                        >
+                            <i class="fas fa-print mr-2"></i>예약 정보 인쇄
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- 푸터 영역 -->
+        <footer class="bg-gray-100 py-8 mt-12">
+            <div class="container mx-auto px-4">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                    <div>
+                        <div class="flex items-center mb-4">
+                            <i class="fas fa-car text-blue-600 text-xl mr-2"></i>
+                            <span class="text-lg font-bold text-gray-800">DriveShare</span>
+                        </div>
+                        <p class="text-gray-600 text-sm">DriveShare는 차량 공유 플랫폼으로 누구나 쉽게 차량을 대여하거나 호스트가 될 수 있습니다.</p>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-gray-800 mb-4">회사</h3>
+                        <ul class="space-y-2">
+                            <li><a href="#" class="text-gray-600 hover:text-blue-600 text-sm">회사 소개</a></li>
+                            <li><a href="#" class="text-gray-600 hover:text-blue-600 text-sm">채용 정보</a></li>
+                            <li><a href="#" class="text-gray-600 hover:text-blue-600 text-sm">뉴스룸</a></li>
+                            <li><a href="#" class="text-gray-600 hover:text-blue-600 text-sm">블로그</a></li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-gray-800 mb-4">지원</h3>
+                        <ul class="space-y-2">
+                            <li><a href="#" class="text-gray-600 hover:text-blue-600 text-sm">도움말 센터</a></li>
+                            <li><a href="#" class="text-gray-600 hover:text-blue-600 text-sm">안전 정보</a></li>
+                            <li><a href="#" class="text-gray-600 hover:text-blue-600 text-sm">취소 옵션</a></li>
+                            <li><a href="#" class="text-gray-600 hover:text-blue-600 text-sm">고객 지원</a></li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-gray-800 mb-4">약관</h3>
+                        <ul class="space-y-2">
+                            <li><a href="#" class="text-gray-600 hover:text-blue-600 text-sm">이용약관</a></li>
+                            <li><a href="#" class="text-gray-600 hover:text-blue-600 text-sm">개인정보 처리방침</a></li>
+                            <li><a href="#" class="text-gray-600 hover:text-blue-600 text-sm">쿠키 정책</a></li>
+                            <li><a href="#" class="text-gray-600 hover:text-blue-600 text-sm">보험 정보</a></li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="border-t border-gray-200 mt-8 pt-8 flex flex-col md:flex-row justify-between items-center">
+                    <div class="text-gray-500 text-sm mb-4 md:mb-0">© 2023 DriveShare Inc. All rights reserved.</div>
+                    <div class="flex space-x-6">
+                        <a href="#" class="text-gray-500 hover:text-blue-600"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#" class="text-gray-500 hover:text-blue-600"><i class="fab fa-twitter"></i></a>
+                        <a href="#" class="text-gray-500 hover:text-blue-600"><i class="fab fa-instagram"></i></a>
+                        <a href="#" class="text-gray-500 hover:text-blue-600"><i class="fab fa-youtube"></i></a>
+                    </div>
+                </div>
+            </div>
+        </footer>
+
+        <script>
+            // 페이지 로드 시 컨페티 효과
+            document.addEventListener("DOMContentLoaded", function () {
+                createConfetti();
+
+                // URL에서 예약 정보 가져오기 (실제 구현에서는 서버에서 데이터를 가져와야 함)
+                const urlParams = new URLSearchParams(window.location.search);
+                const carName = urlParams.get("car") || "2023 현대 그랜저";
+                const startDate = urlParams.get("start") || "2023.11.15";
+                const endDate = urlParams.get("end") || "2023.11.17";
+                const totalPrice = urlParams.get("price") || "132,000";
+
+                // DOM 요소 업데이트
+                document.querySelector(".timeline-content h3").textContent = carName;
+                document.querySelector(".timeline-content p:nth-of-type(1)").textContent = `대여 기간: ${startDate} ~ ${endDate} (2일)`;
+                document.querySelector("#total-price").textContent = `${totalPrice}원`;
+            });
+
+            function createConfetti() {
+                const colors = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6"];
+
+                for (let i = 0; i < 50; i++) {
+                    const confetti = document.createElement("div");
+                    confetti.className = "confetti";
+                    confetti.style.left = Math.random() * 100 + "vw";
+                    confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                    confetti.style.width = Math.random() * 10 + 5 + "px";
+                    confetti.style.height = Math.random() * 10 + 5 + "px";
+                    confetti.style.animationDuration = Math.random() * 3 + 2 + "s";
+                    confetti.style.animationDelay = Math.random() * 2 + "s";
+
+                    document.body.appendChild(confetti);
+
+                    // 애니메이션 종료 후 제거
+                    setTimeout(() => {
+                        confetti.remove();
+                    }, 5000);
+                }
+            }
+        </script>
+    </body>
+</html>

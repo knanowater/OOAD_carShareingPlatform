@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="ko">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>DriveShare - 차량 예약</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script src="/scripts/script.js"></script>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+        <style>
+            .checkout-steps {
+                counter-reset: step;
+            }
+            .checkout-step:before {
+                counter-increment: step;
+                content: counter(step);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: 30px;
+                height: 30px;
+                border-radius: 50%;
+                background-color: #e5e7eb;
+                color: #6b7280;
+                font-weight: bold;
+                margin-right: 10px;
+            }
+            .checkout-step.active:before {
+                background-color: #3b82f6;
+                color: white;
+            }
+            .checkout-step.completed:before {
+                background-color: #10b981;
+                color: white;
+                content: "\f00c";
+                font-family: "Font Awesome 6 Free";
+                font-weight: 900;
+            }
+            .payment-method {
+                transition: all 0.2s ease;
+            }
+            .payment-method:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            }
+            .payment-method.selected {
+                border-color: #3b82f6;
+                background-color: #f0f7ff;
+            }
+            .summary-card {
+                position: sticky;
+                top: 100px;
+            }
+            .date-picker {
+                background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%239C9C9C' viewBox='0 0 16 16'%3E%3Cpath d='M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4H1z'/%3E%3C/svg%3E");
+                background-repeat: no-repeat;
+                background-position: right 0.75rem center;
+                background-size: 16px 12px;
+            }
+        </style>
+    </head>
+    <body class="font-sans antialiased text-gray-800 bg-gray-50">
+        <!-- 헤더 영역 -->
+        <header class="bg-white shadow-sm sticky top-0 z-50">
+            <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+                <div class="flex items-center" onclick="location.href='/'" style="cursor: pointer">
+                    <i class="fas fa-car text-blue-600 text-3xl mr-2"></i>
+                    <span class="text-2xl font-bold text-blue-600">DriveShare</span>
+                </div>
+                <nav class="hidden md:flex space-x-8" id="header-menu">
+                    <a href="/" class="text-blue-600 font-medium">홈</a>
+                    <a href="/list" class="text-gray-600 hover:text-blue-600">차량 찾기</a>
+                    <a href="#" class="text-gray-600 hover:text-blue-600">이용 방법</a>
+                    <a href="#" class="text-gray-600 hover:text-blue-600">고객센터</a>
+                </nav>
+                <div class="flex items-center space-x-4">
+                    <button class="px-4 py-2 rounded-full bg-blue-600 text-white hover:bg-blue-700 transition" onclick="location.href='/login'">로그인 / 회원가입</button>
+                    <button class="md:hidden text-gray-600">
+                        <i class="fas fa-bars text-xl"></i>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- 메인 컨텐츠 -->
+        <main class="container mx-auto px-4 py-8">
+            <div class="flex flex-col lg:flex-row gap-8">
+                <!-- 예약 폼 -->
+                <div class="lg:w-2/3">
+                    <div class="bg-white rounded-lg shadow p-6 mb-6">
+                        <h2 class="text-2xl font-bold mb-6">예약 정보</h2>
+
+                        <!-- 차량 정보 요약 -->
+                        <div class="border-b border-gray-200 pb-6 mb-6">
+                            <div class="flex flex-col sm:flex-row gap-4">
+                                <img src="" alt="차량 이미지" class="w-full sm:w-48 h-32 object-cover rounded-lg" id="car-image" />
+                                <div>
+                                    <h3 class="text-xl font-bold" id="car-name"></h3>
+                                    <div class="flex items-center mt-1 mb-2">
+                                        <div class="flex text-yellow-400 fas fa-star" id="car-rating"></div>
+                                        <span class="ml-2 text-xl font-bold" id="car-rating-num"></span>
+                                    </div>
+                                    <div class="grid grid-cols-2 gap-2 text-sm">
+                                        <div><i class="fas fa-gas-pump text-gray-500 mr-2"></i> <span id="car-fuel-type"></span></div>
+                                        <div><i class="fas fa-cogs text-gray-500 mr-2"></i> <span id="car-transmission"></span></div>
+                                        <div><i class="fas fa-user-friends text-gray-500 mr-2"></i> <span id="car-seat-num"></span>인승</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 날짜 선택 -->
+                        <div class="mb-6">
+                            <h3 class="text-lg font-semibold mb-3">대여 기간</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-gray-700 text-sm font-medium mb-1">대여일</label>
+                                    <div class="relative">
+                                        <input type="date" id="rental-date" class="w-full pr-3 pl-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-gray-700 text-sm font-medium mb-1">반납일</label>
+                                    <div class="relative">
+                                        <input type="date" id="return-date" class="w-full pr-3 pl-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 픽업 위치 -->
+                        <div class="mb-6">
+                            <h3 class="text-lg font-semibold mb-3">픽업 위치</h3>
+                            <div class="bg-gray-100 rounded-md p-3 flex items-center">
+                                <i class="fas fa-map-marker-alt text-gray-600 mr-3"></i>
+                                <span class="text-gray-800 font-medium" id="car-location"></span>
+                            </div>
+                            <div class="mt-2 text-sm text-gray-600"><i class="fas fa-info-circle mr-1"></i> 정확한 픽업 위치는 예약 확정 후 안내됩니다.</div>
+                        </div>
+
+                        <!-- 특별 요청 사항 -->
+                        <div>
+                            <h3 class="text-lg font-semibold mb-3">특별 요청 사항</h3>
+                            <textarea
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                rows="3"
+                                placeholder="호스트에게 전달할 특별 요청 사항이 있다면 입력해주세요. (100자 이내)"
+                                id="request"
+                                maxlength="100"
+                            ></textarea>
+                        </div>
+                    </div>
+
+                    <!-- 결제 방법 선택 -->
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <h2 class="text-2xl font-bold mb-6">결제 방법</h2>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="payment-method border-2 border-gray-200 rounded-lg p-4 cursor-pointer" onclick="selectPaymentMethod(this)">
+                                <div class="flex items-center">
+                                    <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+                                        <i class="fas fa-credit-card text-blue-600"></i>
+                                    </div>
+                                    <span class="font-medium">신용/체크카드</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 선택된 결제 방법 상세 정보 -->
+                        <div id="payment-details" class="mt-6 hidden">
+                            <h3 class="text-lg font-semibold mb-3">신용/체크카드 정보</h3>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-gray-700 text-sm font-medium mb-1">카드 번호</label>
+                                    <input
+                                        type="text"
+                                        placeholder="1234 5678 9012 3456"
+                                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        id="card-number"
+                                    />
+                                </div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-gray-700 text-sm font-medium mb-1">유효기간</label>
+                                        <input
+                                            type="text"
+                                            placeholder="MM/YY"
+                                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            id="expiry-date"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label class="block text-gray-700 text-sm font-medium mb-1">CVC</label>
+                                        <input type="text" placeholder="CVC" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" id="cvc" />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-gray-700 text-sm font-medium mb-1">카드 소유자 이름</label>
+                                    <input
+                                        type="text"
+                                        placeholder="카드에 표시된 이름"
+                                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        id="cardholder-name"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 예약 요약 및 결제 -->
+                <div class="lg:w-1/3">
+                    <div class="summary-card bg-white rounded-lg shadow p-6">
+                        <h2 class="text-2xl font-bold mb-6">예약 요약</h2>
+
+                        <div class="space-y-4">
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">대여 기간 (<span id="summary-rental-days"></span>일)</span>
+                                <span class="font-medium" id="summary-rental-total"></span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">서비스 수수료 (1일 요금의 10%)</span>
+                                <span class="font-medium" id="commission"></span>
+                            </div>
+
+                            <div class="border-t border-gray-200 pt-4">
+                                <div class="flex justify-between">
+                                    <span class="text-lg font-bold">총 결제 금액</span>
+                                    <span class="text-xl font-bold text-blue-600" id="summary-total"></span>
+                                </div>
+                            </div>
+
+                            <div class="mt-6 text-sm text-gray-500">
+                                <p class="mb-2">예약 완료 후 호스트의 승인이 필요합니다.</p>
+                                <p>호스트가 예약을 확정하면 결제가 진행됩니다.</p>
+                            </div>
+
+                            <button class="w-full mt-6 py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition flex items-center justify-center" onclick="submitReservation()">
+                                예약 요청하기
+                            </button>
+
+                            <div class="mt-4 text-xs text-gray-500 text-center">
+                                <p>
+                                    예약 버튼을 클릭하면 DriveShare의 <a href="#" class="text-blue-600 hover:underline">이용약관</a> 및
+                                    <a href="#" class="text-blue-600 hover:underline">개인정보 처리방침</a>에 동의하는 것으로 간주됩니다.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- 푸터 영역 -->
+        <footer class="bg-gray-100 py-8 mt-12">
+            <div class="container mx-auto px-4">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                    <div>
+                        <div class="flex items-center mb-4">
+                            <i class="fas fa-car text-blue-600 text-xl mr-2"></i>
+                            <span class="text-lg font-bold text-gray-800">DriveShare</span>
+                        </div>
+                        <p class="text-gray-600 text-sm">DriveShare는 차량 공유 플랫폼으로 누구나 쉽게 차량을 대여하거나 호스트가 될 수 있습니다.</p>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-gray-800 mb-4">회사</h3>
+                        <ul class="space-y-2">
+                            <li><a href="#" class="text-gray-600 hover:text-blue-600 text-sm">회사 소개</a></li>
+                            <li><a href="#" class="text-gray-600 hover:text-blue-600 text-sm">채용 정보</a></li>
+                            <li><a href="#" class="text-gray-600 hover:text-blue-600 text-sm">뉴스룸</a></li>
+                            <li><a href="#" class="text-gray-600 hover:text-blue-600 text-sm">블로그</a></li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-gray-800 mb-4">지원</h3>
+                        <ul class="space-y-2">
+                            <li><a href="#" class="text-gray-600 hover:text-blue-600 text-sm">도움말 센터</a></li>
+                            <li><a href="#" class="text-gray-600 hover:text-blue-600 text-sm">안전 정보</a></li>
+                            <li><a href="#" class="text-gray-600 hover:text-blue-600 text-sm">취소 옵션</a></li>
+                            <li><a href="#" class="text-gray-600 hover:text-blue-600 text-sm">고객 지원</a></li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-gray-800 mb-4">약관</h3>
+                        <ul class="space-y-2">
+                            <li><a href="#" class="text-gray-600 hover:text-blue-600 text-sm">이용약관</a></li>
+                            <li><a href="#" class="text-gray-600 hover:text-blue-600 text-sm">개인정보 처리방침</a></li>
+                            <li><a href="#" class="text-gray-600 hover:text-blue-600 text-sm">쿠키 정책</a></li>
+                            <li><a href="#" class="text-gray-600 hover:text-blue-600 text-sm">보험 정보</a></li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="border-t border-gray-200 mt-8 pt-8 flex flex-col md:flex-row justify-between items-center">
+                    <div class="text-gray-500 text-sm mb-4 md:mb-0">© 2023 DriveShare Inc. All rights reserved.</div>
+                    <div class="flex space-x-6">
+                        <a href="#" class="text-gray-500 hover:text-blue-600"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#" class="text-gray-500 hover:text-blue-600"><i class="fab fa-twitter"></i></a>
+                        <a href="#" class="text-gray-500 hover:text-blue-600"><i class="fab fa-instagram"></i></a>
+                        <a href="#" class="text-gray-500 hover:text-blue-600"><i class="fab fa-youtube"></i></a>
+                    </div>
+                </div>
+            </div>
+        </footer>
+
+        <script>
+            let car_id,
+                daily_rate = 0,
+                comission = 0;
+            // 결제 방법 선택 함수
+            function selectPaymentMethod(element) {
+                // 모든 결제 방법에서 selected 클래스 제거
+                document.querySelectorAll(".payment-method").forEach((el) => {
+                    el.classList.remove("selected");
+                });
+
+                // 선택된 결제 방법에 selected 클래스 추가
+                element.classList.add("selected");
+
+                // 결제 상세 정보 표시
+                const paymentDetails = document.getElementById("payment-details");
+                paymentDetails.classList.remove("hidden");
+
+                // TODO: 선택된 결제 방법에 따라 다른 상세 정보 표시
+            }
+
+            // 예약 제출 함수
+            async function submitReservation() {
+                const urlParams = new URLSearchParams(window.location.search);
+                const carId = urlParams.get("id");
+                console.log(carId);
+
+                // 간단한 유효성 검사
+                const startDateStr = document.querySelector("#rental-date").value;
+                const endDateStr = document.querySelector("#return-date").value;
+
+                if (!startDateStr || !endDateStr) {
+                    alert("대여 기간을 선택해주세요.");
+                    return;
+                }
+
+                const startDate = new Date(startDateStr);
+                const endDate = new Date(endDateStr);
+
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+
+                if (startDate > endDate) {
+                    alert("대여 기간이 잘못되었습니다.");
+                    return;
+                }
+
+                if (startDate < today) {
+                    alert("대여일은 오늘 이후여야 합니다.");
+                    return;
+                }
+
+                // 결제 방법 선택 확인
+                const selectedPayment = document.querySelector(".payment-method.selected");
+                if (!selectedPayment) {
+                    alert("결제 방법을 선택해주세요.");
+                    return;
+                }
+
+                const carNumber = document.querySelector("#card-number");
+                const expiryDate = document.querySelector("#expiry-date");
+                const cvc = document.querySelector("#cvc");
+                const cardholderName = document.querySelector("#cardholder-name");
+
+                if (!carNumber.value || !expiryDate.value || !cvc.value || !cardholderName.value) {
+                    alert("카드 정보를 모두 입력해주세요.");
+                    return;
+                }
+
+                // 예약 확인 대화상자 표시
+                if (confirm("예약을 요청하시겠습니까?")) {
+                    const authToken = localStorage.getItem("token");
+                    try {
+                        const response = await fetch("/api/reservations/request", {
+                            // Replace with your actual backend API endpoint for creating reservations
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json",
+                                Authorization: `Bearer ${authToken}`,
+                            },
+                            body: JSON.stringify({
+                                car_id: parseInt(carId),
+                                rental_date: startDate.toISOString().split("T")[0],
+                                return_date: endDate.toISOString().split("T")[0],
+                                request: document.querySelector("#request").value,
+                            }),
+                        });
+
+                        if (response.ok) {
+                            const data = await response.json(); // Or response.text() if your backend doesn't return JSON
+                            const reservationId = data.reservation_id; // Assuming your backend returns the reservation ID in JSON
+
+                            window.location.href = `/reservation/success?id=${reservationId}`;
+                        } else {
+                            const errorData = await response.json(); // Or response.text()
+                            alert(`예약 요청 실패: ${errorData.message || response.statusText}`);
+                        }
+                    } catch (error) {
+                        console.error("예약 요청 중 오류 발생:", error);
+                        alert("예약 요청 중 오류가 발생했습니다.");
+                    }
+                }
+            }
+            async function loadCarDetails(carId) {
+                try {
+                    const response = await fetch(`/api/cars/${carId}`); // 백엔드 API 엔드포인트
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    const car = await response.json();
+
+                    daily_rate = car.daily_rate;
+                    comission = car.daily_rate / 10;
+
+                    // HTML 요소에 차량 정보 삽입
+                    document.getElementById("car-image").src = car.image_url || "https://placehold.co/600x400";
+                    document.getElementById("car-name").textContent = `${car.year} ${car.manufacture} ${car.name}`;
+                    document.getElementById("car-fuel-type").textContent = car.fuel_type;
+                    document.getElementById("car-transmission").textContent = car.transmission;
+                    document.getElementById("car-seat-num").textContent = car.seat_num;
+                    document.getElementById("car-location").textContent = car.location;
+                    document.getElementById("car-rating-num").textContent = parseFloat(car.rating).toFixed(1);
+                    document.getElementById("commission").textContent = `${(car.daily_rate / 10).toLocaleString()}원`;
+                } catch (error) {
+                    console.error("차량 정보 로딩 실패:", error);
+                    alert("차량 정보를 불러오는 데 실패했습니다.");
+                    // 예외 처리 (예: 이전 페이지로 이동)
+                    window.history.back();
+                }
+            }
+
+            const cardNumberInput = document.querySelector('input[placeholder="1234 5678 9012 3456"]');
+            cardNumberInput.addEventListener("input", function () {
+                // 숫자 이외의 문자 제거
+                const cleanedValue = this.value.replace(/\D/g, "");
+                let formattedValue = "";
+
+                // 4자리마다 공백 추가
+                for (let i = 0; i < cleanedValue.length; i++) {
+                    formattedValue += cleanedValue[i];
+                    if ((i + 1) % 4 === 0 && i !== cleanedValue.length - 1) {
+                        formattedValue += " ";
+                    }
+                }
+                this.value = formattedValue;
+
+                if (this.value.length > 19) {
+                    this.value = this.value.slice(0, 19);
+                }
+            });
+
+            const expiryDateInput = document.querySelector('input[placeholder="MM/YY"]');
+            expiryDateInput.addEventListener("input", function () {
+                // 숫자 이외의 문자 제거
+                const cleanedValue = this.value.replace(/\D/g, "");
+                let formattedValue = "";
+
+                if (cleanedValue.length >= 1) {
+                    formattedValue += cleanedValue.substring(0, 2);
+                }
+                if (cleanedValue.length >= 3) {
+                    formattedValue += "/" + cleanedValue.substring(2, 4);
+                }
+                this.value = formattedValue;
+
+                // 입력 길이가 2자리가 되면 자동으로 '/' 추가
+                if (this.value.length === 2 && !this.value.includes("/")) {
+                    this.value += "/";
+                }
+
+                // 입력 길이가 5자리를 넘지 않도록 제한 (MM/YY)
+                if (this.value.length > 5) {
+                    this.value = this.value.slice(0, 5);
+                }
+            });
+
+            const cvcInput = document.querySelector('input[placeholder="CVC"]');
+            cvcInput.addEventListener("input", function () {
+                // 숫자 이외의 문자 제거
+                this.value = this.value.replace(/\D/g, "");
+
+                // 최대 3자리까지만 허용
+                if (this.value.length > 3) {
+                    this.value = this.value.slice(0, 3);
+                }
+            });
+
+            window.addEventListener("DOMContentLoaded", function () {
+                // 차량 정보 로드
+                {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    carId = urlParams.get("id");
+
+                    // carId가 존재하는 경우, 차량 정보 로드
+                    if (carId) {
+                        loadCarDetails(carId).then(() => {
+                            // Promise가 완료된 후 실행
+                            // 기본 결제 방법 선택 및 날짜 설정
+                            {
+                                // 기본으로 첫 번째 결제 방법 선택
+                                const firstPaymentMethod = document.querySelector(".payment-method");
+                                if (firstPaymentMethod) {
+                                    firstPaymentMethod.classList.add("selected");
+                                    document.getElementById("payment-details").classList.remove("hidden");
+                                }
+
+                                // 오늘 날짜를 기본 대여일로 설정
+                                const today = new Date();
+                                const tomorrow = new Date();
+                                tomorrow.setDate(today.getDate() + 1);
+
+                                const formatDate = (date) => {
+                                    const year = date.getFullYear();
+                                    const month = (date.getMonth() + 1).toString().padStart(2, "0");
+                                    const day = date.getDate().toString().padStart(2, "0");
+                                    return `${year}-${month}-${day}`;
+                                };
+                                console.log(formatDate(today));
+                                document.querySelector("#rental-date").value = formatDate(today);
+                                document.querySelector("#return-date").value = formatDate(tomorrow);
+                            }
+                            // 대여 기간 계산 및 요금 업데이트
+                            {
+                                const rentalDateInput = document.getElementById("rental-date");
+                                const returnDateInput = document.getElementById("return-date");
+
+                                const calculateRentalPeriod = () => {
+                                    const startDate = new Date(rentalDateInput.value);
+                                    const endDate = new Date(returnDateInput.value);
+
+                                    if (isNaN(startDate) || isNaN(endDate) || startDate >= endDate) {
+                                        return 0; // 유효하지 않은 경우 0 반환
+                                    }
+
+                                    const timeDiff = endDate.getTime() - startDate.getTime();
+                                    const days = Math.ceil(timeDiff / (1000 * 3600 * 24));
+                                    return days;
+                                };
+
+                                const updateRentalFee = () => {
+                                    const dailyRate = daily_rate;
+                                    const rentalDays = calculateRentalPeriod();
+                                    const rentalFee = dailyRate * rentalDays;
+
+                                    document.getElementById("summary-rental-days").textContent = rentalDays.toLocaleString();
+                                    document.querySelector("#summary-rental-total").textContent = `${rentalFee.toLocaleString()}원`;
+
+                                    const totalFee = rentalFee + comission;
+                                    document.getElementById("summary-total").textContent = `${totalFee.toLocaleString()}원`;
+                                };
+
+                                // 초기 계산 및 업데이트
+                                updateRentalFee();
+
+                                // 날짜 변경 시 요금 업데이트
+                                rentalDateInput.addEventListener("change", updateRentalFee);
+                                returnDateInput.addEventListener("change", updateRentalFee);
+                            }
+                        });
+                    } else {
+                        alert("차량 ID가 없습니다.");
+                        window.history.back();
+                    }
+                }
+            });
+        </script>
+    </body>
+</html>
