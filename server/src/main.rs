@@ -311,7 +311,7 @@ pub async fn get_car_by_id(
 #[post("/api/reservations/request", data = "<reservation_data>")]
 pub async fn reservation_request(
     pool: &State<MySqlPool>,
-    auth_token: AuthToken, // AuthToken 가드를 사용하여 사용자 정보 획득
+    auth_token: AuthToken,
     reservation_data: Json<ReservationData>,
 ) -> Result<Json<serde_json::Value>, (Status, String)> {
     let user_id = auth_token.0.sub.parse::<i32>().map_err(|_| {
@@ -332,7 +332,6 @@ pub async fn reservation_request(
 
     let data = reservation_data.into_inner();
 
-    // 차량 상태 확인
     let car_status: Option<String> = sqlx::query_scalar("SELECT status FROM cars WHERE id = ?")
         .bind(data.car_id)
         .fetch_optional(&mut *conn)
@@ -381,9 +380,36 @@ pub async fn reservation_request(
             })?;
 
             let reservation_id = result.last_insert_id();
-            Ok(Json(
-                serde_json::json!({ "reservation_id": reservation_id }),
-            ))
+            // 예약 성공 시 차량 상태를 'Unavailable'로 업데이트
+            let update_car_result = sqlx::query!(
+                "UPDATE cars SET status = 'Unavailable' WHERE id = ?",
+                data.car_id
+            )
+            .execute(&mut *conn)
+            .await
+            .map_err(|e| {
+                eprintln!("Failed to update car status: {}", e);
+                // 차량 상태 업데이트 실패는 심각한 오류이므로 롤백 또는 추가 로깅 고려
+                (
+                    Status::InternalServerError,
+                    format!("차량 상태를 업데이트하는 데 실패했습니다: {}", e),
+                )
+            })?;
+
+            if update_car_result.rows_affected() > 0 {
+                Ok(Json(
+                    serde_json::json!({ "reservation_id": reservation_id }),
+                ))
+            } else {
+                // 차량 상태 업데이트가 반영되지 않았을 경우 (드문 경우)
+                eprintln!(
+                    "Warning: Car status update not applied for car ID {}",
+                    data.car_id
+                );
+                Ok(Json(
+                    serde_json::json!({ "reservation_id": reservation_id }),
+                ))
+            }
         }
     }
 }
@@ -563,8 +589,8 @@ async fn api_return_car(
         Status::InternalServerError
     })?;
 
-    // 예약 정보 확인 및 사용자 ID 일치 여부 확인
-    let result = sqlx::query!(
+    // 예약 정보 확인 및 사용자 ID 일치 여부 확인, car_id 가져오기
+    let reservation_info = sqlx::query!(
         "SELECT user_id, car_id FROM reservation WHERE id = ?",
         reservation_id
     )
@@ -575,13 +601,14 @@ async fn api_return_car(
         Status::NotFound // 예약 정보가 없으면 404 Not Found
     })?;
 
-    let owner_user_id = result.user_id;
-    let car_id = result.car_id;
+    let owner_user_id = reservation_info.user_id;
+    let car_id = reservation_info.car_id;
 
     if user_id != owner_user_id {
         return Err(Status::Forbidden); // 예약한 사용자와 반납 요청자가 다르면 403 Forbidden
     }
-    let update_result = sqlx::query!(
+
+    let update_reservation_result = sqlx::query!(
         "UPDATE reservation SET reservation_status = 'completed', return_date = ? WHERE id = ?",
         Utc::now(),
         reservation_id
@@ -593,12 +620,25 @@ async fn api_return_car(
         Status::InternalServerError
     })?;
 
-    if update_result.rows_affected() > 0 {
+    if update_reservation_result.rows_affected() > 0 {
+        // 차량 반납 성공 후 차량 상태를 'Available'로 업데이트 (결과 확인 없이 시도)
+        let update_car_result =
+            sqlx::query!("UPDATE cars SET status = 'Available' WHERE id = ?", car_id)
+                .execute(&mut *conn)
+                .await; // .map_err를 제거하여 오류를 Result로 처리
+
+        if let Err(e) = update_car_result {
+            eprintln!(
+                "Warning: Failed to update car status for car ID {}: {}",
+                car_id, e
+            );
+        }
+
         Ok(Json(ApiResponse {
             message: "차량이 성공적으로 반납 처리되었습니다.".to_string(),
         }))
     } else {
-        Err(Status::InternalServerError) // 업데이트 실패
+        Err(Status::InternalServerError) // 예약 업데이트 실패
     }
 }
 
@@ -621,9 +661,9 @@ async fn api_cancel_reservation(
         Status::InternalServerError
     })?;
 
-    // 예약 정보 확인 및 사용자 ID 일치 여부 확인
-    let result = sqlx::query!(
-        "SELECT user_id FROM reservation WHERE id = ?",
+    // 예약 정보 확인 및 사용자 ID 일치 여부 확인과 car_id 가져오기
+    let reservation_info = sqlx::query!(
+        "SELECT user_id, car_id FROM reservation WHERE id = ?",
         reservation_id
     )
     .fetch_one(&mut *conn)
@@ -633,13 +673,14 @@ async fn api_cancel_reservation(
         Status::NotFound // 예약 정보가 없으면 404 Not Found
     })?;
 
-    let owner_user_id = result.user_id;
+    let owner_user_id = reservation_info.user_id;
+    let car_id = reservation_info.car_id;
 
     if user_id != owner_user_id {
         return Err(Status::Forbidden); // 예약한 사용자와 취소 요청자가 다르면 403 Forbidden
     }
 
-    let update_result = sqlx::query!(
+    let update_reservation_result = sqlx::query!(
         "UPDATE reservation SET reservation_status = 'canceled' WHERE id = ?",
         reservation_id
     )
@@ -650,11 +691,24 @@ async fn api_cancel_reservation(
         Status::InternalServerError
     })?;
 
-    if update_result.rows_affected() > 0 {
+    if update_reservation_result.rows_affected() > 0 {
+        // 예약 취소 성공 후 차량 상태를 'Available'로 업데이트 (결과 확인 없이 시도)
+        let update_car_result =
+            sqlx::query!("UPDATE cars SET status = 'Available' WHERE id = ?", car_id)
+                .execute(&mut *conn)
+                .await; // .map_err를 제거하여 오류를 Result로 처리
+
+        if let Err(e) = update_car_result {
+            eprintln!(
+                "Warning: Failed to update car status for car ID {}: {}",
+                car_id, e
+            );
+        }
+
         Ok(Json(ApiResponse {
             message: "예약이 성공적으로 취소되었습니다.".to_string(),
         }))
     } else {
-        Err(Status::InternalServerError) // 업데이트 실패
+        Err(Status::InternalServerError) // 예약 업데이트 실패
     }
-}
+} // 예약 취소 성공 후 차량 상태
