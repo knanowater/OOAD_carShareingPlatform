@@ -329,7 +329,7 @@
                 const carId = urlParams.get("id");
                 console.log(carId);
 
-                // 간단한 유효성 검사 (대여 기간, 결제 방법 등 기존 유효성 검사 유지)
+                // 간단한 유효성 검사 (대여 기간, 결제 방법, 카드 정보 등 기존 유효성 검사 유지)
                 const startDateStr = document.querySelector("#rental-date").value;
                 const endDateStr = document.querySelector("#return-date").value;
 
@@ -393,9 +393,12 @@
                     const totalPrice = rentalFee + dailyRate / 10;
 
                     const authToken = localStorage.getItem("token");
-                    let reservationId;
+                    let reservationId = null;
+                    let paymentSuccessful = false;
+                    let transactionId = null;
 
                     try {
+                        // 1. 예약 API 호출
                         const reservationResponse = await fetch("/api/reservations/request", {
                             method: "POST",
                             headers: {
@@ -415,12 +418,12 @@
                             const reservationData = await reservationResponse.json();
                             reservationId = reservationData.reservation_id;
 
-                            // 결제 API 호출
+                            // 2. 결제 API 호출 (예약 성공 시에만)
                             const paymentResponse = await fetch("/api/pay", {
                                 method: "POST",
                                 headers: {
                                     "Content-Type": "application/json",
-                                    Authorization: `Bearer ${authToken}`, // 필요한 경우
+                                    Authorization: `Bearer ${authToken}`,
                                 },
                                 body: JSON.stringify({
                                     card_number: cardNumber,
@@ -437,15 +440,17 @@
                             if (paymentResponse.ok) {
                                 const paymentData = await paymentResponse.json();
                                 if (paymentData.success) {
-                                    window.location.href = `/reservation/success?id=${reservationId}&payment_id=${paymentData.transaction_id || "가상"}`; // 결제 성공 페이지로 이동
+                                    window.location.href = `/reservation/success?id=${reservationId}&payment_id=${paymentData.transaction_id || "가상"}`;
                                 } else {
                                     alert(`결제 실패: ${paymentData.message}`);
-                                    // 결제 실패 시 예약 취소 또는 다른 처리 로직 추가
+                                    await cancelReservation(reservationId, authToken);
+                                    reservationId = null; // 예약 ID 무효화
                                 }
                             } else {
                                 const errorData = await paymentResponse.json();
                                 alert(`결제 API 호출 실패: ${errorData.message || paymentResponse.statusText}`);
-                                // 결제 API 호출 실패 시 예약 취소 또는 다른 처리 로직 추가
+                                await cancelReservation(reservationId, authToken);
+                                reservationId = null; // 예약 ID 무효화
                             }
                         } else {
                             const errorData = await reservationResponse.json();
@@ -454,9 +459,44 @@
                     } catch (error) {
                         console.error("예약 또는 결제 요청 중 오류 발생:", error);
                         alert("예약 또는 결제 요청 중 오류가 발생했습니다.");
+                        if (reservationId) {
+                            await cancelReservation(reservationId, authToken);
+                        }
                     }
                 }
             }
+
+            // 예약 취소 API 호출 함수
+            async function cancelReservation(reservationId, authToken) {
+                if (!reservationId || !authToken) {
+                    console.warn("취소할 예약 ID 또는 인증 토큰이 없습니다.");
+                    return;
+                }
+                try {
+                    const cancelResponse = await fetch(`/api/reservations/cancel/${reservationId}`, {
+                        method: "DELETE",
+                        headers: {
+                            Authorization: `Bearer ${authToken}`,
+                        },
+                    });
+
+                    if (cancelResponse.ok) {
+                        console.log("예약 취소 성공 (서버 응답 상태 코드: 200):");
+                        alert("결제 실패로 인해 예약이 취소되었습니다.");
+                    } else if (cancelResponse.status === 403) {
+                        alert("예약을 취소할 권한이 없습니다.");
+                    } else if (cancelResponse.status === 404) {
+                        alert("취소하려는 예약이 존재하지 않습니다.");
+                    } else {
+                        console.error("예약 취소 실패 (서버 응답 상태 코드:", cancelResponse.status, ")");
+                        alert(`예약 취소에 실패했습니다. 오류 코드: ${cancelResponse.status}`);
+                    }
+                } catch (error) {
+                    console.error("예약 취소 요청 중 네트워크 오류:", error);
+                    alert("예약 취소 중 네트워크 오류가 발생했습니다. 인터넷 연결을 확인해주세요.");
+                }
+            }
+
             async function loadCarDetails(carId) {
                 try {
                     const response = await fetch(`/api/cars/${carId}`); // 백엔드 API 엔드포인트

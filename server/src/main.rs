@@ -18,8 +18,10 @@ use rocket::fs::NamedFile;
 use rocket::http::Status;
 use rocket::serde::json::Json;
 use rocket::{Rocket, get, routes};
+use rocket::{delete, post};
 use serde::{Deserialize, Serialize};
 use server::{CarInfo, add_car, update_car};
+use sqlx::Acquire;
 use sqlx::MySqlPool;
 use sqlx::mysql::MySqlPoolOptions;
 use std::env;
@@ -73,6 +75,7 @@ async fn main() -> Result<(), sqlx::Error> {
                 api_cancel_reservation,
                 api_overdue_fee_info,
                 process_payment,
+                cancel_reservation_due_to_payment_failed,
             ],
         )
         .mount(
@@ -421,6 +424,101 @@ pub async fn reservation_request(
                 ))
             }
         }
+    }
+}
+
+#[delete("/api/reservations/cancel/<id>")]
+pub async fn cancel_reservation_due_to_payment_failed(
+    id: i32,
+    pool: &State<MySqlPool>,
+    auth_token: AuthToken,
+) -> Result<Status, Status> {
+    let user_id = auth_token
+        .0
+        .sub
+        .parse::<i32>()
+        .map_err(|_| Status::Unauthorized)?;
+    let mut conn = pool
+        .acquire()
+        .await
+        .map_err(|_| Status::InternalServerError)?;
+
+    let reservation_result = sqlx::query!("SELECT car_id FROM reservation WHERE id = ?", id)
+        .fetch_optional(&mut *conn)
+        .await
+        .map_err(|_| Status::InternalServerError)?;
+
+    match reservation_result {
+        Some(reservation) => {
+            // 권한 확인 (예약 소유자)
+            let reservation_user_id: Option<i32> =
+                sqlx::query_scalar!("SELECT user_id FROM reservation WHERE id = ?", id)
+                    .fetch_optional(&mut *conn)
+                    .await
+                    .map_err(|_| Status::InternalServerError)?;
+
+            if let Some(res_user_id) = reservation_user_id {
+                if res_user_id == user_id {
+                    // 트랜잭션 시작
+                    let mut tx = conn
+                        .begin()
+                        .await
+                        .map_err(|_| Status::InternalServerError)?;
+
+                    // 예약 삭제
+                    let delete_reservation_result =
+                        sqlx::query!("DELETE FROM reservation WHERE id = ?", id)
+                            .execute(&mut *tx)
+                            .await
+                            .map_err(|e| {
+                                eprintln!("예약 삭제 실패: {}", e);
+                                // 롤백은 async 함수이므로 여기서 직접 await 할 수 없습니다.
+                                // 트랜잭션은 tx 변수가 drop될 때 롤백됩니다.
+                                Status::InternalServerError
+                            })?;
+
+                    if delete_reservation_result.rows_affected() > 0 {
+                        // 차량 상태를 'Available'로 업데이트
+                        let update_car_result = sqlx::query!(
+                            "UPDATE cars SET status = 'Available' WHERE id = ?",
+                            reservation.car_id
+                        )
+                        .execute(&mut *tx)
+                        .await
+                        .map_err(|e| {
+                            eprintln!("차량 상태 업데이트 실패: {}", e);
+                            // 롤백은 async 함수이므로 여기서 직접 await 할 수 없습니다.
+                            // 트랜잭션은 tx 변수가 drop될 때 롤백됩니다.
+                            Status::InternalServerError
+                        })?;
+
+                        // 트랜잭션 커밋
+                        tx.commit().await.map_err(|e| {
+                            eprintln!("트랜잭션 커밋 실패: {}", e);
+                            Status::InternalServerError
+                        })?;
+
+                        if update_car_result.rows_affected() > 0 {
+                            Ok(Status::Ok)
+                        } else {
+                            // 차량 상태 업데이트가 반영되지 않았을 경우 (경고)
+                            eprintln!(
+                                "Warning: Car status not updated for car ID {}",
+                                reservation.car_id
+                            );
+                            Ok(Status::Ok) // 일단 예약 삭제는 성공했으므로 OK 반환 고려
+                        }
+                    } else {
+                        Err(Status::NotFound) // 해당 ID의 예약이 없는 경우
+                    }
+                } else {
+                    Err(Status::Forbidden) // 권한 없음
+                }
+            } else {
+                Err(Status::NotFound) // 해당 ID의 예약이 없는 경우
+            }
+        }
+        None => Err(Status::NotFound), // 해당 ID의 예약이 없는 경우
     }
 }
 
