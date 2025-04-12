@@ -411,7 +411,7 @@
                                 expiry_date: expiryDate,
                                 cvc: cvc,
                                 cardholder_name: cardholderName,
-                                reservation_id: parseInt(reservationId),
+                                reservation_id: reservationId,
                                 total_amount: currentOverdueAmount, // 저장된 변수 사용
                                 payment_method: paymentMethod,
                                 payment_type: "overdue", // 연체료 결제 유형 명시
@@ -481,7 +481,7 @@
                             })
                             .then((data) => {
                                 console.log(data);
-                                document.querySelector("#reservation-id").textContent = `RSV-${data.reservation_id}`; // 예약 번호
+                                document.querySelector("#reservation-id").textContent = data.reservation_id; // 예약 번호
                                 document.querySelector("#car-info").textContent = data.car_info; // 차량 정보
                                 document.querySelector("#expected-return-date").textContent = formatDate(data.expected_return_date); // 예정 반납일
                                 document.querySelector("#actual-return-date").textContent = data.actual_return_date ? formatDate(data.actual_return_date) : "미반납"; // 실제 반납일

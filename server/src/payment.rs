@@ -106,16 +106,14 @@ pub async fn process_payment(
 
         if result_payment.rows_affected() > 0 {
             if payment.payment_type == "overdue" {
-                sqlx::query!(
-                    "UPDATE reservation SET reservation_status = 'completed' WHERE id = ?",
-                    payment.reservation_id
+                if let Err(e) = reservation_service::update_reservation_status_completed(
+                    pool,
+                    &payment.reservation_id,
                 )
-                .execute(&mut *conn)
                 .await
-                .map_err(|e| {
-                    eprintln!("reservation 테이블 업데이트 실패: {}", e);
-                    Status::InternalServerError
-                })?;
+                {
+                    eprintln!("연체료 결제 후 예약 상태 업데이트 실패: {}", e);
+                }
             }
 
             Ok(Json(PaymentResult {
@@ -153,5 +151,32 @@ pub async fn process_payment(
                 .to_string(),
             transaction_id: None,
         }))
+    }
+}
+
+pub mod reservation_service {
+    use rocket::http::Status;
+    use sqlx::MySqlPool;
+
+    pub async fn update_reservation_status_completed(
+        pool: &MySqlPool,
+        reservation_id: &str,
+    ) -> Result<(), Status> {
+        let mut conn = pool.acquire().await.map_err(|e| {
+            eprintln!("Failed to acquire connection: {}", e);
+            Status::InternalServerError
+        })?;
+
+        sqlx::query!(
+            "UPDATE reservation SET reservation_status = 'completed' WHERE reservation_id = ?",
+            reservation_id
+        )
+        .execute(&mut *conn)
+        .await
+        .map_err(|e| {
+            eprintln!("reservation 테이블 업데이트 실패: {}", e);
+            Status::InternalServerError
+        })?;
+        Ok(())
     }
 }

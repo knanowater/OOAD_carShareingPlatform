@@ -289,7 +289,6 @@
                     reservationsListContainer.innerHTML = "<p>예약 내역이 없습니다.</p>";
                     return;
                 }
-
                 reservations.forEach((reservation) => {
                     const reservationCard = document.createElement("div");
                     reservationCard.classList.add("bg-white", "rounded-xl", "shadow-md", "p-6", "mb-4");
@@ -388,9 +387,9 @@
             function getReservationActionButton(reservation) {
                 const status = reservation.reservation_status.toLowerCase();
                 if (status === "pending") {
-                    return `<button class="mt-2 px-3 py-1 bg-red-500 text-white text-sm rounded hover:bg-red-600" onclick="cancelButton(${reservation.reservation_id})" >취소</button> <button class="mt-2 ml-2 px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">상세 보기</button>`;
+                    return `<button class="mt-2 px-3 py-1 bg-red-500 text-white text-sm rounded hover:bg-red-600" onclick="cancelButton('${reservation.reservation_id}')" >취소</button> <button class="mt-2 ml-2 px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">상세 보기</button>`;
                 } else if (status === "in use" || status === "overdue") {
-                    return `<button class="mt-2 px-3 py-1 bg-amber-500 text-white text-sm rounded hover:bg-amber-600" onclick="returnButton(${reservation.reservation_id})">반납 하기</button> <button class="mt-2 ml-2 px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">상세 보기</button>`;
+                    return `<button class="mt-2 px-3 py-1 bg-amber-500 text-white text-sm rounded hover:bg-amber-600" onclick="returnButton('${reservation.reservation_id}')">반납 하기</button> <button class="mt-2 ml-2 px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">상세 보기</button>`;
                 } else if (status === "completed") {
                     return '<button class="mt-2 px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">리뷰 작성</button>';
                 }
