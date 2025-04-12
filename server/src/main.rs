@@ -7,6 +7,7 @@ extern crate rocket_include_static_resources;
 mod auth;
 
 use auth::{AuthToken, is_admin, login, logout, signup};
+use chrono::{NaiveDateTime, Utc};
 use dotenvy::dotenv;
 use rocket::State;
 use rocket::form::FromForm;
@@ -55,8 +56,10 @@ async fn main() -> Result<(), sqlx::Error> {
                 list_page,
                 reservation_page,
                 reservation_success_page,
-                admin_dashboard,
-                car_management,
+                mypage_page,
+                mypage_reservations_page,
+                admin_dashboard_page,
+                car_management_page,
                 add_car_endpoint,
                 update_car_endpoint,
                 signup,
@@ -66,6 +69,10 @@ async fn main() -> Result<(), sqlx::Error> {
                 get_cars,
                 get_car_by_id,
                 reservation_request,
+                api_mypage,
+                api_reservations,
+                api_return_car,
+                api_cancel_reservation,
             ],
         )
         .mount(
@@ -352,14 +359,15 @@ pub async fn reservation_request(
             let reservation_timestamp = chrono::Local::now().naive_local();
             let result = sqlx::query!(
                 r#"
-                INSERT INTO reservation (user_id, car_id, reservation_timestamp, rental_date, return_date, request, reservation_status )
-                VALUES (?, ?, ?, ?, ?, ?,'pending')
+                INSERT INTO reservation (user_id, car_id, reservation_timestamp, rental_date, return_date, total_price, request, reservation_status )
+                VALUES (?, ?, ?, ?, ?, ?, ?,'pending')
                 "#,
                 user_id,
                 data.car_id,
                 reservation_timestamp,
                 data.rental_date,
                 data.return_date,
+                data.total_price,
                 data.request
             )
             .execute(&mut *conn)
@@ -380,24 +388,273 @@ pub async fn reservation_request(
     }
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Serialize)]
 pub struct ReservationData {
-    pub car_id: i32,
-    pub rental_date: String,
-    pub return_date: String,
-    pub request: String,
+    car_id: i32,
+    rental_date: String,
+    return_date: String,
+    request: String,
+    total_price: f32,
 }
 
 #[get("/admin")]
-pub async fn admin_dashboard() -> Option<NamedFile> {
+pub async fn admin_dashboard_page() -> Option<NamedFile> {
     NamedFile::open(Path::new("../client/admin/dashboard.html"))
         .await
         .ok()
 }
 
 #[get("/admin/vehicles")]
-pub async fn car_management() -> Option<NamedFile> {
+pub async fn car_management_page() -> Option<NamedFile> {
     NamedFile::open(Path::new("../client/admin/vehicles.html"))
         .await
         .ok()
+}
+
+#[get("/mypage")]
+pub async fn mypage_page() -> Option<NamedFile> {
+    NamedFile::open(Path::new("../client/mypage/mypage.html"))
+        .await
+        .ok()
+}
+
+#[get("/mypage/reservations")]
+pub async fn mypage_reservations_page() -> Option<NamedFile> {
+    NamedFile::open(Path::new("../client/mypage/reservations.html"))
+        .await
+        .ok()
+}
+
+#[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]
+pub struct User {
+    pub id: i32,
+    pub name: String,
+    pub email: String,
+    pub role: String,
+}
+
+#[get("/api/mypage")]
+pub async fn api_mypage(
+    auth_token: AuthToken,
+    pool: &State<MySqlPool>,
+) -> Result<Json<User>, Status> {
+    let user_id = auth_token.0.sub.parse::<i32>().map_err(|_| {
+        eprintln!("Failed to parse user ID from token subject");
+        Status::Unauthorized
+    })?;
+
+    let mut conn = pool.acquire().await.map_err(|e| {
+        eprintln!("Failed to acquire connection from pool: {}", e);
+        Status::InternalServerError
+    })?;
+
+    let user = sqlx::query_as::<_, User>("SELECT id, name, email, role FROM users WHERE id = ?")
+        .bind(user_id)
+        .fetch_one(&mut *conn)
+        .await
+        .map_err(|e| match e {
+            sqlx::Error::RowNotFound => Status::NotFound,
+            _ => Status::InternalServerError,
+        })?;
+
+    Ok(Json(user))
+}
+
+#[derive(Serialize)]
+pub struct ReservationInfo {
+    reservation_id: i32,
+    car_image_url: String,
+    car_manufacture: String,
+    car_model: String,
+    rental_date: NaiveDateTime,
+    return_date: NaiveDateTime,
+    rental_period_days: i64,
+    pickup_location: String,
+    total_price: f32,
+    reservation_status: String,
+}
+
+#[get("/api/reservations")]
+pub async fn api_reservations(
+    pool: &State<MySqlPool>,
+    auth_token: AuthToken,
+) -> Result<Json<Vec<ReservationInfo>>, Status> {
+    let user_id = auth_token
+        .0
+        .sub
+        .parse::<i32>()
+        .map_err(|_| Status::Unauthorized)?;
+
+    let mut conn = pool.acquire().await.map_err(|e| {
+        eprintln!("Failed to acquire connection: {}", e);
+        Status::InternalServerError
+    })?;
+
+    let reservations = sqlx::query!(
+        r#"
+        SELECT
+            r.id AS reservation_id,
+            c.image_url AS car_image_url,
+            c.manufacture AS car_manufacture,
+            c.name AS car_model,
+            r.rental_date,
+            r.return_date,
+            DATEDIFF(r.return_date, r.rental_date) AS rental_period_days,
+            COALESCE(c.location, '미정') AS pickup_location, -- NULL인 경우 '미정'으로 처리
+            COALESCE(r.total_price, 0) AS total_price,             -- NULL인 경우 0으로 처리
+            r.reservation_status
+        FROM reservation r
+        JOIN cars c ON r.car_id = c.id
+        WHERE r.user_id = ?
+        ORDER BY r.id DESC
+        "#,
+        user_id
+    )
+    .fetch_all(&mut *conn)
+    .await
+    .map_err(|e| {
+        eprintln!("Failed to fetch reservations: {}", e);
+        Status::InternalServerError
+    })?
+    .into_iter()
+    .map(|row| ReservationInfo {
+        reservation_id: row.reservation_id,
+        car_image_url: row.car_image_url.unwrap_or_default(),
+        car_manufacture: row.car_manufacture,
+        car_model: row.car_model,
+        rental_date: row.rental_date,
+        return_date: row.return_date,
+        rental_period_days: row.rental_period_days.unwrap_or_default(), // Option<i64> -> i64 (None이면 0)
+        pickup_location: row.pickup_location,
+        total_price: row.total_price,
+        reservation_status: row.reservation_status,
+    })
+    .collect();
+
+    Ok(Json(reservations))
+}
+
+#[derive(Deserialize)]
+struct Request {
+    reservation_id: i32,
+}
+
+#[derive(Serialize)]
+struct ApiResponse {
+    message: String,
+}
+
+#[post("/api/return", data = "<return_request>")]
+async fn api_return_car(
+    pool: &State<MySqlPool>,
+    auth_token: auth::AuthToken,
+    return_request: Json<Request>,
+) -> Result<Json<ApiResponse>, Status> {
+    let user_id = auth_token
+        .0
+        .sub
+        .parse::<i32>()
+        .map_err(|_| Status::Unauthorized)?;
+    let reservation_id = return_request.into_inner().reservation_id;
+
+    // 데이터베이스 연결 가져오기
+    let mut conn = pool.acquire().await.map_err(|e| {
+        eprintln!("Failed to acquire connection: {}", e);
+        Status::InternalServerError
+    })?;
+
+    // 예약 정보 확인 및 사용자 ID 일치 여부 확인
+    let result = sqlx::query!(
+        "SELECT user_id, car_id FROM reservation WHERE id = ?",
+        reservation_id
+    )
+    .fetch_one(&mut *conn)
+    .await
+    .map_err(|e| {
+        eprintln!("Failed to fetch reservation: {}", e);
+        Status::NotFound // 예약 정보가 없으면 404 Not Found
+    })?;
+
+    let owner_user_id = result.user_id;
+    let car_id = result.car_id;
+
+    if user_id != owner_user_id {
+        return Err(Status::Forbidden); // 예약한 사용자와 반납 요청자가 다르면 403 Forbidden
+    }
+    let update_result = sqlx::query!(
+        "UPDATE reservation SET reservation_status = 'completed', return_date = ? WHERE id = ?",
+        Utc::now(),
+        reservation_id
+    )
+    .execute(&mut *conn)
+    .await
+    .map_err(|e| {
+        eprintln!("Failed to update reservation status: {}", e);
+        Status::InternalServerError
+    })?;
+
+    if update_result.rows_affected() > 0 {
+        Ok(Json(ApiResponse {
+            message: "차량이 성공적으로 반납 처리되었습니다.".to_string(),
+        }))
+    } else {
+        Err(Status::InternalServerError) // 업데이트 실패
+    }
+}
+
+#[post("/api/cancel", data = "<cancel_request>")]
+async fn api_cancel_reservation(
+    pool: &State<MySqlPool>,
+    auth_token: auth::AuthToken,
+    cancel_request: Json<Request>,
+) -> Result<Json<ApiResponse>, Status> {
+    let user_id = auth_token
+        .0
+        .sub
+        .parse::<i32>()
+        .map_err(|_| Status::Unauthorized)?;
+    let reservation_id = cancel_request.into_inner().reservation_id;
+
+    // 데이터베이스 연결 가져오기
+    let mut conn = pool.acquire().await.map_err(|e| {
+        eprintln!("Failed to acquire connection: {}", e);
+        Status::InternalServerError
+    })?;
+
+    // 예약 정보 확인 및 사용자 ID 일치 여부 확인
+    let result = sqlx::query!(
+        "SELECT user_id FROM reservation WHERE id = ?",
+        reservation_id
+    )
+    .fetch_one(&mut *conn)
+    .await
+    .map_err(|e| {
+        eprintln!("Failed to fetch reservation: {}", e);
+        Status::NotFound // 예약 정보가 없으면 404 Not Found
+    })?;
+
+    let owner_user_id = result.user_id;
+
+    if user_id != owner_user_id {
+        return Err(Status::Forbidden); // 예약한 사용자와 취소 요청자가 다르면 403 Forbidden
+    }
+
+    let update_result = sqlx::query!(
+        "UPDATE reservation SET reservation_status = 'canceled' WHERE id = ?",
+        reservation_id
+    )
+    .execute(&mut *conn)
+    .await
+    .map_err(|e| {
+        eprintln!("Failed to update reservation status: {}", e);
+        Status::InternalServerError
+    })?;
+
+    if update_result.rows_affected() > 0 {
+        Ok(Json(ApiResponse {
+            message: "예약이 성공적으로 취소되었습니다.".to_string(),
+        }))
+    } else {
+        Err(Status::InternalServerError) // 업데이트 실패
+    }
 }

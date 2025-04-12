@@ -68,10 +68,11 @@
                     <span class="text-2xl font-bold text-blue-600">DriveShare</span>
                 </div>
                 <nav class="hidden md:flex space-x-8" id="header-menu">
-                    <a href="/" class="text-blue-600 font-medium">홈</a>
-                    <a href="/list" class="text-gray-600 hover:text-blue-600">차량 찾기</a>
+                    <a href="/" class="text-gray-600 hover:text-blue-600">홈</a>
+                    <a href="/list" class="text-blue-600 font-medium">차량 찾기</a>
                     <a href="#" class="text-gray-600 hover:text-blue-600">이용 방법</a>
                     <a href="#" class="text-gray-600 hover:text-blue-600">고객센터</a>
+                    <a href="/mypage" class="text-gray-600 hover:text-blue-600" id="header-mypage">마이페이지</a>
                 </nav>
                 <div class="flex items-center space-x-4">
                     <button class="px-4 py-2 rounded-full bg-blue-600 text-white hover:bg-blue-700 transition" onclick="location.href='/login'">로그인 / 회원가입</button>
@@ -372,6 +373,24 @@
 
                 // 예약 확인 대화상자 표시
                 if (confirm("예약을 요청하시겠습니까?")) {
+                    const calculateRentalPeriod = () => {
+                        const rentalDateInput = document.getElementById("rental-date");
+                        const returnDateInput = document.getElementById("return-date");
+                        const startDate = new Date(rentalDateInput.value);
+                        const endDate = new Date(returnDateInput.value);
+
+                        if (isNaN(startDate) || isNaN(endDate) || startDate >= endDate) {
+                            return 0; // 유효하지 않은 경우 0 반환
+                        }
+
+                        const timeDiff = endDate.getTime() - startDate.getTime();
+                        const days = Math.ceil(timeDiff / (1000 * 3600 * 24));
+                        return days;
+                    };
+                    const dailyRate = daily_rate;
+                    const rentalDays = calculateRentalPeriod();
+                    const rentalFee = dailyRate * rentalDays;
+
                     const authToken = localStorage.getItem("token");
                     try {
                         const response = await fetch("/api/reservations/request", {
@@ -386,6 +405,7 @@
                                 rental_date: startDate.toISOString().split("T")[0],
                                 return_date: endDate.toISOString().split("T")[0],
                                 request: document.querySelector("#request").value,
+                                total_price: rentalFee + dailyRate / 10,
                             }),
                         });
 

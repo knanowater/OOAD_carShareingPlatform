@@ -140,7 +140,6 @@ pub async fn login(
 // 로그아웃 엔드포인트
 #[get("/api/logout")]
 pub async fn logout() -> Json<ApiResponse> {
-    // 로그아웃 로직은 필요에 따라 구현 (예: 세션 무효화)
     Json(ApiResponse {
         status: "success".to_string(),
         message: "Logout successful".to_string(),
