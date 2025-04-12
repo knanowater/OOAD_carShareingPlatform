@@ -9,9 +9,11 @@ mod background_tasks;
 mod payment;
 
 use auth::{AuthToken, is_admin, login, logout, signup};
-use chrono::{NaiveDateTime, Utc};
+use chrono::{Local, NaiveDateTime, Utc}; // Utc와 Local 모두 명시적으로 가져옵니다.
 use dotenvy::dotenv;
+use lazy_static::lazy_static;
 use payment::process_payment;
+use rand::{RngCore, SeedableRng, rngs::StdRng}; // 필요한 트레잇과 구조체를 가져옵니다.
 use rocket::State;
 use rocket::form::FromForm;
 use rocket::fs::NamedFile;
@@ -26,6 +28,8 @@ use sqlx::MySqlPool;
 use sqlx::mysql::MySqlPoolOptions;
 use std::env;
 use std::path::Path;
+use std::sync::Mutex;
+
 static_response_handler! {
     "/favicon.ico" => favicon => "favicon",
 }
@@ -139,9 +143,12 @@ async fn overdue_fee_page() -> Option<NamedFile> {
 }
 
 #[get("/reservation/success?<id>")]
-async fn reservation_success_page(id: Option<i32>) -> Option<NamedFile> {
-    if let Some(id) = id {
-        println!("Reservation success page requested with id: {:?}", id);
+async fn reservation_success_page(id: Option<String>) -> Option<NamedFile> {
+    if let Some(reservation_id) = id {
+        println!(
+            "Reservation success page requested with id: {:?}",
+            reservation_id
+        );
         NamedFile::open(Path::new("../client/reservation-success.html"))
             .await
             .ok()
@@ -321,6 +328,21 @@ pub async fn get_car_by_id(
     }
 }
 
+lazy_static! {
+    static ref RNG: Mutex<StdRng> = Mutex::new(StdRng::seed_from_u64(0)); // 간단한 시드로 초기화 (from_entropy 문제 해결)
+}
+
+fn generate_reservation_id() -> String {
+    let timestamp = Utc::now()
+        .naive_utc()
+        .and_utc()
+        .timestamp_nanos_opt()
+        .unwrap(); // deprecated 메서드 대신 사용
+    let mut rng = RNG.lock().unwrap();
+    let random_part = rng.next_u32();
+    format!("RSV-{}-{}", timestamp, random_part)
+}
+
 #[post("/api/reservations/request", data = "<reservation_data>")]
 pub async fn reservation_request(
     pool: &State<MySqlPool>,
@@ -368,11 +390,12 @@ pub async fn reservation_request(
             return Err((Status::NotFound, "선택한 차량을 찾을 수 없습니다.".into()));
         }
         Some(_) => {
-            let reservation_timestamp = chrono::Local::now().naive_local();
-            let result = sqlx::query!(
+            let reservation_timestamp = Local::now().naive_local();
+            let new_reservation_id = generate_reservation_id();
+            sqlx::query!(
                 r#"
-                INSERT INTO reservation (user_id, car_id, reservation_timestamp, rental_date, return_date, total_price, request, reservation_status )
-                VALUES (?, ?, ?, ?, ?, ?, ?,'pending')
+                INSERT INTO reservation (id, user_id, car_id, reservation_timestamp, rental_date, return_date, total_price, request, reservation_status, reservation_id)
+                VALUES (NULL, ?, ?, ?, ?, ?, ?, ?, 'pending', ?)
                 "#,
                 user_id,
                 data.car_id,
@@ -380,7 +403,8 @@ pub async fn reservation_request(
                 data.rental_date,
                 data.return_date,
                 data.total_price,
-                data.request
+                data.request,
+                new_reservation_id,
             )
             .execute(&mut *conn)
             .await
@@ -392,8 +416,7 @@ pub async fn reservation_request(
                 )
             })?;
 
-            let reservation_id = result.last_insert_id();
-            // 예약 성공 시 차량 상태를 'Unavailable'로 업데이트
+            // 예약 성공 시 차량 상태를 'Unavailable'로 업데이트 (기존 id 사용)
             let update_car_result = sqlx::query!(
                 "UPDATE cars SET status = 'Unavailable' WHERE id = ?",
                 data.car_id
@@ -402,7 +425,6 @@ pub async fn reservation_request(
             .await
             .map_err(|e| {
                 eprintln!("Failed to update car status: {}", e);
-                // 차량 상태 업데이트 실패는 심각한 오류이므로 롤백 또는 추가 로깅 고려
                 (
                     Status::InternalServerError,
                     format!("차량 상태를 업데이트하는 데 실패했습니다: {}", e),
@@ -411,16 +433,15 @@ pub async fn reservation_request(
 
             if update_car_result.rows_affected() > 0 {
                 Ok(Json(
-                    serde_json::json!({ "reservation_id": reservation_id }),
+                    serde_json::json!({ "reservation_id": new_reservation_id }),
                 ))
             } else {
-                // 차량 상태 업데이트가 반영되지 않았을 경우 (드문 경우)
                 eprintln!(
                     "Warning: Car status update not applied for car ID {}",
                     data.car_id
                 );
                 Ok(Json(
-                    serde_json::json!({ "reservation_id": reservation_id }),
+                    serde_json::json!({ "reservation_id": new_reservation_id }),
                 ))
             }
         }
@@ -429,7 +450,7 @@ pub async fn reservation_request(
 
 #[delete("/api/reservations/cancel/<id>")]
 pub async fn cancel_reservation_due_to_payment_failed(
-    id: i32,
+    id: String, // 라우트 파라미터는 String 타입으로 받습니다.
     pool: &State<MySqlPool>,
     auth_token: AuthToken,
 ) -> Result<Status, Status> {
@@ -443,19 +464,24 @@ pub async fn cancel_reservation_due_to_payment_failed(
         .await
         .map_err(|_| Status::InternalServerError)?;
 
-    let reservation_result = sqlx::query!("SELECT car_id FROM reservation WHERE id = ?", id)
-        .fetch_optional(&mut *conn)
-        .await
-        .map_err(|_| Status::InternalServerError)?;
+    let reservation_result = sqlx::query!(
+        "SELECT car_id FROM reservation WHERE reservation_id = ?",
+        id
+    )
+    .fetch_optional(&mut *conn)
+    .await
+    .map_err(|_| Status::InternalServerError)?;
 
     match reservation_result {
         Some(reservation) => {
             // 권한 확인 (예약 소유자)
-            let reservation_user_id: Option<i32> =
-                sqlx::query_scalar!("SELECT user_id FROM reservation WHERE id = ?", id)
-                    .fetch_optional(&mut *conn)
-                    .await
-                    .map_err(|_| Status::InternalServerError)?;
+            let reservation_user_id: Option<i32> = sqlx::query_scalar!(
+                "SELECT user_id FROM reservation WHERE reservation_id = ?",
+                id
+            )
+            .fetch_optional(&mut *conn)
+            .await
+            .map_err(|_| Status::InternalServerError)?;
 
             if let Some(res_user_id) = reservation_user_id {
                 if res_user_id == user_id {
@@ -465,20 +491,18 @@ pub async fn cancel_reservation_due_to_payment_failed(
                         .await
                         .map_err(|_| Status::InternalServerError)?;
 
-                    // 예약 삭제
+                    // 예약 삭제 (reservation_id 기준으로 삭제)
                     let delete_reservation_result =
-                        sqlx::query!("DELETE FROM reservation WHERE id = ?", id)
+                        sqlx::query!("DELETE FROM reservation WHERE reservation_id = ?", id)
                             .execute(&mut *tx)
                             .await
                             .map_err(|e| {
                                 eprintln!("예약 삭제 실패: {}", e);
-                                // 롤백은 async 함수이므로 여기서 직접 await 할 수 없습니다.
-                                // 트랜잭션은 tx 변수가 drop될 때 롤백됩니다.
                                 Status::InternalServerError
                             })?;
 
                     if delete_reservation_result.rows_affected() > 0 {
-                        // 차량 상태를 'Available'로 업데이트
+                        // 차량 상태를 'Available'로 업데이트 (car_id는 기존 예약 정보에서 가져옴)
                         let update_car_result = sqlx::query!(
                             "UPDATE cars SET status = 'Available' WHERE id = ?",
                             reservation.car_id
@@ -487,8 +511,6 @@ pub async fn cancel_reservation_due_to_payment_failed(
                         .await
                         .map_err(|e| {
                             eprintln!("차량 상태 업데이트 실패: {}", e);
-                            // 롤백은 async 함수이므로 여기서 직접 await 할 수 없습니다.
-                            // 트랜잭션은 tx 변수가 drop될 때 롤백됩니다.
                             Status::InternalServerError
                         })?;
 
@@ -501,24 +523,23 @@ pub async fn cancel_reservation_due_to_payment_failed(
                         if update_car_result.rows_affected() > 0 {
                             Ok(Status::Ok)
                         } else {
-                            // 차량 상태 업데이트가 반영되지 않았을 경우 (경고)
                             eprintln!(
                                 "Warning: Car status not updated for car ID {}",
                                 reservation.car_id
                             );
-                            Ok(Status::Ok) // 일단 예약 삭제는 성공했으므로 OK 반환 고려
+                            Ok(Status::Ok)
                         }
                     } else {
-                        Err(Status::NotFound) // 해당 ID의 예약이 없는 경우
+                        Err(Status::NotFound) // 해당 reservation_id의 예약이 없는 경우
                     }
                 } else {
                     Err(Status::Forbidden) // 권한 없음
                 }
             } else {
-                Err(Status::NotFound) // 해당 ID의 예약이 없는 경우
+                Err(Status::NotFound) // 해당 reservation_id의 예약이 없는 경우
             }
         }
-        None => Err(Status::NotFound), // 해당 ID의 예약이 없는 경우
+        None => Err(Status::NotFound), // 해당 reservation_id의 예약이 없는 경우
     }
 }
 

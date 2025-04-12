@@ -1,23 +1,17 @@
+use chrono::Utc;
 use lazy_static::lazy_static;
-use rand::Rng as _;
+use rand::Rng;
 use rand::SeedableRng;
-use rand_chacha::ChaCha8Rng;
+use rand::rngs::StdRng;
 use rocket::State;
 use rocket::http::Status;
 use rocket::serde::json::Json;
 use rocket::serde::{Deserialize, Serialize};
 use sqlx::MySqlPool;
 use std::sync::Mutex;
-use std::time::{SystemTime, UNIX_EPOCH};
 
 lazy_static! {
-    static ref RNG: Mutex<ChaCha8Rng> = {
-        let seed = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap()
-            .as_secs();
-        Mutex::new(ChaCha8Rng::seed_from_u64(seed))
-    };
+    static ref RNG: Mutex<StdRng> = Mutex::new(StdRng::seed_from_u64(0));
 }
 
 #[derive(Deserialize)]
@@ -27,7 +21,7 @@ pub struct PaymentInfo {
     expiry_date: String, // MM/YY 형식
     cvc: String,
     cardholder_name: String,
-    reservation_id: i32,    // 어떤 예약에 대한 결제인지 식별
+    reservation_id: String, // 어떤 예약에 대한 결제인지 식별
     total_amount: i32,      // 결제할 총 금액
     payment_method: String, // 결제 방법 추가
     payment_type: String,   // 결제 유형 추가 ('reservation', 'overdue' 등)
@@ -40,6 +34,12 @@ pub struct PaymentResult {
     message: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     transaction_id: Option<String>, // 결제 성공 시 거래 ID
+}
+
+fn generate_transaction_id() -> String {
+    let timestamp = Utc::now().timestamp_nanos_opt().unwrap();
+    let random_part = RNG.lock().unwrap().random::<u32>();
+    format!("TXN-{}-{}", timestamp, random_part)
 }
 
 #[post("/api/pay", data = "<payment_info>")]
@@ -66,7 +66,7 @@ pub async fn process_payment(
     }
 
     let payment_successful = RNG.lock().unwrap().random_bool(0.8);
-    let transaction_id = format!("TXN-{}", RNG.lock().unwrap().random::<u32>());
+    let transaction_id = generate_transaction_id();
 
     println!(
         "가상 결제 처리: 카드 끝 4자리 ****-****-****-{}, 예약 ID {}, 금액 {}원, 방법 {}, 유형 {}, 성공: {}",
