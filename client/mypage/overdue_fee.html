@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="ko">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>DriveShare - 연체료 납부</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script src="/scripts/script.js"></script>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+        <style>
+            .payment-method {
+                transition: all 0.2s ease;
+            }
+            .payment-method:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            }
+            .payment-method.selected {
+                border-color: #3b82f6;
+                background-color: #f0f7ff;
+            }
+            .summary-card {
+                position: sticky;
+                top: 100px;
+            }
+            .date-picker {
+                background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%239C9C9C' viewBox='0 0 16 16'%3E%3Cpath d='M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4H1z'/%3E%3C/svg%3E");
+                background-repeat: no-repeat;
+                background-position: right 0.75rem center;
+                background-size: 16px 12px;
+            }
+        </style>
+    </head>
+    <body class="font-sans antialiased text-gray-800 bg-gray-50">
+        <!-- 헤더 영역 -->
+        <header class="bg-white shadow-sm sticky top-0 z-50">
+            <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+                <div class="flex items-center" onclick="location.href='/'" style="cursor: pointer">
+                    <i class="fas fa-car text-blue-600 text-3xl mr-2"></i>
+                    <span class="text-2xl font-bold text-blue-600">DriveShare</span>
+                </div>
+                <nav class="hidden md:flex space-x-8" id="header-menu">
+                    <a href="/" class="text-gray-600 hover:text-blue-600">홈</a>
+                    <a href="/list" class="text-gray-600 hover:text-blue-600">차량 찾기</a>
+                    <a href="#" class="text-gray-600 hover:text-blue-600">이용 방법</a>
+                    <a href="#" class="text-gray-600 hover:text-blue-600">고객센터</a>
+                    <a href="/mypage" class="text-blue-600 font-medium" id="header-mypage">마이페이지</a>
+                </nav>
+                <div class="flex items-center space-x-4">
+                    <button class="px-4 py-2 rounded-full bg-blue-600 text-white hover:bg-blue-700 transition" onclick="location.href='/login'">로그인 / 회원가입</button>
+                    <button class="md:hidden text-gray-600">
+                        <i class="fas fa-bars text-xl"></i>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- 메인 컨텐츠 -->
+        <main class="container mx-auto px-4 py-8">
+            <div class="flex flex-col lg:flex-row gap-8">
+                <!-- 연체 정보 및 결제 폼 -->
+                <div class="lg:w-2/3">
+                    <div class="bg-white rounded-lg shadow p-6 mb-6">
+                        <div class="flex items-center mb-6">
+                            <i class="fas fa-exclamation-triangle text-red-500 text-2xl mr-3"></i>
+                            <h2 class="text-2xl font-bold">연체료 납부</h2>
+                        </div>
+
+                        <!-- 연체 정보 요약 -->
+                        <div class="border-b border-gray-200 pb-6 mb-6">
+                            <div class="flex justify-between items-center mb-4">
+                                <h3 class="text-lg font-semibold">연체 정보</h3>
+                                <span class="px-3 py-1 rounded-full bg-orange-100 text-orange-700 text-sm font-medium">연체 중</span>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <p class="text-gray-600 text-sm mb-1">예약 번호</p>
+                                    <p class="font-medium" id="reservation-id"></p>
+                                </div>
+                                <div>
+                                    <p class="text-gray-600 text-sm mb-1">차량 정보</p>
+                                    <p class="font-medium" id="car-info">2023 현대 그랜저</p>
+                                </div>
+                                <div>
+                                    <p class="text-gray-600 text-sm mb-1">예정 반납일</p>
+                                    <p class="font-medium" id="expected-return-date">2023년 6월 15일</p>
+                                </div>
+                                <div>
+                                    <p class="text-gray-600 text-sm mb-1">실제 반납일</p>
+                                    <p class="font-medium" id="actual-return-date">2023년 6월 17일</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 연체 사유 -->
+                        <div class="mb-6">
+                            <h3 class="text-lg font-semibold mb-3">연체 사유</h3>
+                            <div class="bg-gray-50 rounded-lg p-4">
+                                <p class="text-gray-700">예약하신 차량이 예정 반납일로부터 2일 연체되어 반납되었습니다. DriveShare 이용 약관에 따라 연체료가 부과되었습니다.</p>
+                            </div>
+                        </div>
+
+                        <!-- 결제 방법 선택 -->
+                        <div>
+                            <h3 class="text-lg font-semibold mb-3">결제 방법</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div class="payment-method border-2 border-gray-200 rounded-lg p-4 cursor-pointer" onclick="selectPaymentMethod(this)" data-payment-method="credit_card">
+                                    <div class="flex items-center">
+                                        <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+                                            <i class="fas fa-credit-card text-blue-600"></i>
+                                        </div>
+                                        <span class="font-medium">신용/체크카드</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 선택된 결제 방법 상세 정보 -->
+                            <div id="payment-details" class="mt-6 hidden">
+                                <h3 class="text-lg font-semibold mb-3">신용/체크카드 정보</h3>
+                                <div class="space-y-4">
+                                    <div>
+                                        <label class="block text-gray-700 text-sm font-medium mb-1">카드 번호</label>
+                                        <input
+                                            type="text"
+                                            placeholder="1234 5678 9012 3456"
+                                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            id="card-number"
+                                        />
+                                    </div>
+                                    <div class="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label class="block text-gray-700 text-sm font-medium mb-1">유효기간</label>
+                                            <input
+                                                type="text"
+                                                placeholder="MM/YY"
+                                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                id="expiry-date"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label class="block text-gray-700 text-sm font-medium mb-1">CVC</label>
+                                            <input
+                                                type="text"
+                                                placeholder="CVC"
+                                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                id="cvc"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="block text-gray-700 text-sm font-medium mb-1">카드 소유자 이름</label>
+                                        <input
+                                            type="text"
+                                            placeholder="카드에 표시된 이름"
+                                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            id="cardholder-name"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 주의 사항 -->
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <h3 class="text-lg font-semibold mb-3 flex items-center">
+                            <i class="fas fa-exclamation-circle text-red-500 mr-2"></i>
+                            연체료 납부 시 주의 사항
+                        </h3>
+                        <ul class="list-disc pl-5 space-y-2 text-gray-700">
+                            <li>연체료를 납부하지 않을 경우, 향후 DriveShare 서비스 이용이 제한될 수 있습니다.</li>
+                            <li>연체료 납부 후 1시간 이내에 결제 확인이 완료되며, 마이페이지에서 확인 가능합니다.</li>
+                            <li>연체료 납부 후에도 추가 연체가 발생한 경우 별도로 안내드립니다.</li>
+                            <li>연체료에 대한 문의사항은 고객센터(1544-1234)로 연락주시기 바랍니다.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- 연체료 요약 및 결제 -->
+                <div class="lg:w-1/3">
+                    <div class="summary-card bg-white rounded-lg shadow p-6">
+                        <h2 class="text-2xl font-bold mb-6">연체료 내역</h2>
+
+                        <div class="space-y-4">
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">시간당 연체료 (1시간 요금의 1.5배)</span>
+                                <span class="font-medium" id="base-fee"></span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">연체 시간</span>
+                                <span class="font-medium" id="overdue-time"></span>
+                            </div>
+
+                            <div class="border-t border-gray-200 pt-4">
+                                <div class="flex justify-between">
+                                    <span class="text-lg font-bold">총 연체료</span>
+                                    <span class="text-xl font-bold text-red-600" id="total-fee"></span>
+                                </div>
+                            </div>
+
+                            <div class="mt-6 text-sm text-gray-500">
+                                <p class="mb-2">연체료는 반납일로부터 7일 이내에 납부해주셔야 합니다.</p>
+                                <p>납부 기한이 지날 경우 추가 위약금이 발생할 수 있습니다.</p>
+                            </div>
+
+                            <button class="w-full mt-6 py-4 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg transition flex items-center justify-center" onclick="submitLateFeePayment()">
+                                연체료 결제하기
+                            </button>
+
+                            <div class="mt-4 text-xs text-gray-500 text-center">
+                                <p>
+                                    결제 버튼을 클릭하면 DriveShare의 <a href="#" class="text-blue-600 hover:underline">이용약관</a> 및
+                                    <a href="#" class="text-blue-600 hover:underline">개인정보 처리방침</a>에 동의하는 것으로 간주됩니다.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- 푸터 영역 -->
+        <footer class="bg-gray-100 py-8 mt-12">
+            <div class="container mx-auto px-4">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                    <div>
+                        <div class="flex items-center mb-4">
+                            <i class="fas fa-car text-blue-600 text-xl mr-2"></i>
+                            <span class="text-lg font-bold text-gray-800">DriveShare</span>
+                        </div>
+                        <p class="text-gray-600 text-sm">DriveShare는 차량 공유 플랫폼으로 누구나 쉽게 차량을 대여하거나 호스트가 될 수 있습니다.</p>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-gray-800 mb-4">회사</h3>
+                        <ul class="space-y-2">
+                            <li><a href="#" class="text-gray-600 hover:text-blue-600 text-sm">회사 소개</a></li>
+                            <li><a href="#" class="text-gray-600 hover:text-blue-600 text-sm">채용 정보</a></li>
+                            <li><a href="#" class="text-gray-600 hover:text-blue-600 text-sm">뉴스룸</a></li>
+                            <li><a href="#" class="text-gray-600 hover:text-blue-600 text-sm">블로그</a></li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-gray-800 mb-4">지원</h3>
+                        <ul class="space-y-2">
+                            <li><a href="#" class="text-gray-600 hover:text-blue-600 text-sm">도움말 센터</a></li>
+                            <li><a href="#" class="text-gray-600 hover:text-blue-600 text-sm">안전 정보</a></li>
+                            <li><a href="#" class="text-gray-600 hover:text-blue-600 text-sm">취소 옵션</a></li>
+                            <li><a href="#" class="text-gray-600 hover:text-blue-600 text-sm">고객 지원</a></li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-gray-800 mb-4">약관</h3>
+                        <ul class="space-y-2">
+                            <li><a href="#" class="text-gray-600 hover:text-blue-600 text-sm">이용약관</a></li>
+                            <li><a href="#" class="text-gray-600 hover:text-blue-600 text-sm">개인정보 처리방침</a></li>
+                            <li><a href="#" class="text-gray-600 hover:text-blue-600 text-sm">쿠키 정책</a></li>
+                            <li><a href="#" class="text-gray-600 hover:text-blue-600 text-sm">보험 정보</a></li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="border-t border-gray-200 mt-8 pt-8 flex flex-col md:flex-row justify-between items-center">
+                    <div class="text-gray-500 text-sm mb-4 md:mb-0">© 2023 DriveShare Inc. All rights reserved.</div>
+                    <div class="flex space-x-6">
+                        <a href="#" class="text-gray-500 hover:text-blue-600"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#" class="text-gray-500 hover:text-blue-600"><i class="fab fa-twitter"></i></a>
+                        <a href="#" class="text-gray-500 hover:text-blue-600"><i class="fab fa-instagram"></i></a>
+                        <a href="#" class="text-gray-500 hover:text-blue-600"><i class="fab fa-youtube"></i></a>
+                    </div>
+                </div>
+            </div>
+        </footer>
+
+        <script>
+            let currentOverdueAmount = 0;
+            // 결제 방법 선택 함수
+            function selectPaymentMethod(element) {
+                // 모든 결제 방법에서 selected 클래스 제거
+                document.querySelectorAll(".payment-method").forEach((el) => {
+                    el.classList.remove("selected");
+                });
+
+                // 선택된 결제 방법에 selected 클래스 추가
+                element.classList.add("selected");
+
+                // 결제 상세 정보 표시
+                const paymentDetails = document.getElementById("payment-details");
+                paymentDetails.classList.remove("hidden");
+
+                // TODO: 선택된 결제 방법에 따라 다른 상세 정보 표시
+            }
+
+            // 카드 번호 포맷팅
+            const cardNumberInput = document.querySelector('input[placeholder="1234 5678 9012 3456"]');
+            if (cardNumberInput) {
+                cardNumberInput.addEventListener("input", function () {
+                    // 숫자 이외의 문자 제거
+                    const cleanedValue = this.value.replace(/\D/g, "");
+                    let formattedValue = "";
+
+                    // 4자리마다 공백 추가
+                    for (let i = 0; i < cleanedValue.length; i++) {
+                        formattedValue += cleanedValue[i];
+                        if ((i + 1) % 4 === 0 && i !== cleanedValue.length - 1) {
+                            formattedValue += " ";
+                        }
+                    }
+                    this.value = formattedValue;
+
+                    if (this.value.length > 19) {
+                        this.value = this.value.slice(0, 19);
+                    }
+                });
+            }
+
+            // 유효기간 포맷팅
+            const expiryDateInput = document.querySelector('input[placeholder="MM/YY"]');
+            if (expiryDateInput) {
+                expiryDateInput.addEventListener("input", function () {
+                    // 숫자 이외의 문자 제거
+                    const cleanedValue = this.value.replace(/\D/g, "");
+                    let formattedValue = "";
+
+                    if (cleanedValue.length >= 1) {
+                        formattedValue += cleanedValue.substring(0, 2);
+                    }
+                    if (cleanedValue.length >= 3) {
+                        formattedValue += "/" + cleanedValue.substring(2, 4);
+                    }
+                    this.value = formattedValue;
+
+                    // 입력 길이가 2자리가 되면 자동으로 '/' 추가
+                    if (this.value.length === 2 && !this.value.includes("/")) {
+                        this.value += "/";
+                    }
+
+                    // 입력 길이가 5자리를 넘지 않도록 제한 (MM/YY)
+                    if (this.value.length > 5) {
+                        this.value = this.value.slice(0, 5);
+                    }
+                });
+            }
+
+            // CVC 포맷팅
+            const cvcInput = document.querySelector('input[placeholder="CVC"]');
+            if (cvcInput) {
+                cvcInput.addEventListener("input", function () {
+                    // 숫자 이외의 문자 제거
+                    this.value = this.value.replace(/\D/g, "");
+
+                    // 최대 3자리까지만 허용
+                    if (this.value.length > 3) {
+                        this.value = this.value.slice(0, 3);
+                    }
+                });
+            }
+
+            // 연체료 결제 제출 함수
+            async function submitLateFeePayment() {
+                const selectedPaymentElement = document.querySelector(".payment-method.selected");
+                if (!selectedPaymentElement) {
+                    alert("결제 방법을 선택해주세요.");
+                    return;
+                }
+                const paymentMethod = selectedPaymentElement.getAttribute("data-payment-method");
+
+                let cardNumber = "";
+                let expiryDate = "";
+                let cvc = "";
+                let cardholderName = "";
+
+                // 카드 결제인 경우 카드 정보 가져오기
+                if (paymentMethod === "credit_card") {
+                    cardNumber = document.querySelector("#card-number").value;
+                    expiryDate = document.querySelector("#expiry-date").value;
+                    cvc = document.querySelector("#cvc").value;
+                    cardholderName = document.querySelector("#cardholder-name").value;
+
+                    if (!cardNumber || !expiryDate || !cvc || !cardholderName) {
+                        alert("카드 정보를 모두 입력해주세요.");
+                        return;
+                    }
+                }
+
+                const urlParams = new URLSearchParams(window.location.search);
+                const reservationId = urlParams.get("reservationId");
+
+                if (!reservationId || isNaN(currentOverdueAmount) || currentOverdueAmount <= 0) {
+                    alert("연체료 정보를 불러오는 데 실패했습니다.");
+                    return;
+                }
+
+                // 결제 확인 대화상자 표시
+                if (confirm(`연체료 ${currentOverdueAmount.toLocaleString()}원을 결제하시겠습니까?`)) {
+                    try {
+                        // 로딩 표시
+                        const paymentButton = document.querySelector('button[onclick="submitLateFeePayment()"]');
+                        paymentButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> 결제 처리 중...';
+                        paymentButton.disabled = true;
+
+                        const authToken = localStorage.getItem("token");
+
+                        const paymentResponse = await fetch("/api/pay", {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json",
+                                Authorization: `Bearer ${authToken}`, // 필요한 경우
+                            },
+                            body: JSON.stringify({
+                                card_number: cardNumber,
+                                expiry_date: expiryDate,
+                                cvc: cvc,
+                                cardholder_name: cardholderName,
+                                reservation_id: parseInt(reservationId),
+                                total_amount: currentOverdueAmount, // 저장된 변수 사용
+                                payment_method: paymentMethod,
+                                payment_type: "overdue", // 연체료 결제 유형 명시
+                            }),
+                        });
+
+                        if (paymentResponse.ok) {
+                            const paymentData = await paymentResponse.json();
+                            if (paymentData.success) {
+                                alert("연체료 결제가 완료되었습니다. 마이페이지에서 확인 가능합니다.");
+                                window.location.href = "/mypage/reservations";
+                            } else {
+                                alert(`결제 실패: ${paymentData.message}`);
+                            }
+                        } else {
+                            const errorData = await paymentResponse.json();
+                            alert(`결제 API 호출 실패: ${errorData.message || paymentResponse.statusText}`);
+                        }
+                    } catch (error) {
+                        console.error("결제 처리 중 오류 발생:", error);
+                        alert("결제 처리 중 오류가 발생했습니다. 다시 시도해주세요.");
+                    } finally {
+                        // 로딩 상태 복원 (성공, 실패 여부와 관계없이)
+                        const paymentButton = document.querySelector('button[onclick="submitLateFeePayment()"]');
+                        paymentButton.textContent = "연체료 결제하기";
+                        paymentButton.disabled = false;
+                    }
+                }
+            }
+
+            function formatDate(dateString) {
+                const date = new Date(dateString);
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, "0");
+                const day = String(date.getDate()).padStart(2, "0");
+                return `${year}년 ${month}월 ${day}일`;
+            }
+
+            window.addEventListener("DOMContentLoaded", function () {
+                // 페이지 로드 시 기본 결제 방법 선택
+                {
+                    const firstPaymentMethod = document.querySelector(".payment-method");
+                    if (firstPaymentMethod) {
+                        firstPaymentMethod.classList.add("selected");
+                        document.getElementById("payment-details").classList.remove("hidden");
+                    }
+                }
+                // 연체 정보 불러오기
+                {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const reservationId = urlParams.get("reservationId");
+
+                    if (reservationId) {
+                        fetch(`/api/overdue_fee_info/${reservationId}`, {
+                            method: "GET",
+                            headers: {
+                                Authorization: `Bearer ${localStorage.getItem("token")}`, // JWT 토큰 필요
+                                "Content-Type": "application/json",
+                            },
+                        })
+                            .then((response) => {
+                                if (!response.ok) {
+                                    console.error("연체 정보 불러오기 실패:", response.status);
+                                    return;
+                                }
+                                return response.json();
+                            })
+                            .then((data) => {
+                                console.log(data);
+                                document.querySelector("#reservation-id").textContent = `RSV-${data.reservation_id}`; // 예약 번호
+                                document.querySelector("#car-info").textContent = data.car_info; // 차량 정보
+                                document.querySelector("#expected-return-date").textContent = formatDate(data.expected_return_date); // 예정 반납일
+                                document.querySelector("#actual-return-date").textContent = data.actual_return_date ? formatDate(data.actual_return_date) : "미반납"; // 실제 반납일
+                                document.querySelector("#base-fee").textContent = `${data.base_fee.toLocaleString()}원`; // 기본 연체료
+                                document.querySelector("#overdue-time").textContent = `${data.overdue_hours}시간`; // 연체 시간
+                                document.querySelector("#total-fee").textContent = `${data.total_overdue_fee.toLocaleString()}원`; // 총 연체료
+
+                                currentOverdueAmount = data.total_overdue_fee;
+                            })
+                            .catch((error) => {
+                                console.error("연체 정보 불러오기 중 오류 발생:", error);
+                                // 오류 처리
+                            });
+                    } else {
+                        console.error("reservationId가 URL에 없습니다.");
+                        // reservationId가 없을 경우 처리
+                    }
+                }
+            });
+        </script>
+    </body>
+</html>

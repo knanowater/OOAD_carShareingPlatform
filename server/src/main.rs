@@ -5,37 +5,35 @@ extern crate rocket;
 extern crate rocket_include_static_resources;
 
 mod auth;
+mod background_tasks;
+mod payment;
 
 use auth::{AuthToken, is_admin, login, logout, signup};
 use chrono::{NaiveDateTime, Utc};
 use dotenvy::dotenv;
+use payment::process_payment;
 use rocket::State;
 use rocket::form::FromForm;
 use rocket::fs::NamedFile;
 use rocket::http::Status;
 use rocket::serde::json::Json;
+use rocket::{Rocket, get, routes};
 use serde::{Deserialize, Serialize};
 use server::{CarInfo, add_car, update_car};
 use sqlx::MySqlPool;
 use sqlx::mysql::MySqlPoolOptions;
 use std::env;
 use std::path::Path;
-
 static_response_handler! {
     "/favicon.ico" => favicon => "favicon",
 }
-
 #[tokio::main]
 async fn main() -> Result<(), sqlx::Error> {
-    // .env 파일에서 환경 변수 로드
     dotenv().expect(".env file not found");
-
-    // 환경 변수에서 데이터베이스 URL 읽기
     let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
 
     println!("Connecting to database...");
 
-    // 데이터베이스 연결 풀 생성
     let pool = MySqlPoolOptions::new()
         .max_connections(5)
         .connect(&database_url)
@@ -43,8 +41,7 @@ async fn main() -> Result<(), sqlx::Error> {
 
     println!("Successfully connected to the database!");
 
-    // Rocket 서버 실행
-    rocket::build()
+    let rocket = rocket::build()
         .attach(static_resources_initializer!("favicon" => "../favicon.ico",))
         .mount(
             "/",
@@ -58,6 +55,7 @@ async fn main() -> Result<(), sqlx::Error> {
                 reservation_success_page,
                 mypage_page,
                 mypage_reservations_page,
+                overdue_fee_page,
                 admin_dashboard_page,
                 car_management_page,
                 add_car_endpoint,
@@ -73,20 +71,25 @@ async fn main() -> Result<(), sqlx::Error> {
                 api_reservations,
                 api_return_car,
                 api_cancel_reservation,
+                api_overdue_fee_info,
+                process_payment,
             ],
         )
         .mount(
             "/scripts",
             rocket::fs::FileServer::from("../client/scripts"),
         )
-        .manage(pool)
+        .manage(pool.clone());
+
+    let rocket_with_tasks: Rocket<rocket::Build> = background_tasks::start_background_tasks(rocket);
+
+    rocket_with_tasks
         .launch()
         .await
         .expect("Rocket failed to launch");
 
     Ok(())
 }
-
 #[get("/")]
 async fn index() -> Option<NamedFile> {
     NamedFile::open(Path::new("../client/index.html"))
@@ -123,6 +126,13 @@ async fn reservation_page(id: Option<i32>) -> Option<NamedFile> {
     } else {
         None
     }
+}
+
+#[get("/overdue_fee")]
+async fn overdue_fee_page() -> Option<NamedFile> {
+    NamedFile::open(Path::new("../client/mypage/overdue_fee.html"))
+        .await
+        .ok()
 }
 
 #[get("/reservation/success?<id>")]
@@ -566,16 +576,23 @@ struct Request {
 }
 
 #[derive(Serialize)]
-struct ApiResponse {
+struct CancelApiResponse {
     message: String,
+}
+
+#[derive(Serialize)]
+struct ReturnApiResponse {
+    message: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    overdue_fee: Option<i32>, // 연체료 필드 (없으면 직렬화에서 제외)
 }
 
 #[post("/api/return", data = "<return_request>")]
 async fn api_return_car(
     pool: &State<MySqlPool>,
-    auth_token: auth::AuthToken,
+    auth_token: AuthToken,
     return_request: Json<Request>,
-) -> Result<Json<ApiResponse>, Status> {
+) -> Result<Json<ReturnApiResponse>, Status> {
     let user_id = auth_token
         .0
         .sub
@@ -589,53 +606,92 @@ async fn api_return_car(
         Status::InternalServerError
     })?;
 
-    // 예약 정보 확인 및 사용자 ID 일치 여부 확인, car_id 가져오기
-    let reservation_info = sqlx::query!(
-        "SELECT user_id, car_id FROM reservation WHERE id = ?",
+    // 예약 정보 확인 및 사용자 ID 일치 여부 확인, car_id, 반납 예정 시간 가져오기
+    let reservation_result = sqlx::query!(
+        "SELECT user_id, car_id, return_date FROM reservation WHERE id = ?",
         reservation_id
     )
-    .fetch_one(&mut *conn)
+    .fetch_optional(&mut *conn) // fetch_optional 사용
     .await
     .map_err(|e| {
         eprintln!("Failed to fetch reservation: {}", e);
-        Status::NotFound // 예약 정보가 없으면 404 Not Found
+        Status::InternalServerError
     })?;
+
+    let reservation_info = match reservation_result {
+        Some(info) => info,
+        None => return Err(Status::NotFound),
+    };
 
     let owner_user_id = reservation_info.user_id;
     let car_id = reservation_info.car_id;
+    let return_deadline: Option<NaiveDateTime> = Some(reservation_info.return_date); // 명시적 타입 지정
 
     if user_id != owner_user_id {
         return Err(Status::Forbidden); // 예약한 사용자와 반납 요청자가 다르면 403 Forbidden
     }
 
+    let now = Utc::now().naive_utc(); // 현재 시간을 UTC naive datetime으로 가져옴
+
+    let mut overdue_fee = 0;
+    if let Some(deadline) = return_deadline {
+        if now > deadline {
+            let overdue_duration = now - deadline;
+            let overdue_hours = overdue_duration.num_hours();
+
+            let car_info_result = sqlx::query!("SELECT daily_rate FROM cars WHERE id = ?", car_id)
+                .fetch_optional(&mut *conn) // fetch_optional 사용
+                .await
+                .map_err(|e| {
+                    eprintln!("Failed to fetch car info: {}", e);
+                    Status::InternalServerError
+                })?;
+
+            if let Some(car) = car_info_result {
+                let daily_rate = car.daily_rate;
+                let hourly_rate = daily_rate as f64 / 24.0;
+                overdue_fee = (hourly_rate * 1.5 * overdue_hours as f64).round() as i32;
+            }
+        }
+    }
+
+    // 예약 상태 업데이트 (연체료와 실제 반납 시간 포함)
     let update_reservation_result = sqlx::query!(
-        "UPDATE reservation SET reservation_status = 'completed', return_date = ? WHERE id = ?",
-        Utc::now(),
-        reservation_id
-    )
-    .execute(&mut *conn)
-    .await
-    .map_err(|e| {
-        eprintln!("Failed to update reservation status: {}", e);
-        Status::InternalServerError
-    })?;
+         "UPDATE reservation SET reservation_status = ?, return_date_actual = ?, overdue_fee = ? WHERE id = ?",
+         if overdue_fee > 0 { "overdue" } else { "completed" }, // 연체료 있으면 'overdue' 상태로 변경
+         now, // 실제 반납 시간 저장
+         overdue_fee,
+         reservation_id
+     )
+     .execute(&mut *conn)
+     .await
+     .map_err(|e| {
+         eprintln!("Failed to update reservation status and return time: {}", e);
+         Status::InternalServerError
+     })?;
+
+    // 차량 반납 성공 후 차량 상태를 'Available'로 업데이트 (결과 확인 없이 시도)
+    let update_car_result =
+        sqlx::query!("UPDATE cars SET status = 'Available' WHERE id = ?", car_id)
+            .execute(&mut *conn)
+            .await;
+
+    if let Err(e) = update_car_result {
+        eprintln!(
+            "Warning: Failed to update car status for car ID {}: {}",
+            car_id, e
+        );
+    }
 
     if update_reservation_result.rows_affected() > 0 {
-        // 차량 반납 성공 후 차량 상태를 'Available'로 업데이트 (결과 확인 없이 시도)
-        let update_car_result =
-            sqlx::query!("UPDATE cars SET status = 'Available' WHERE id = ?", car_id)
-                .execute(&mut *conn)
-                .await; // .map_err를 제거하여 오류를 Result로 처리
-
-        if let Err(e) = update_car_result {
-            eprintln!(
-                "Warning: Failed to update car status for car ID {}: {}",
-                car_id, e
-            );
-        }
-
-        Ok(Json(ApiResponse {
-            message: "차량이 성공적으로 반납 처리되었습니다.".to_string(),
+        let message = if overdue_fee > 0 {
+            "차량이 연체되었습니다. 연체료 결제 페이지로 이동합니다.".to_string()
+        } else {
+            "차량이 성공적으로 반납 처리되었습니다.".to_string()
+        };
+        Ok(Json(ReturnApiResponse {
+            message,
+            overdue_fee: Some(overdue_fee),
         }))
     } else {
         Err(Status::InternalServerError) // 예약 업데이트 실패
@@ -647,7 +703,7 @@ async fn api_cancel_reservation(
     pool: &State<MySqlPool>,
     auth_token: auth::AuthToken,
     cancel_request: Json<Request>,
-) -> Result<Json<ApiResponse>, Status> {
+) -> Result<Json<CancelApiResponse>, Status> {
     let user_id = auth_token
         .0
         .sub
@@ -705,10 +761,94 @@ async fn api_cancel_reservation(
             );
         }
 
-        Ok(Json(ApiResponse {
+        Ok(Json(CancelApiResponse {
             message: "예약이 성공적으로 취소되었습니다.".to_string(),
         }))
     } else {
         Err(Status::InternalServerError) // 예약 업데이트 실패
     }
-} // 예약 취소 성공 후 차량 상태
+}
+
+#[get("/api/overdue_fee_info/<reservation_id>")]
+async fn api_overdue_fee_info(
+    pool: &State<MySqlPool>,
+    auth_token: AuthToken,
+    reservation_id: i32,
+) -> Result<Json<OverdueFeeInfo>, Status> {
+    let user_id = auth_token
+        .0
+        .sub
+        .parse::<i32>()
+        .map_err(|_| Status::Unauthorized)?;
+
+    let mut conn = pool.acquire().await.map_err(|e| {
+        eprintln!("Failed to acquire connection: {}", e);
+        Status::InternalServerError
+    })?;
+
+    let reservation = sqlx::query!(
+        r#"
+        SELECT
+            r.id AS reservation_id,
+            c.manufacture AS car_manufacture,
+            c.name AS car_model,
+            r.rental_date,
+            r.return_date,
+            r.return_date_actual,
+            r.overdue_fee,
+            c.daily_rate -- 차량의 일일 요금을 가져옴
+        FROM reservation r
+        JOIN cars c ON r.car_id = c.id
+        WHERE r.id = ? AND r.user_id = ? AND r.reservation_status = 'overdue'
+        "#,
+        reservation_id,
+        user_id
+    )
+    .fetch_optional(&mut *conn)
+    .await
+    .map_err(|e| {
+        eprintln!("Failed to fetch overdue reservation info: {}", e);
+        Status::InternalServerError
+    })?;
+
+    match reservation {
+        Some(res) => {
+            let rental_date = res.rental_date.and_utc();
+            let return_date = res.return_date.and_utc();
+            let return_date_actual = res.return_date_actual.map(|dt| dt.and_utc());
+
+            let overdue_hours = return_date_actual
+                .and_then(|actual| Some((actual - return_date).num_hours()))
+                .unwrap_or(0);
+
+            // 기본 연체료 계산 (시간당 요금 * 1.5, 정수 처리)
+            let hourly_rate = (res.daily_rate as f64 / 24.0).round() as i32;
+            let base_fee = (hourly_rate as f64 * 1.5).round() as i32;
+
+            Ok(Json(OverdueFeeInfo {
+                reservation_id: res.reservation_id,
+                car_info: format!("{} {}", res.car_manufacture, res.car_model),
+                rental_date: rental_date.naive_utc().date(), // 날짜만 유지
+                expected_return_date: return_date.naive_utc().date(), // 날짜만 유지
+                actual_return_date: return_date_actual.map(|dt| dt.naive_utc().date()), // 날짜만 유지
+                base_fee,
+                overdue_hours,
+                total_overdue_fee: res.overdue_fee.unwrap_or(0) as i32,
+            }))
+        }
+        None => Err(Status::NotFound),
+    }
+}
+
+#[derive(Serialize)]
+#[serde(crate = "rocket::serde")]
+struct OverdueFeeInfo {
+    reservation_id: i32,
+    car_info: String,
+    rental_date: chrono::NaiveDate,
+    expected_return_date: chrono::NaiveDate,
+    actual_return_date: Option<chrono::NaiveDate>,
+    base_fee: i32,
+    overdue_hours: i64,
+    total_overdue_fee: i32,
+}

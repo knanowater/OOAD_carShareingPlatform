@@ -5,6 +5,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>DriveShare - 예약 내역</title>
         <script src="https://cdn.tailwindcss.com"></script>
+        <script src="/scripts/script.js"></script>
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
         <style>
             .filter-active {
@@ -34,15 +35,15 @@
                     <i class="fas fa-car text-blue-600 text-3xl mr-2"></i>
                     <span class="text-2xl font-bold text-blue-600">DriveShare</span>
                 </div>
-                <nav class="hidden md:flex space-x-8">
+                <nav class="hidden md:flex space-x-8" id="header-menu">
                     <a href="/" class="text-gray-600 hover:text-blue-600">홈</a>
                     <a href="/list" class="text-gray-600 hover:text-blue-600">차량 찾기</a>
                     <a href="#" class="text-gray-600 hover:text-blue-600">이용 방법</a>
                     <a href="#" class="text-gray-600 hover:text-blue-600">고객센터</a>
-                    <a href="/mypage" class="text-blue-600 font-medium">마이페이지</a>
+                    <a href="/mypage" class="text-blue-600 font-medium" id="header-mypage">마이페이지</a>
                 </nav>
                 <div class="flex items-center space-x-4">
-                    <button class="px-4 py-2 rounded-full bg-blue-600 text-white hover:bg-blue-700 transition" onclick="location.href='/logout'">로그아웃</button>
+                    <button class="px-4 py-2 rounded-full bg-blue-600 text-white hover:bg-blue-700 transition" onclick="location.href='/login'">로그인 / 회원가입</button>
                     <button class="md:hidden text-gray-600">
                         <i class="fas fa-bars text-xl"></i>
                     </button>
@@ -356,6 +357,8 @@
                         return "이용 중";
                     case "completed":
                         return "이용 완료";
+                    case "overdue":
+                        return "연체 중";
                     case "canceled":
                         return "취소됨";
                     default:
@@ -373,6 +376,8 @@
                         return "bg-yellow-100 text-yellow-800";
                     case "completed": // 이용 완료
                         return "bg-green-100 text-green-700";
+                    case "overdue": // 연체 중
+                        return "bg-orange-100 text-orange-700";
                     case "canceled": // 취소됨
                         return "bg-red-100 text-red-700";
                     default:
@@ -381,11 +386,12 @@
             }
 
             function getReservationActionButton(reservation) {
-                if (reservation.reservation_status.toLowerCase() === "pending") {
+                const status = reservation.reservation_status.toLowerCase();
+                if (status === "pending") {
                     return `<button class="mt-2 px-3 py-1 bg-red-500 text-white text-sm rounded hover:bg-red-600" onclick="cancelButton(${reservation.reservation_id})" >취소</button> <button class="mt-2 ml-2 px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">상세 보기</button>`;
-                } else if (reservation.reservation_status.toLowerCase() === "in use") {
+                } else if (status === "in use" || status === "overdue") {
                     return `<button class="mt-2 px-3 py-1 bg-amber-500 text-white text-sm rounded hover:bg-amber-600" onclick="returnButton(${reservation.reservation_id})">반납 하기</button> <button class="mt-2 ml-2 px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">상세 보기</button>`;
-                } else if (reservation.reservation_status.toLowerCase() === "completed") {
+                } else if (status === "completed") {
                     return '<button class="mt-2 px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">리뷰 작성</button>';
                 }
                 return '<button class="mt-2 px-3 py-1 bg-gray-200 text-gray-700 text-sm rounded hover:bg-gray-300">상세 보기</button>';
@@ -442,13 +448,19 @@
                                 Authorization: `Bearer ${token}`,
                                 "Content-Type": "application/json",
                             },
-                            body: JSON.stringify({ reservation_id: reservationId }), // <-- 키 이름을 소문자로 변경
+                            body: JSON.stringify({ reservation_id: reservationId }),
                         });
 
                         if (response.ok) {
                             const result = await response.json();
-                            alert(result.message || "차량 반납이 완료되었습니다.");
-                            window.location.reload();
+                            if (result.overdue_fee > 0) {
+                                if (confirm(`차량이 연체되었습니다.\n연체료 ${result.overdue_fee.toLocaleString()}원 결제 페이지로 이동하시겠습니까?`)) {
+                                    window.location.href = `/overdue_fee?reservationId=${reservationId}`;
+                                }
+                            } else {
+                                alert(result.message || "차량 반납이 완료되었습니다.");
+                                window.location.reload();
+                            }
                         } else {
                             const errorResult = await response.json();
                             console.error("차량 반납 실패:", response.status, errorResult);

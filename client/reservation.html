@@ -156,7 +156,7 @@
                     <div class="bg-white rounded-lg shadow p-6">
                         <h2 class="text-2xl font-bold mb-6">결제 방법</h2>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div class="payment-method border-2 border-gray-200 rounded-lg p-4 cursor-pointer" onclick="selectPaymentMethod(this)">
+                            <div class="payment-method border-2 border-gray-200 rounded-lg p-4 cursor-pointer" onclick="selectPaymentMethod(this)" data-payment-method="credit_card">
                                 <div class="flex items-center">
                                     <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mr-3">
                                         <i class="fas fa-credit-card text-blue-600"></i>
@@ -329,7 +329,7 @@
                 const carId = urlParams.get("id");
                 console.log(carId);
 
-                // 간단한 유효성 검사
+                // 간단한 유효성 검사 (대여 기간, 결제 방법 등 기존 유효성 검사 유지)
                 const startDateStr = document.querySelector("#rental-date").value;
                 const endDateStr = document.querySelector("#return-date").value;
 
@@ -354,19 +354,19 @@
                     return;
                 }
 
-                // 결제 방법 선택 확인
                 const selectedPayment = document.querySelector(".payment-method.selected");
                 if (!selectedPayment) {
                     alert("결제 방법을 선택해주세요.");
                     return;
                 }
+                const paymentMethod = selectedPayment.getAttribute("data-payment-method");
 
-                const carNumber = document.querySelector("#card-number");
-                const expiryDate = document.querySelector("#expiry-date");
-                const cvc = document.querySelector("#cvc");
-                const cardholderName = document.querySelector("#cardholder-name");
+                const cardNumber = document.querySelector("#card-number").value;
+                const expiryDate = document.querySelector("#expiry-date").value;
+                const cvc = document.querySelector("#cvc").value;
+                const cardholderName = document.querySelector("#cardholder-name").value;
 
-                if (!carNumber.value || !expiryDate.value || !cvc.value || !cardholderName.value) {
+                if (paymentMethod === "credit_card" && (!cardNumber || !expiryDate || !cvc || !cardholderName)) {
                     alert("카드 정보를 모두 입력해주세요.");
                     return;
                 }
@@ -390,11 +390,13 @@
                     const dailyRate = daily_rate;
                     const rentalDays = calculateRentalPeriod();
                     const rentalFee = dailyRate * rentalDays;
+                    const totalPrice = rentalFee + dailyRate / 10;
 
                     const authToken = localStorage.getItem("token");
+                    let reservationId;
+
                     try {
-                        const response = await fetch("/api/reservations/request", {
-                            // Replace with your actual backend API endpoint for creating reservations
+                        const reservationResponse = await fetch("/api/reservations/request", {
                             method: "POST",
                             headers: {
                                 "Content-Type": "application/json",
@@ -405,22 +407,53 @@
                                 rental_date: startDate.toISOString().split("T")[0],
                                 return_date: endDate.toISOString().split("T")[0],
                                 request: document.querySelector("#request").value,
-                                total_price: rentalFee + dailyRate / 10,
+                                total_price: totalPrice,
                             }),
                         });
 
-                        if (response.ok) {
-                            const data = await response.json(); // Or response.text() if your backend doesn't return JSON
-                            const reservationId = data.reservation_id; // Assuming your backend returns the reservation ID in JSON
+                        if (reservationResponse.ok) {
+                            const reservationData = await reservationResponse.json();
+                            reservationId = reservationData.reservation_id;
 
-                            window.location.href = `/reservation/success?id=${reservationId}`;
+                            // 결제 API 호출
+                            const paymentResponse = await fetch("/api/pay", {
+                                method: "POST",
+                                headers: {
+                                    "Content-Type": "application/json",
+                                    Authorization: `Bearer ${authToken}`, // 필요한 경우
+                                },
+                                body: JSON.stringify({
+                                    card_number: cardNumber,
+                                    expiry_date: expiryDate,
+                                    cvc: cvc,
+                                    cardholder_name: cardholderName,
+                                    reservation_id: reservationId,
+                                    total_amount: totalPrice,
+                                    payment_method: paymentMethod,
+                                    payment_type: "reservation",
+                                }),
+                            });
+
+                            if (paymentResponse.ok) {
+                                const paymentData = await paymentResponse.json();
+                                if (paymentData.success) {
+                                    window.location.href = `/reservation/success?id=${reservationId}&payment_id=${paymentData.transaction_id || "가상"}`; // 결제 성공 페이지로 이동
+                                } else {
+                                    alert(`결제 실패: ${paymentData.message}`);
+                                    // 결제 실패 시 예약 취소 또는 다른 처리 로직 추가
+                                }
+                            } else {
+                                const errorData = await paymentResponse.json();
+                                alert(`결제 API 호출 실패: ${errorData.message || paymentResponse.statusText}`);
+                                // 결제 API 호출 실패 시 예약 취소 또는 다른 처리 로직 추가
+                            }
                         } else {
-                            const errorData = await response.json(); // Or response.text()
-                            alert(`예약 요청 실패: ${errorData.message || response.statusText}`);
+                            const errorData = await reservationResponse.json();
+                            alert(`예약 요청 실패: ${errorData.message || reservationResponse.statusText}`);
                         }
                     } catch (error) {
-                        console.error("예약 요청 중 오류 발생:", error);
-                        alert("예약 요청 중 오류가 발생했습니다.");
+                        console.error("예약 또는 결제 요청 중 오류 발생:", error);
+                        alert("예약 또는 결제 요청 중 오류가 발생했습니다.");
                     }
                 }
             }
