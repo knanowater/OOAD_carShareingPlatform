@@ -614,37 +614,107 @@ pub async fn api_mypage(
     Ok(Json(user))
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, sqlx::FromRow)]
+#[serde(crate = "rocket::serde")]
 pub struct ReservationInfo {
-    reservation_id: String,
-    car_image_url: String,
-    car_manufacture: String,
-    car_model: String,
-    rental_date: NaiveDateTime,
-    return_date: NaiveDateTime,
-    rental_period_days: i64,
-    pickup_location: String,
-    total_price: f32,
-    reservation_status: String,
+    pub reservation_id: String,
+    pub car_image_url: String,
+    pub car_manufacture: String,
+    pub car_model: String,
+    pub rental_date: chrono::NaiveDateTime,
+    pub return_date: chrono::NaiveDateTime,
+    pub rental_period_days: i32,
+    pub pickup_location: String,
+    pub total_price: f64,
+    pub reservation_status: String,
 }
 
-#[get("/api/reservations")]
+#[get("/api/reservations?<page>&<limit>&<status>&<start_date>&<end_date>&<car_type>")]
 pub async fn api_reservations(
     pool: &State<MySqlPool>,
     auth_token: AuthToken,
-) -> Result<Json<Vec<ReservationInfo>>, Status> {
-    let user_id = auth_token
+    page: Option<u64>,
+    limit: Option<u64>,
+    status: Option<String>,
+    start_date: Option<String>,
+    end_date: Option<String>,
+    car_type: Option<String>,
+) -> Result<Json<ReservationsResponse>, Status> {
+    let user_id_str = auth_token
         .0
         .sub
         .parse::<i32>()
-        .map_err(|_| Status::Unauthorized)?;
+        .map_err(|_| Status::Unauthorized)?
+        .to_string();
+
+    let current_page = page.unwrap_or(1);
+    let items_per_page = limit.unwrap_or(10);
+    let offset = (current_page - 1) * items_per_page;
 
     let mut conn = pool.acquire().await.map_err(|e| {
         eprintln!("Failed to acquire connection: {}", e);
         Status::InternalServerError
     })?;
 
-    let reservations = sqlx::query!(
+    let mut where_clause = "WHERE r.user_id = ?".to_string();
+    let mut conditions: Vec<String> = Vec::new();
+    let mut query_params: Vec<&str> = Vec::new();
+    query_params.push(user_id_str.as_str());
+
+    if let Some(ref s) = status {
+        if s != "all" {
+            conditions.push("r.reservation_status = ?".to_string());
+            query_params.push(s.as_str());
+        }
+    }
+
+    if let Some(ref start) = start_date {
+        conditions.push("r.rental_date >= ?".to_string());
+        query_params.push(start.as_str());
+    }
+
+    if let Some(ref end) = end_date {
+        conditions.push("r.return_date <= ?".to_string());
+        query_params.push(end.as_str());
+    }
+
+    if let Some(ref car) = car_type {
+        if !car.is_empty() {
+            conditions.push("c.car_type = ?".to_string());
+            query_params.push(car.as_str());
+        }
+    }
+
+    if !conditions.is_empty() {
+        where_clause.push_str(&format!(" AND {}", conditions.join(" AND ")));
+    }
+
+    let count_query_str = format!(
+        r#"
+        SELECT COUNT(*)
+        FROM reservation r
+        JOIN cars c ON r.car_id = c.id
+        {}
+        "#,
+        where_clause
+    );
+
+    let mut count_query = sqlx::query_as::<_, (i64,)>(count_query_str.as_str());
+    for param in &query_params {
+        count_query = count_query.bind(*param);
+    }
+    let total_items = count_query
+        .fetch_one(&mut *conn)
+        .await
+        .map_err(|e| {
+            eprintln!("Failed to count reservations: {}", e);
+            Status::InternalServerError
+        })?
+        .0;
+
+    let total_pages = (total_items as f64 / items_per_page as f64).ceil() as u64;
+
+    let select_query_str = format!(
         r#"
         SELECT
             r.reservation_id AS reservation_id,
@@ -654,38 +724,43 @@ pub async fn api_reservations(
             r.rental_date,
             r.return_date,
             DATEDIFF(r.return_date, r.rental_date) AS rental_period_days,
-            COALESCE(c.location, '미정') AS pickup_location, -- NULL인 경우 '미정'으로 처리
-            COALESCE(r.total_price, 0) AS total_price,             -- NULL인 경우 0으로 처리
+            COALESCE(c.location, '미정') AS pickup_location,
+            COALESCE(r.total_price, 0) AS total_price,
             r.reservation_status
         FROM reservation r
         JOIN cars c ON r.car_id = c.id
-        WHERE r.user_id = ?
+        {}
         ORDER BY r.id DESC
+        LIMIT ? OFFSET ?
         "#,
-        user_id
-    )
-    .fetch_all(&mut *conn)
-    .await
-    .map_err(|e| {
-        eprintln!("Failed to fetch reservations: {}", e);
-        Status::InternalServerError
-    })?
-    .into_iter()
-    .map(|row| ReservationInfo {
-        reservation_id: row.reservation_id.unwrap_or_default(),
-        car_image_url: row.car_image_url.unwrap_or_default(),
-        car_manufacture: row.car_manufacture,
-        car_model: row.car_model,
-        rental_date: row.rental_date,
-        return_date: row.return_date,
-        rental_period_days: row.rental_period_days.unwrap_or_default(), // Option<i64> -> i64 (None이면 0)
-        pickup_location: row.pickup_location,
-        total_price: row.total_price,
-        reservation_status: row.reservation_status,
-    })
-    .collect();
+        where_clause
+    );
 
-    Ok(Json(reservations))
+    let mut select_query = sqlx::query_as::<_, ReservationInfo>(select_query_str.as_str());
+    for param in &query_params {
+        select_query = select_query.bind(*param);
+    }
+    let reservations = select_query
+        .bind(items_per_page as i64)
+        .bind(offset as i64)
+        .fetch_all(&mut *conn)
+        .await
+        .map_err(|e| {
+            eprintln!("Failed to fetch paginated reservations: {}", e);
+            Status::InternalServerError
+        })?;
+
+    Ok(Json(ReservationsResponse {
+        reservations,
+        total_pages,
+    }))
+}
+
+#[derive(Serialize)]
+#[serde(crate = "rocket::serde")]
+pub struct ReservationsResponse {
+    reservations: Vec<ReservationInfo>,
+    total_pages: u64,
 }
 
 #[derive(Deserialize)]

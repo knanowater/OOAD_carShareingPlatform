@@ -28,7 +28,6 @@
         </style>
     </head>
     <body class="font-sans antialiased text-gray-800 bg-gray-50">
-        <!-- 헤더 영역 -->
         <header class="bg-white shadow-sm sticky top-0 z-50">
             <div class="container mx-auto px-4 py-4 flex justify-between items-center">
                 <div class="flex items-center" onclick="location.href='/'" style="cursor: pointer">
@@ -51,59 +50,24 @@
             </div>
         </header>
 
-        <!-- 메인 컨텐츠 영역 -->
         <main class="container mx-auto px-4 py-8">
-            <!-- 페이지 헤더 -->
             <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
                 <div>
                     <h1 class="text-2xl md:text-3xl font-bold mb-2">예약 내역</h1>
                     <p class="text-gray-600">지난 1년간의 예약 내역을 확인할 수 있습니다.</p>
                 </div>
-                <div class="mt-4 md:mt-0">
-                    <button onclick="window.print()" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition"><i class="fas fa-print mr-2"></i>인쇄하기</button>
-                </div>
             </div>
 
-            <!-- 필터 섹션 -->
             <div class="bg-white rounded-xl shadow-md p-6 mb-8">
-                <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
-                    <h2 class="text-lg font-bold mb-4 md:mb-0">예약 상태 필터</h2>
-                    <div class="flex flex-wrap gap-2">
-                        <button class="filter-active px-4 py-2 rounded-full text-sm transition" onclick="filterReservations('all')">전체 보기</button>
-                        <button class="bg-gray-100 px-4 py-2 rounded-full text-sm hover:bg-gray-200 transition" onclick="filterReservations('upcoming')">이용 예정</button>
-                        <button class="bg-gray-100 px-4 py-2 rounded-full text-sm hover:bg-gray-200 transition" onclick="filterReservations('completed')">이용 완료</button>
-                        <button class="bg-gray-100 px-4 py-2 rounded-full text-sm hover:bg-gray-200 transition" onclick="filterReservations('canceled')">취소된 예약</button>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div class="bg-gray-100 p-4 rounded-lg">
-                        <label for="start-date" class="block text-sm font-medium text-gray-700 mb-1">시작일</label>
-                        <input type="date" id="start-date" class="w-full p-2 border border-gray-300 rounded" />
-                    </div>
-                    <div class="bg-gray-100 p-4 rounded-lg">
-                        <label for="end-date" class="block text-sm font-medium text-gray-700 mb-1">종료일</label>
-                        <input type="date" id="end-date" class="w-full p-2 border border-gray-300 rounded" />
-                    </div>
-                    <div class="bg-gray-100 p-4 rounded-lg">
-                        <label for="car-type" class="block text-sm font-medium text-gray-700 mb-1">차종</label>
-                        <select id="car-type" class="w-full p-2 border border-gray-300 rounded">
-                            <option value="">전체</option>
-                            <option value="sedan">세단</option>
-                            <option value="suv">SUV</option>
-                            <option value="electric">전기차</option>
-                            <option value="premium">프리미엄</option>
-                        </select>
-                    </div>
-                    <div class="flex items-end">
-                        <button class="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition">검색하기</button>
-                    </div>
+                <div class="flex flex-wrap gap-2 mb-6">
+                    <button class="filter-active px-4 py-2 rounded-full text-sm transition" onclick="filterReservations('all')">전체 보기</button>
+                    <button class="bg-gray-100 px-4 py-2 rounded-full text-sm hover:bg-gray-200 transition" onclick="filterReservations('upcoming')">이용 예정</button>
+                    <button class="bg-gray-100 px-4 py-2 rounded-full text-sm hover:bg-gray-200 transition" onclick="filterReservations('completed')">이용 완료</button>
+                    <button class="bg-gray-100 px-4 py-2 rounded-full text-sm hover:bg-gray-200 transition" onclick="filterReservations('canceled')">취소된 예약</button>
                 </div>
             </div>
 
-            <!-- 예약 목록 -->
             <div id="reservations-list">
-                <!-- 테이블 헤더 (모바일에서는 숨김) -->
                 <div class="hidden md:grid grid-cols-12 bg-gray-100 p-4 font-medium text-gray-700">
                     <div class="col-span-3">차량 정보</div>
                     <div class="col-span-2">예약일</div>
@@ -115,22 +79,21 @@
             </div>
 
             <!-- 페이지네이션 -->
-            <div class="flex justify-center">
+            <div class="mt-8 flex justify-center" id="page-nav">
                 <nav class="inline-flex rounded-md shadow">
-                    <a href="#" class="px-3 py-2 rounded-l-md border border-gray-300 bg-white text-gray-500 hover:bg-gray-50">
+                    <a href="#" class="px-4 py-2 border border-gray-300 bg-white text-gray-500 hover:bg-gray-50 rounded-l-md">
                         <i class="fas fa-chevron-left"></i>
                     </a>
-                    <a href="#" class="px-4 py-2 border-t border-b border-gray-300 bg-white text-gray-500 hover:bg-gray-50 pagination-active"> 1 </a>
-                    <a href="#" class="px-4 py-2 border-t border-b border-gray-300 bg-white text-gray-500 hover:bg-gray-50"> 2 </a>
-                    <a href="#" class="px-4 py-2 border-t border-b border-gray-300 bg-white text-gray-500 hover:bg-gray-50"> 3 </a>
-                    <a href="#" class="px-3 py-2 rounded-r-md border border-gray-300 bg-white text-gray-500 hover:bg-gray-50">
+                    <a href="#" class="px-4 py-2 border-t border-b border-gray-300 bg-white text-blue-600 font-medium">1</a>
+                    <a href="#" class="px-4 py-2 border-t border-b border-gray-300 bg-white text-gray-500 hover:bg-gray-50">2</a>
+                    <a href="#" class="px-4 py-2 border-t border-b border-gray-300 bg-white text-gray-500 hover:bg-gray-50">3</a>
+                    <a href="#" class="px-4 py-2 border border-gray-300 bg-white text-gray-500 hover:bg-gray-50 rounded-r-md">
                         <i class="fas fa-chevron-right"></i>
                     </a>
                 </nav>
             </div>
         </main>
 
-        <!-- 푸터 영역 -->
         <footer class="bg-gray-900 text-white py-12">
             <div class="container mx-auto px-4">
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
@@ -140,51 +103,35 @@
                             <span class="text-xl font-bold">DriveShare</span>
                         </div>
                         <p class="text-gray-400 mb-4">국내 최고의 카셰어링 플랫폼</p>
-                        <div class="flex space-x-4">
-                            <a href="#" class="text-gray-400 hover:text-white"><i class="fab fa-facebook-f"></i></a>
-                            <a href="#" class="text-gray-400 hover:text-white"><i class="fab fa-instagram"></i></a>
-                            <a href="#" class="text-gray-400 hover:text-white"><i class="fab fa-twitter"></i></a>
-                            <a href="#" class="text-gray-400 hover:text-white"><i class="fab fa-youtube"></i></a>
-                        </div>
                     </div>
-
                     <div>
                         <h3 class="font-bold text-lg mb-4">이용안내</h3>
                         <ul class="space-y-2">
                             <li><a href="#" class="text-gray-400 hover:text-white">이용 방법</a></li>
                             <li><a href="#" class="text-gray-400 hover:text-white">요금 안내</a></li>
-                            <li><a href="#" class="text-gray-400 hover:text-white">보험 안내</a></li>
-                            <li><a href="#" class="text-gray-400 hover:text-white">자주 묻는 질문</a></li>
                         </ul>
                     </div>
-
                     <div>
                         <h3 class="font-bold text-lg mb-4">호스트 안내</h3>
                         <ul class="space-y-2">
                             <li><a href="#" class="text-gray-400 hover:text-white">호스트 가이드</a></li>
                             <li><a href="#" class="text-gray-400 hover:text-white">호스트 등록하기</a></li>
-                            <li><a href="#" class="text-gray-400 hover:text-white">수익 계산기</a></li>
-                            <li><a href="#" class="text-gray-400 hover:text-white">호스트 지원</a></li>
                         </ul>
                     </div>
-
                     <div>
                         <h3 class="font-bold text-lg mb-4">고객센터</h3>
                         <ul class="space-y-2">
                             <li class="text-gray-400">평일 09:00 ~ 18:00</li>
                             <li class="text-gray-400">(점심시간 12:00 ~ 13:00)</li>
                             <li class="mt-4"><a href="tel:1670-1234" class="text-blue-400 hover:text-blue-300">1670-1234</a></li>
-                            <li><a href="mailto:help@driveshare.co.kr" class="text-blue-400 hover:text-blue-300">help@driveshare.co.kr</a></li>
                         </ul>
                     </div>
                 </div>
-
-                <div class="border-t border-gray-800 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center">
-                    <div class="text-gray-500 text-sm mb-4 md:mb-0">© 2023 DriveShare Inc. All rights reserved.</div>
+                <div class="border-t border-gray-800 mt-12 pt-8 flex justify-between items-center">
+                    <div class="text-gray-500 text-sm">© 2023 DriveShare Inc. All rights reserved.</div>
                     <div class="flex space-x-6">
                         <a href="#" class="text-gray-500 hover:text-white text-sm">이용약관</a>
                         <a href="#" class="text-gray-500 hover:text-white text-sm">개인정보처리방침</a>
-                        <a href="#" class="text-gray-500 hover:text-white text-sm">위치기반서비스 이용약관</a>
                     </div>
                 </div>
             </div>
@@ -243,17 +190,43 @@
                     });
                 });
             });
+
+            let currentPage = 1;
+            const reservationsPerPage = 10;
+            let totalPages = 1;
+            let currentFilter = "all";
+
+            const filterButtons = document.querySelectorAll('[onclick^="filterReservations"]');
+            filterButtons.forEach((button) => {
+                button.addEventListener("click", function () {
+                    filterButtons.forEach((btn) => {
+                        btn.classList.remove("filter-active");
+                        btn.classList.add("bg-gray-100");
+                    });
+                    this.classList.add("filter-active");
+                    this.classList.remove("bg-gray-100");
+                    currentFilter = this.getAttribute("onclick").replace("filterReservations('", "").replace("')", "");
+                    currentPage = 1;
+                    fetchReservations();
+                });
+            });
+
             async function fetchReservations() {
                 const token = localStorage.getItem("token");
-
                 if (!token) {
-                    console.error("인증 토큰이 없습니다.");
                     window.location.href = "/login";
                     return;
                 }
 
+                const params = new URLSearchParams();
+                params.append("page", currentPage);
+                params.append("limit", reservationsPerPage);
+                if (currentFilter !== "all") {
+                    params.append("status", currentFilter);
+                }
+
                 try {
-                    const response = await fetch("/api/reservations", {
+                    const response = await fetch(`/api/reservations?${params.toString()}`, {
                         method: "GET",
                         headers: {
                             Authorization: `Bearer ${token}`,
@@ -262,74 +235,117 @@
                     });
 
                     if (response.ok) {
-                        const reservations = await response.json();
-                        console.log(reservations);
+                        const data = await response.json();
+                        const reservations = data.reservations || [];
+                        totalPages = data.totalPages || 1;
                         renderReservations(reservations);
+                        renderPagination(totalPages);
                     } else {
                         console.error("예약 내역 로드 실패:", response.status);
-                        // 오류 처리
+                        document.getElementById("reservations-list").innerHTML = '<p class="p-4 text-red-500">예약 내역을 불러오는 데 실패했습니다.</p>';
+                        document.getElementById("pagination-container").innerHTML = "";
                     }
                 } catch (error) {
                     console.error("예약 내역 요청 중 오류 발생:", error);
-                    // 오류 처리
+                    document.getElementById("reservations-list").innerHTML = '<p class="p-4 text-red-500">예약 내역 요청 중 오류가 발생했습니다.</p>';
+                    document.getElementById("pagination-container").innerHTML = "";
                 }
             }
 
             function renderReservations(reservations) {
                 const reservationsListContainer = document.getElementById("reservations-list");
-
-                if (!reservationsListContainer) {
-                    console.error("예약 목록을 표시할 컨테이너 요소를 찾을 수 없습니다.");
-                    return;
-                }
-
                 reservationsListContainer.innerHTML = "";
 
                 if (!reservations || reservations.length === 0) {
-                    reservationsListContainer.innerHTML = "<p>예약 내역이 없습니다.</p>";
+                    reservationsListContainer.innerHTML = '<p class="p-4">예약 내역이 없습니다.</p>';
                     return;
                 }
+
                 reservations.forEach((reservation) => {
                     const reservationCard = document.createElement("div");
-                    reservationCard.classList.add("bg-white", "rounded-xl", "shadow-md", "p-6", "mb-4");
-
-                    const carImageUrl = reservation.car_image_url || "https://placehold.co/200x150";
-                    const carManufature = reservation.car_manufacture;
-                    const carModel = reservation.car_model || "차량 모델 정보 없음";
-                    const rentalDate = formatDate(reservation.rental_date);
-                    const returnDate = formatDate(reservation.return_date);
-                    const rentalPeriodDays = reservation.rental_period_days || "정보 없음";
-                    const totalPrice = formatPrice(reservation.total_price);
-                    const pickupLocation = reservation.pickup_location || "픽업 장소 정보 없음";
-
+                    reservationCard.classList.add("bg-white", "rounded-xl", "shadow-md", "p-6", "mb-4", "reservation-card");
                     reservationCard.innerHTML = `
-              <div class="flex flex-col md:flex-row md:items-center">
-                <img
-                  src="${carImageUrl}"
-                  alt="${carModel}"
-                  class="w-full md:w-48 h-32 object-cover rounded-lg mb-3 md:mb-0 md:mr-6"
-                />
-                <div class="flex-1">
-                  <div class="flex justify-between items-start">
-                    <div>
-                      <h3 class="font-bold text-lg">${carManufature} ${carModel}</h3>
+                    <div class="flex flex-col md:flex-row md:items-center">
+                        <img src="${reservation.car_image_url || "https://placehold.co/200x150"}" alt="${
+                        reservation.car_model
+                    }" class="w-full md:w-48 h-32 object-cover rounded-lg mb-3 md:mb-0 md:mr-6">
+                        <div class="flex-1">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <h3 class="font-bold text-lg">${reservation.car_manufacture} ${reservation.car_model}</h3>
+                                </div>
+                                <span class="${getReservationStatusClass(reservation.reservation_status)} status-badge">${getReservationStatusText(reservation.reservation_status)}</span>
+                            </div>
+                            <div class="mt-2 text-sm">
+                                <p class="text-gray-600"><i class="fas fa-calendar-alt text-blue-500 mr-2"></i>${formatDate(reservation.rental_date)} ~ ${formatDate(reservation.return_date)}</p>
+                                <p class="text-gray-600"><i class="fas fa-map-marker-alt text-blue-500 mr-2"></i>${reservation.pickup_location}</p>
+                            </div>
+                        </div>
+                        <div class="mt-3 md:mt-0 md:ml-4 text-right">
+                            <p class="font-bold text-lg">${formatPrice(reservation.total_price)}원</p>
+                            ${getReservationActionButton(reservation)}
+                        </div>
                     </div>
-                    <span class="${getReservationStatusClass(reservation.reservation_status)} text-xs px-2 py-1 rounded">${getReservationStatusText(reservation.reservation_status)}</span>
-                  </div>
-                  <div class="mt-2 text-sm">
-                    <p class="text-gray-600"><i class="fas fa-calendar-alt text-blue-500 mr-2"></i>${rentalDate} ~ ${returnDate}</p>
-                    <p class="text-gray-600"><i class="fas fa-map-marker-alt text-blue-500 mr-2"></i>${pickupLocation}</p>
-                  </div>
-                </div>
-                <div class="mt-3 md:mt-0 md:ml-4 text-right">
-                  <p class="font-bold text-lg">${totalPrice}원</p>
-                  ${getReservationActionButton(reservation)}
-                </div>
-              </div>
-            `;
-
+                `;
                     reservationsListContainer.appendChild(reservationCard);
                 });
+            }
+
+            function renderPagination(totalPages) {
+                const paginationNav = document.querySelector("#page-nav");
+                if (!paginationNav) return;
+                paginationNav.innerHTML = ""; // 기존 페이지 번호 제거
+
+                const prevButton = document.createElement("a");
+                prevButton.href = "#";
+                prevButton.classList.add("px-4", "py-2", "border", "border-gray-300", "bg-white", "text-gray-500", "hover:bg-gray-50", "rounded-l-md");
+                prevButton.innerHTML = '<i class="fas fa-chevron-left"></i>';
+                prevButton.addEventListener("click", (e) => {
+                    e.preventDefault();
+                    if (currentPage > 1) {
+                        currentPage--;
+                        loadCarsWithFiltersAndSorting((currentPage - 1) * carsPerPage, currentSort, currentFilters);
+                    }
+                });
+                paginationNav.appendChild(prevButton);
+
+                const maxVisiblePages = 5; // 최대로 보여줄 페이지 번호 개수
+                let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+                let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+                if (totalPages > maxVisiblePages && endPage === totalPages) {
+                    startPage = Math.max(1, endPage - maxVisiblePages + 1);
+                }
+
+                for (let i = startPage; i <= endPage; i++) {
+                    const pageLink = document.createElement("a");
+                    pageLink.href = "#";
+                    pageLink.textContent = i;
+                    pageLink.classList.add("px-4", "py-2", "border-t", "border-b", "border-gray-300", "bg-white", "text-gray-500", "hover:bg-gray-50");
+                    if (i === currentPage) {
+                        pageLink.classList.remove("text-gray-500", "hover:bg-gray-50");
+                        pageLink.classList.add("text-blue-600", "font-medium");
+                    }
+                    pageLink.addEventListener("click", (e) => {
+                        e.preventDefault();
+                        currentPage = i;
+                        loadCarsWithFiltersAndSorting((currentPage - 1) * carsPerPage, currentSort, currentFilters);
+                    });
+                    paginationNav.appendChild(pageLink);
+                }
+
+                const nextButton = document.createElement("a");
+                nextButton.href = "#";
+                nextButton.classList.add("px-4", "py-2", "border", "border-gray-300", "bg-white", "text-gray-500", "hover:bg-gray-50", "rounded-r-md");
+                nextButton.innerHTML = '<i class="fas fa-chevron-right"></i>';
+                nextButton.addEventListener("click", (e) => {
+                    e.preventDefault();
+                    if (currentPage < totalPages) {
+                        currentPage++;
+                        loadCarsWithFiltersAndSorting((currentPage - 1) * carsPerPage, currentSort, currentFilters);
+                    }
+                });
+                paginationNav.appendChild(nextButton);
             }
 
             function formatDate(dateString) {
