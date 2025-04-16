@@ -278,7 +278,7 @@ pub async fn get_cars(pool: &State<MySqlPool>, query: CarQuery) -> Json<CarListR
     };
 
     let sql = format!(
-        "SELECT id, plate_number, manufacturer, name, year, car_type, fuel_type, transmission, seat_num, daily_rate, location, rating, description, status, connected_with, image_url FROM cars {} {} LIMIT ? OFFSET ?",
+        "SELECT id, plate_number, manufacturer, name, year, car_type, fuel_type, transmission, seat_num, daily_rate, location, rating, description, status, image_url FROM cars {} {} LIMIT ? OFFSET ?",
         where_clause, order_by_clause
     );
 
@@ -316,7 +316,7 @@ pub async fn get_car_by_id(
     pool: &State<MySqlPool>,
     id: i32,
 ) -> Result<Json<CarInfo>, (Status, String)> {
-    let sql = "SELECT id, plate_number, manufacturer, name, year, car_type, fuel_type, transmission, seat_num, color, image_url, car_trim, daily_rate, location, rating, description, status, connected_with FROM cars WHERE id = ?";
+    let sql = "SELECT id, plate_number, manufacturer, name, year, car_type, fuel_type, transmission, seat_num, color, image_url, car_trim, daily_rate, location, rating, description, status FROM cars WHERE id = ?";
 
     let car_result = sqlx::query_as::<_, CarInfo>(sql)
         .bind(id)
