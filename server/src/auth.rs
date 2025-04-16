@@ -34,7 +34,7 @@ pub struct LoginRequest {
 
 // 회원 가입 엔드포인트
 #[post("/api/signup", format = "json", data = "<user_info>")]
-pub async fn signup(
+pub async fn api_signup(
     user_info: Json<CreateUserRequest>,
     pool: &rocket::State<MySqlPool>,
 ) -> rocket::serde::json::Json<ApiResponse> {
@@ -82,7 +82,7 @@ pub async fn signup(
 
 // 로그인 엔드포인트
 #[post("/api/login", format = "json", data = "<login_info>")]
-pub async fn login(
+pub async fn api_login(
     login_info: Json<LoginRequest>,
     pool: &rocket::State<MySqlPool>,
 ) -> rocket::serde::json::Json<ApiResponse> {
@@ -139,7 +139,7 @@ pub async fn login(
 
 // 로그아웃 엔드포인트
 #[get("/api/logout")]
-pub async fn logout() -> Json<ApiResponse> {
+pub async fn api_logout() -> Json<ApiResponse> {
     Json(ApiResponse {
         status: "success".to_string(),
         message: "Logout successful".to_string(),
@@ -187,6 +187,6 @@ impl<'r> request::FromRequest<'r> for AuthToken {
 }
 
 #[get("/api/isAdmin")]
-pub async fn is_admin(auth_token: AuthToken) -> Result<Json<bool>, Status> {
+pub async fn api_is_admin(auth_token: AuthToken) -> Result<Json<bool>, Status> {
     Ok(Json(auth_token.0.role.to_lowercase() == "admin"))
 }
