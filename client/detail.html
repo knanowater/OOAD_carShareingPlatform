@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="ko">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>DriveShare - 차량 상세정보</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script src="scripts/script.js"></script>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+        <style>
+            .car-detail-hero {
+                background: linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.2)),
+                    url("https://images.unsplash.com/photo-1494972308805-46370c3ffe93?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1770&q=80");
+                background-size: cover;
+                background-position: center;
+            }
+            .image-gallery-thumbnail.active {
+                border: 2px solid #3b82f6;
+            }
+            .sticky-booking {
+                position: sticky;
+                top: 100px;
+            }
+            .feature-icon {
+                width: 24px;
+                height: 24px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background-color: #3b82f6;
+                color: white;
+                border-radius: 50%;
+            }
+            .tab-button.active {
+                border-bottom: 2px solid #3b82f6;
+                color: #3b82f6;
+                font-weight: 600;
+            }
+            .datepicker-input {
+                background-color: #f9fafb;
+            }
+        </style>
+    </head>
+    <body class="font-sans antialiased text-gray-800 bg-gray-50">
+        <!-- 헤더 영역 -->
+        <header class="bg-white shadow-sm sticky top-0 z-50">
+            <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+                <div class="flex items-center" onclick="location.href='/'" style="cursor: pointer">
+                    <i class="fas fa-car text-blue-600 text-3xl mr-2"></i>
+                    <span class="text-2xl font-bold text-blue-600">DriveShare</span>
+                </div>
+                <nav class="hidden md:flex space-x-8">
+                    <a href="/" class="text-gray-600 hover:text-blue-600">홈</a>
+                    <a href="/list" class="text-blue-600 font-medium">차량 찾기</a>
+                    <a href="#" class="text-gray-600 hover:text-blue-600">이용 방법</a>
+                    <a href="#" class="text-gray-600 hover:text-blue-600">고객센터</a>
+                    <a href="/mypage" class="text-gray-600 hover:text-blue-600">마이페이지</a>
+                </nav>
+                <div class="flex items-center space-x-4">
+                    <button class="px-4 py-2 rounded-full bg-blue-600 text-white hover:bg-blue-700 transition">로그인 / 회원가입</button>
+                    <button class="md:hidden text-gray-600">
+                        <i class="fas fa-bars text-xl"></i>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- 차량 상세정보 메인 섹션 -->
+        <main class="container mx-auto px-4 py-8">
+            <!-- 차량 기본 정보 섹션 -->
+            <section class="mb-12">
+                <div class="flex flex-col md:flex-row gap-8">
+                    <!-- 차량 이미지 -->
+                    <div class="w-full md:w-2/3">
+                        <div class="bg-white rounded-xl shadow-md overflow-hidden mb-4">
+                            <img id="main-image" alt="차량 메인 이미지" class="w-full h-96 object-cover" />
+                        </div>
+                    </div>
+
+                    <!-- 차량 기본 정보 -->
+                    <div class="w-full md:w-1/3">
+                        <div class="bg-white rounded-xl shadow-md p-6 sticky-booking">
+                            <h1 class="text-2xl font-bold mb-2 car-full-name"></h1>
+                            <div class="flex items-center mb-4">
+                                <i class="fas fa-star text-yellow-400 mr-1"></i>
+                                <span class="font-medium mr-2 car-rating"></span>
+                            </div>
+
+                            <div class="flex items-center justify-between mb-6">
+                                <div>
+                                    <p class="text-gray-500 text-sm">하루 기준</p>
+                                    <p class="text-2xl font-bold text-blue-600" id="car-daily-rate"></p>
+                                </div>
+                            </div>
+
+                            <div class="border-t border-b border-gray-100 py-4 mb-6">
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <p class="text-gray-500 text-sm">연료</p>
+                                        <p class="font-medium car-fuel-type"></p>
+                                    </div>
+                                    <div>
+                                        <p class="text-gray-500 text-sm">변속기</p>
+                                        <p class="font-medium car-transmission"></p>
+                                    </div>
+                                    <div>
+                                        <p class="text-gray-500 text-sm">연식</p>
+                                        <p class="font-medium car-year"></p>
+                                    </div>
+                                    <div>
+                                        <p class="text-gray-500 text-sm">인승</p>
+                                        <p class="font-medium car-seat-num seat-num"></p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 예약 버튼 -->
+                            <button class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition mb-3" id="reservation-button">예약하기</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 차량 상세정보 탭 -->
+            <div id="details-tab" class="tab-content">
+                <div class="bg-white rounded-xl shadow-md p-6 mb-8">
+                    <h2 class="text-xl font-bold mb-4">차량 사양</h2>
+                    <div class="grid grid-cols-1 gap-6">
+                        <div>
+                            <h3 class="font-medium text-gray-700 mb-2">기본 정보</h3>
+                            <div class="space-y-2">
+                                <div class="flex justify-between border-b border-gray-100 pb-2">
+                                    <span class="text-gray-500">제조사</span>
+                                    <span class="font-medium car-manufacturer"></span>
+                                </div>
+                                <div class="flex justify-between border-b border-gray-100 pb-2">
+                                    <span class="text-gray-500">모델</span>
+                                    <span class="font-medium car-name"></span>
+                                </div>
+                                <div class="flex justify-between border-b border-gray-100 pb-2">
+                                    <span class="text-gray-500">연식</span>
+                                    <span class="font-medium car-year">2022년</span>
+                                </div>
+                                <div class="flex justify-between border-b border-gray-100 pb-2">
+                                    <span class="text-gray-500">차량 등급</span>
+                                    <span class="font-medium" id="car-trim"></span>
+                                </div>
+                                <div class="flex justify-between border-b border-gray-100 pb-2">
+                                    <span class="text-gray-500">색상</span>
+                                    <span class="font-medium" id="car-color"></span>
+                                </div>
+                                <div class="flex justify-between border-b border-gray-100 pb-2">
+                                    <span class="text-gray-500">연료</span>
+                                    <span class="font-medium car-fuel-type"></span>
+                                </div>
+                                <div class="flex justify-between border-b border-gray-100 pb-2">
+                                    <span class="text-gray-500">변속기</span>
+                                    <span class="font-medium car-transmission">자동</span>
+                                </div>
+                                <div class="flex justify-between border-b border-gray-100 pb-2">
+                                    <span class="text-gray-500">인승</span>
+                                    <span class="font-medium car-seat-num">5인승</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 유의사항 -->
+            <section class="mb-12">
+                <div class="bg-white rounded-xl shadow-md p-6">
+                    <h2 class="text-xl font-bold mb-6">이용 안내 및 유의사항</h2>
+                    <div class="space-y-4">
+                        <div class="flex">
+                            <div class="flex-shrink-0 text-blue-600 mr-3 mt-1">
+                                <i class="fas fa-info-circle"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-medium mb-1">대여 가능 연령</h3>
+                                <p class="text-gray-600 text-sm">만 21세 이상, 운전 경력 1년 이상</p>
+                            </div>
+                        </div>
+                        <div class="flex">
+                            <div class="flex-shrink-0 text-blue-600 mr-3 mt-1">
+                                <i class="fas fa-gas-pump"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-medium mb-1">연료 정책</h3>
+                                <p class="text-gray-600 text-sm">대여 시 연료량과 동일하게 반납해 주세요. 차이가 있을 경우 추가 비용이 발생할 수 있습니다.</p>
+                            </div>
+                        </div>
+                        <div class="flex">
+                            <div class="flex-shrink-0 text-blue-600 mr-3 mt-1">
+                                <i class="fas fa-smoking-ban"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-medium mb-1">금연 차량</h3>
+                                <p class="text-gray-600 text-sm">본 차량은 금연 차량입니다. 차량 내 흡연 시 청소비가 추가로 부과됩니다.</p>
+                            </div>
+                        </div>
+                        <div class="flex">
+                            <div class="flex-shrink-0 text-blue-600 mr-3 mt-1">
+                                <i class="fas fa-paw"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-medium mb-1">반려동물 동승</h3>
+                                <p class="text-gray-600 text-sm">반려동물 동승이 가능하나, 차량 내부 오염 시 추가 청소비가 부과될 수 있습니다.</p>
+                            </div>
+                        </div>
+                        <div class="flex">
+                            <div class="flex-shrink-0 text-blue-600 mr-3 mt-1">
+                                <i class="fas fa-car-crash"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-medium mb-1">사고 및 고장 시</h3>
+                                <p class="text-gray-600 text-sm">사고 또는 고장 발생 시 즉시 DriveShare 고객센터(1588-1234)로 연락주세요.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- 푸터 영역 -->
+        <footer class="bg-gray-100 py-8 mt-12">
+            <div class="container mx-auto px-4">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                    <div>
+                        <div class="flex items-center mb-4">
+                            <i class="fas fa-car text-blue-600 text-xl mr-2"></i>
+                            <span class="text-lg font-bold text-gray-800">DriveShare</span>
+                        </div>
+                        <p class="text-gray-600 text-sm">DriveShare는 차량 공유 플랫폼으로 누구나 쉽게 차량을 대여하거나 호스트가 될 수 있습니다.</p>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-gray-800 mb-4">회사</h3>
+                        <ul class="space-y-2">
+                            <li><a href="#" class="text-gray-600 hover:text-blue-600 text-sm">회사 소개</a></li>
+                            <li><a href="#" class="text-gray-600 hover:text-blue-600 text-sm">채용 정보</a></li>
+                            <li><a href="#" class="text-gray-600 hover:text-blue-600 text-sm">뉴스룸</a></li>
+                            <li><a href="#" class="text-gray-600 hover:text-blue-600 text-sm">블로그</a></li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-gray-800 mb-4">지원</h3>
+                        <ul class="space-y-2">
+                            <li><a href="#" class="text-gray-600 hover:text-blue-600 text-sm">도움말 센터</a></li>
+                            <li><a href="#" class="text-gray-600 hover:text-blue-600 text-sm">안전 정보</a></li>
+                            <li><a href="#" class="text-gray-600 hover:text-blue-600 text-sm">취소 옵션</a></li>
+                            <li><a href="#" class="text-gray-600 hover:text-blue-600 text-sm">고객 지원</a></li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-gray-800 mb-4">약관</h3>
+                        <ul class="space-y-2">
+                            <li><a href="#" class="text-gray-600 hover:text-blue-600 text-sm">이용약관</a></li>
+                            <li><a href="#" class="text-gray-600 hover:text-blue-600 text-sm">개인정보 처리방침</a></li>
+                            <li><a href="#" class="text-gray-600 hover:text-blue-600 text-sm">쿠키 정책</a></li>
+                            <li><a href="#" class="text-gray-600 hover:text-blue-600 text-sm">보험 정보</a></li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="border-t border-gray-200 mt-8 pt-8 flex flex-col md:flex-row justify-between items-center">
+                    <div class="text-gray-500 text-sm mb-4 md:mb-0">© 2023 DriveShare Inc. All rights reserved.</div>
+                    <div class="flex space-x-6">
+                        <a href="#" class="text-gray-500 hover:text-blue-600"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#" class="text-gray-500 hover:text-blue-600"><i class="fab fa-twitter"></i></a>
+                        <a href="#" class="text-gray-500 hover:text-blue-600"><i class="fab fa-instagram"></i></a>
+                        <a href="#" class="text-gray-500 hover:text-blue-600"><i class="fab fa-youtube"></i></a>
+                    </div>
+                </div>
+            </div>
+        </footer>
+
+        <script>
+            // 이미지 갤러리 기능
+            function changeMainImage(thumbnail) {
+                const mainImage = document.getElementById("main-image");
+                mainImage.src = thumbnail.src;
+
+                // 모든 썸네일에서 active 클래스 제거
+                document.querySelectorAll(".image-gallery-thumbnail").forEach((item) => {
+                    item.classList.remove("active");
+                });
+
+                // 클릭한 썸네일에 active 클래스 추가
+                thumbnail.classList.add("active");
+            }
+
+            // 탭 전환 기능
+            function changeTab(tabId) {
+                // 모든 탭 컨텐츠 숨기기
+                document.querySelectorAll(".tab-content").forEach((content) => {
+                    content.classList.add("hidden");
+                });
+
+                // 모든 탭 버튼 비활성화
+                document.querySelectorAll(".tab-button").forEach((button) => {
+                    button.classList.remove("active");
+                });
+
+                // 선택한 탭 컨텐츠 표시
+                document.getElementById(tabId + "-tab").classList.remove("hidden");
+
+                // 선택한 탭 버튼 활성화
+                event.currentTarget.classList.add("active");
+            }
+
+            window.addEventListener("DOMContentLoaded", function () {
+                //차량 정보 로드
+                {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const carId = urlParams.get("id");
+
+                    if (carId) {
+                        fetch(`/api/cars/${carId}`)
+                            .then((response) => {
+                                if (!response.ok) {
+                                    throw new Error(`HTTP error! status: ${response.status}`);
+                                }
+                                return response.json();
+                            })
+                            .then((car) => {
+                                const getSafeValue = (value, suffix = "", isNumber = false) => {
+                                    if (value === null || value === undefined || value === "None") {
+                                        return "알 수 없음";
+                                    }
+                                    return isNumber ? `${parseFloat(value).toFixed(1)}${suffix}` : `${value}${suffix}`;
+                                };
+
+                                Array.from(document.getElementsByClassName("car-manufacturer")).forEach((el) => {
+                                    el.innerHTML = getSafeValue(car.manufacturer);
+                                });
+
+                                Array.from(document.getElementsByClassName("car-name")).forEach((el) => {
+                                    el.innerHTML = getSafeValue(car.name);
+                                });
+
+                                Array.from(document.getElementsByClassName("car-year")).forEach((el) => {
+                                    el.innerHTML = getSafeValue(car.year, "년");
+                                });
+
+                                Array.from(document.getElementsByClassName("car-full-name")).forEach((el) => {
+                                    const year = getSafeValue(car.year);
+                                    const manufacturer = getSafeValue(car.manufacturer);
+                                    const name = getSafeValue(car.name);
+                                    el.innerHTML = `${year} ${manufacturer} ${name}`;
+                                });
+
+                                Array.from(document.getElementsByClassName("car-fuel-type")).forEach((el) => {
+                                    el.innerHTML = getSafeValue(car.fuel_type);
+                                });
+
+                                Array.from(document.getElementsByClassName("car-transmission")).forEach((el) => {
+                                    el.innerHTML = getSafeValue(car.transmission);
+                                });
+
+                                Array.from(document.getElementsByClassName("car-seat-num")).forEach((el) => {
+                                    el.innerHTML = getSafeValue(car.seat_num, "인승");
+                                });
+
+                                Array.from(document.getElementsByClassName("car-rating")).forEach((el) => {
+                                    el.innerHTML = getSafeValue(car.rating, "", true);
+                                });
+
+                                document.querySelector("#main-image").src = car.image_url && car.image_url !== "None" ? car.image_url : "https://placehold.co/600x400";
+                                document.querySelector("#car-daily-rate").innerHTML = getSafeValue(car.daily_rate.toLocaleString(), "원");
+                                document.querySelector("#car-trim").innerHTML = getSafeValue(car.car_trim);
+                                document.querySelector("#car-color").innerHTML = getSafeValue(car.color);
+                                document.querySelector("#reservation-button").addEventListener("click", () => {
+                                    location.href = `/reservation?id=${car.id}`;
+                                });
+                            })
+                            .catch((error) => {
+                                console.error("차량 정보 로딩 실패: ", error);
+                            });
+                    }
+                }
+
+                // 날짜 선택기 초기화
+                {
+                    // 오늘 날짜
+                    const today = new Date();
+                    const tomorrow = new Date(today);
+                    tomorrow.setDate(tomorrow.getDate() + 1);
+
+                    // 날짜 형식 변환 (YYYY-MM-DD)
+                    const formatDate = (date) => {
+                        const year = date.getFullYear();
+                        const month = String(date.getMonth() + 1).padStart(2, "0");
+                        const day = String(date.getDate()).padStart(2, "0");
+                        return `${year}-${month}-${day}`;
+                    };
+
+                    // 기본값 설정 (오늘과 내일)
+                    document.getElementById("start-date").value = formatDate(today);
+                    document.getElementById("end-date").value = formatDate(tomorrow);
+
+                    // 최소 날짜 설정 (오늘 이전 날짜 선택 불가)
+                    document.getElementById("start-date").min = formatDate(today);
+                    document.getElementById("end-date").min = formatDate(tomorrow);
+
+                    // 대여일 변경 시 반납일 최소 날짜 업데이트
+                    document.getElementById("start-date").addEventListener("change", function () {
+                        const startDate = new Date(this.value);
+                        const minEndDate = new Date(startDate);
+                        minEndDate.setDate(minEndDate.getDate() + 1);
+
+                        document.getElementById("end-date").min = formatDate(minEndDate);
+
+                        // 현재 선택된 반납일이 새로운 최소 날짜보다 이전이면 업데이트
+                        const currentEndDate = new Date(document.getElementById("end-date").value);
+                        if (currentEndDate < minEndDate) {
+                            document.getElementById("end-date").value = formatDate(minEndDate);
+                        }
+                    });
+                }
+            });
+        </script>
+    </body>
+</html>

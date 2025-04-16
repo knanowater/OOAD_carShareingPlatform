@@ -231,7 +231,7 @@
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">제조사</label>
-                                <input type="text" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500" id="manufacture" />
+                                <input type="text" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500" id="manufacturer" />
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">연식</label>
@@ -355,7 +355,7 @@
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">제조사</label>
-                                <input type="text" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500" id="update_manufacture" />
+                                <input type="text" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500" id="update_manufacturer" />
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">연식</label>
@@ -700,7 +700,7 @@
                                       <div class="flex justify-between items-start">
                                         <div>
                                           <h3 class="font-bold text-lg">
-                                            ${car.manufacture || "회사 정보 없음"} ${car.name || "차량 이름 없음"}
+                                            ${car.manufacturer || "회사 정보 없음"} ${car.name || "차량 이름 없음"}
                                           </h3>
                                           <p class="text-gray-600 text-sm">
                                             ${car.year || "연식 정보 없음"}년식 • ${car.fuel_type || "연료 정보 없음"}
@@ -807,7 +807,7 @@
             }
             function addCar() {
                 const plate_number = document.querySelector("#plate_number").value;
-                const manufacture = document.querySelector("#manufacture").value;
+                const manufacturer = document.querySelector("#manufacturer").value;
                 const name = document.querySelector("#name").value;
                 const year = parseInt(document.querySelector("#year").value, 10); // 문자열을 정수로 변환
                 const car_type = document.querySelector("#car_type").value;
@@ -822,14 +822,14 @@
                 const connected_With = "";
                 const image_url = "";
 
-                if (!plate_number || !manufacture || !name || isNaN(year) || !car_type || !fuel_type || !transmission || isNaN(seat_num) || isNaN(daily_rate) || !location || !status) {
+                if (!plate_number || !manufacturer || !name || isNaN(year) || !car_type || !fuel_type || !transmission || isNaN(seat_num) || isNaN(daily_rate) || !location || !status) {
                     alert("모든 필드를 올바르게 입력해주세요. 연식, 좌석수, 일일 대여료는 숫자여야 합니다.");
                     return;
                 }
 
                 const car_data = {
                     plate_number: plate_number,
-                    manufacture: manufacture,
+                    manufacturer: manufacturer,
                     name: name,
                     year: year,
                     car_type: car_type,
@@ -902,7 +902,7 @@
 
                     // 모달 폼에 데이터 채우기
                     document.getElementById("update_plate_number").value = carData.plate_number;
-                    document.getElementById("update_manufacture").value = carData.manufacture;
+                    document.getElementById("update_manufacturer").value = carData.manufacturer;
                     document.getElementById("update_name").value = carData.name;
                     document.getElementById("update_year").value = carData.year;
                     document.getElementById("update_car_type").value = carData.car_type;

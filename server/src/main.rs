@@ -64,6 +64,7 @@ async fn main() -> Result<(), sqlx::Error> {
                 overdue_fee_page,
                 admin_dashboard_page,
                 car_management_page,
+                car_detail_page,
                 add_car_endpoint,
                 update_car_endpoint,
                 signup,
@@ -138,6 +139,13 @@ async fn reservation_page(id: Option<i32>) -> Option<NamedFile> {
 #[get("/overdue_fee")]
 async fn overdue_fee_page() -> Option<NamedFile> {
     NamedFile::open(Path::new("../client/mypage/overdue_fee.html"))
+        .await
+        .ok()
+}
+
+#[get("/detail?<id>")]
+async fn car_detail_page(id: Option<String>) -> Option<NamedFile> {
+    NamedFile::open(Path::new("../client/detail.html"))
         .await
         .ok()
 }
@@ -270,7 +278,7 @@ pub async fn get_cars(pool: &State<MySqlPool>, query: CarQuery) -> Json<CarListR
     };
 
     let sql = format!(
-        "SELECT id, plate_number, manufacture, name, year, car_type, fuel_type, transmission, seat_num, daily_rate, location, rating, description, status, connected_with, image_url FROM cars {} {} LIMIT ? OFFSET ?",
+        "SELECT id, plate_number, manufacturer, name, year, car_type, fuel_type, transmission, seat_num, daily_rate, location, rating, description, status, connected_with, image_url FROM cars {} {} LIMIT ? OFFSET ?",
         where_clause, order_by_clause
     );
 
@@ -308,7 +316,7 @@ pub async fn get_car_by_id(
     pool: &State<MySqlPool>,
     id: i32,
 ) -> Result<Json<CarInfo>, (Status, String)> {
-    let sql = "SELECT id, plate_number, manufacture, name, year, car_type, fuel_type, transmission, seat_num, daily_rate, location, rating, description, status, connected_with, image_url FROM cars WHERE id = ?";
+    let sql = "SELECT id, plate_number, manufacturer, name, year, car_type, fuel_type, transmission, seat_num, color, image_url, car_trim, daily_rate, location, rating, description, status, connected_with FROM cars WHERE id = ?";
 
     let car_result = sqlx::query_as::<_, CarInfo>(sql)
         .bind(id)
@@ -619,7 +627,7 @@ pub async fn api_mypage(
 pub struct ReservationInfo {
     pub reservation_id: String,
     pub car_image_url: String,
-    pub car_manufacture: String,
+    pub car_manufacturer: String,
     pub car_model: String,
     pub rental_date: chrono::NaiveDateTime,
     pub return_date: chrono::NaiveDateTime,
@@ -719,7 +727,7 @@ pub async fn api_reservations(
         SELECT
             r.reservation_id AS reservation_id,
             c.image_url AS car_image_url,
-            c.manufacture AS car_manufacture,
+            c.manufacturer AS car_manufacturer,
             c.name AS car_model,
             r.rental_date,
             r.return_date,
@@ -982,7 +990,7 @@ async fn api_overdue_fee_info(
         SELECT
             r.id AS reservation_internal_id, -- 내부 ID
             r.reservation_id, -- 외부 ID
-            c.manufacture AS car_manufacture,
+            c.manufacturer AS car_manufacturer,
             c.name AS car_model,
             r.rental_date,
             r.return_date,
@@ -1018,7 +1026,7 @@ async fn api_overdue_fee_info(
 
             Ok(Json(OverdueFeeInfo {
                 reservation_id: res.reservation_id.unwrap_or_default(),
-                car_info: format!("{} {}", res.car_manufacture, res.car_model),
+                car_info: format!("{} {}", res.car_manufacturer, res.car_model),
                 rental_date: rental_date.naive_utc().date(),
                 expected_return_date: return_date.naive_utc().date(),
                 actual_return_date: return_date_actual.map(|dt| dt.naive_utc().date()),

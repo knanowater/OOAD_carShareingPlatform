@@ -9,20 +9,22 @@ use sqlx::{FromRow, Row};
 pub struct CarInfo {
     id: Option<i32>,
     plate_number: String,
-    manufacture: String,
+    manufacturer: String,
     name: String,
     year: u16,
     car_type: String,
     fuel_type: String,
     transmission: String,
     seat_num: u8,
+    color: Option<String>,
+    image_url: Option<String>,
+    car_trim: Option<String>,
     daily_rate: f64,
     location: String,
     rating: f64,
     description: Option<String>,
     status: String,
     connected_with: Option<String>,
-    image_url: Option<String>,
 }
 
 impl CarInfo {
@@ -32,8 +34,8 @@ impl CarInfo {
     fn set_plate_number(&mut self, plate_number: String) {
         self.plate_number = plate_number;
     }
-    fn set_manufacture(&mut self, manufacture: String) {
-        self.manufacture = manufacture;
+    fn set_manufacturer(&mut self, manufacturer: String) {
+        self.manufacturer = manufacturer;
     }
     fn set_name(&mut self, name: String) {
         self.name = name;
@@ -53,6 +55,15 @@ impl CarInfo {
     fn set_seat_num(&mut self, seat_num: u8) {
         self.seat_num = seat_num;
     }
+    fn set_color(&mut self, color: Option<String>) {
+        self.color = color;
+    }
+    fn set_image_url(&mut self, image_url: Option<String>) {
+        self.image_url = image_url;
+    }
+    fn set_car_trim(&mut self, car_trim: Option<String>) {
+        self.car_trim = car_trim;
+    }
     fn set_daily_rate(&mut self, daily_rate: f64) {
         self.daily_rate = daily_rate;
     }
@@ -71,16 +82,12 @@ impl CarInfo {
     fn set_connected_with(&mut self, connected_with: Option<String>) {
         self.connected_with = connected_with;
     }
-    fn set_image_url(&mut self, image_url: Option<String>) {
-        self.image_url = image_url;
-    }
 
-    // Getter 메서드 (선택 사항)
     pub fn plate_number(&self) -> &str {
         &self.plate_number
     }
-    pub fn manufacture(&self) -> &str {
-        &self.manufacture
+    pub fn manufacturer(&self) -> &str {
+        &self.manufacturer
     }
     pub fn name(&self) -> &str {
         &self.name
@@ -100,6 +107,15 @@ impl CarInfo {
     pub fn seat_num(&self) -> u8 {
         self.seat_num
     }
+    pub fn color(&self) -> &Option<String> {
+        &self.color
+    }
+    pub fn image_url(&self) -> &Option<String> {
+        &self.image_url
+    }
+    pub fn car_trim(&self) -> &Option<String> {
+        &self.car_trim
+    }
     pub fn daily_rate(&self) -> f64 {
         self.daily_rate
     }
@@ -118,9 +134,6 @@ impl CarInfo {
     pub fn connected_with(&self) -> &Option<String> {
         &self.connected_with
     }
-    pub fn image_url(&self) -> &Option<String> {
-        &self.image_url
-    }
 }
 
 impl FromRow<'_, MySqlRow> for CarInfo {
@@ -128,37 +141,41 @@ impl FromRow<'_, MySqlRow> for CarInfo {
         let mut car_info = CarInfo {
             id: row.try_get("id").ok(),
             plate_number: String::new(),
-            manufacture: String::new(),
+            manufacturer: String::new(),
             name: String::new(),
             year: 0,
             car_type: String::new(),
             fuel_type: String::new(),
             transmission: String::new(),
             seat_num: 0,
+            color: None,
+            image_url: None,
+            car_trim: None,
             daily_rate: 0.0,
             location: String::new(),
             rating: 0.0,
             description: None,
             status: String::new(),
             connected_with: None,
-            image_url: None,
         };
 
         car_info.set_plate_number(row.try_get("plate_number")?);
-        car_info.set_manufacture(row.try_get("manufacture")?);
+        car_info.set_manufacturer(row.try_get("manufacturer")?);
         car_info.set_name(row.try_get("name")?);
         car_info.set_year(row.try_get("year")?);
         car_info.set_car_type(row.try_get("car_type")?);
         car_info.set_fuel_type(row.try_get("fuel_type")?);
         car_info.set_transmission(row.try_get("transmission")?);
         car_info.set_seat_num(row.try_get("seat_num")?);
+        car_info.set_color(row.try_get("color").ok());
+        car_info.set_image_url(row.try_get("image_url").ok());
+        car_info.set_car_trim(row.try_get("car_trim").ok());
         car_info.set_daily_rate(row.try_get("daily_rate")?);
         car_info.set_location(row.try_get("location")?);
         car_info.set_rating(row.try_get("rating")?);
         car_info.set_description(row.try_get("description")?);
         car_info.set_status(row.try_get("status")?);
         car_info.set_connected_with(row.try_get("connected_with").ok());
-        car_info.set_image_url(row.try_get("image_url").ok());
 
         Ok(car_info)
     }
@@ -178,26 +195,28 @@ pub async fn add_car(pool: &MySqlPool, info: CarInfo) -> Result<String, String> 
         Ok(None) => {
             // plate_number가 존재하지 않으므로 차량 추가 진행
             let query = r#"
-                INSERT INTO cars (plate_number, manufacture, name, year, car_type, fuel_type, transmission, seat_num, daily_rate, location, rating, description, status, connected_with, image_url)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO cars (plate_number, manufacturer, name, year, car_type, fuel_type, transmission, seat_num, color, image_url, car_trim, daily_rate, location, rating, description, status, connected_with)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             "#;
 
             let result = sqlx::query(query)
                 .bind(&info.plate_number)
-                .bind(&info.manufacture)
+                .bind(&info.manufacturer)
                 .bind(&info.name)
                 .bind(&info.year)
                 .bind(&info.car_type)
                 .bind(&info.fuel_type)
                 .bind(&info.transmission)
                 .bind(&info.seat_num)
+                .bind(&info.color)
+                .bind(&info.image_url)
+                .bind(&info.car_trim)
                 .bind(&info.daily_rate)
                 .bind(&info.location)
                 .bind(&info.rating)
                 .bind(&info.description)
                 .bind(&info.status)
                 .bind(&info.connected_with)
-                .bind(&info.image_url)
                 .execute(pool)
                 .await;
 
@@ -223,24 +242,28 @@ pub async fn update_car(pool: &MySqlPool, info: CarInfo) -> Result<String, Strin
             // 차량이 존재하므로 업데이트 수행
             let query = r#"
                 UPDATE cars
-                SET manufacture = ?, name = ?, year = ?, car_type = ?, fuel_type = ?, transmission = ?, seat_num = ?, daily_rate = ?, rating = ?, status = ?, connected_with = ?, image_url = ?
+                SET manufacturer = ?, name = ?, year = ?, car_type = ?, fuel_type = ?, transmission = ?, seat_num = ?, daily_rate = ?, rating = ?, status = ?, connected_with = ?, image_url = ?
                 WHERE plate_number = ?
             "#;
 
             let result = sqlx::query(query)
-                .bind(&info.manufacture)
+                .bind(&info.plate_number)
+                .bind(&info.manufacturer)
                 .bind(&info.name)
                 .bind(&info.year)
                 .bind(&info.car_type)
                 .bind(&info.fuel_type)
                 .bind(&info.transmission)
                 .bind(&info.seat_num)
+                .bind(&info.color)
+                .bind(&info.image_url)
+                .bind(&info.car_trim)
                 .bind(&info.daily_rate)
+                .bind(&info.location)
                 .bind(&info.rating)
+                .bind(&info.description)
                 .bind(&info.status)
                 .bind(&info.connected_with)
-                .bind(&info.image_url)
-                .bind(&info.plate_number) // Add plate_number to the end
                 .execute(pool)
                 .await;
 
