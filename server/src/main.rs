@@ -9,6 +9,7 @@ mod auth;
 mod background_tasks;
 mod models;
 mod payment;
+mod repositories;
 mod routes;
 mod utils;
 

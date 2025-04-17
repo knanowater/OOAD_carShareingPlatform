@@ -6,8 +6,8 @@ use sqlx::FromRow;
 #[serde(crate = "rocket::serde")]
 pub struct CreateReservationRequest {
     pub car_id: i32,
-    pub rental_date: String, // 날짜 형식 고려 (NaiveDateTime or String)
-    pub return_date: String, // 날짜 형식 고려 (NaiveDateTime or String)
+    pub rental_date: String,
+    pub return_date: String,
     pub request: String,
     pub total_price: f32,
 }
