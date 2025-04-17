@@ -80,8 +80,6 @@ impl<'a> ReservationRepository<'a> {
         .execute(&mut *tx)
         .await;
 
-        println!("{:?}", insert_res);
-
         if let Err(e) = insert_res {
             tx.rollback().await.ok();
             return Err((Status::InternalServerError, format!("예약 실패: {}", e)));
@@ -480,6 +478,61 @@ impl<'a> ReservationRepository<'a> {
             }))
         } else {
             Err(Status::NotFound)
+        }
+    }
+
+    pub async fn get_reservation_info_by_reservation_id_payment_id(
+        &self,
+        user_id: i32,
+        reservation_id: String,
+        payment_id: String,
+    ) -> Result<Json<ReservationInfo>, Status> {
+        let mut conn = self
+            .pool
+            .acquire()
+            .await
+            .map_err(|_| Status::InternalServerError)?;
+
+        let reservation = sqlx::query_as!(
+            ReservationInfo,
+            r#"
+            SELECT 
+                r.car_id,
+                CAST(c.year AS UNSIGNED) as year, -- 강제 형 변환
+                c.manufacturer,
+                c.name,
+                c.image_url,
+                r.rental_date,
+                r.return_date,
+                c.daily_rate,
+                r.total_price,
+                r.request,
+                p.payment_date,
+                p.reservation_id as payment_reservation_id,
+                p.payment_method,
+                p.amount,
+                r.reservation_status
+            FROM reservation r
+            JOIN payment p ON r.reservation_id = p.reservation_id
+            JOIN cars c ON r.car_id = c.id
+            WHERE r.reservation_id = ? AND p.transaction_id = ? AND r.user_id = ?
+            "#,
+            reservation_id,
+            payment_id,
+            user_id
+        )
+        .fetch_optional(&mut *conn)
+        .await
+        .map_err(|e| {
+            eprintln!("Error fetching reservation info: {}", e);
+            rocket::http::Status::InternalServerError
+        })?;
+
+        println!("{:?}", reservation);
+
+        match reservation {
+            Some(reservation) => Ok(rocket::serde::json::Json(reservation)),
+            None => Err(rocket::http::Status::NotFound),
         }
     }
 }

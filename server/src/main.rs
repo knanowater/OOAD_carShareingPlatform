@@ -69,6 +69,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     routes::cars::api_update_car, // routes::cars에서 가져옴
                     routes::reservations::api_reservation_request,
                     routes::reservations::api_reservations,
+                    routes::reservations::api_get_reservation_info_by_reservation_id_payment_id,
                     routes::reservations::api_return_car,
                     routes::reservations::api_cancel_reservation,
                     routes::reservations::cancel_reservation_due_to_payment_failed,

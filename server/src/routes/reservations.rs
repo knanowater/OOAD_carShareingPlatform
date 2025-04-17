@@ -1,10 +1,10 @@
+use crate::auth::AuthToken;
+use crate::models::reservation::ReservationQuery;
+use crate::models::reservation::*;
+use crate::repositories::reservation_repository::ReservationRepository;
 use rocket::http::Status;
 use rocket::serde::json::{Json, json};
 use rocket::{State, delete, get, post};
-
-use crate::auth::AuthToken;
-use crate::models::reservation::*;
-use crate::repositories::reservation_repository::ReservationRepository;
 use sqlx::MySqlPool;
 
 #[post("/api/reservations/request", data = "<reservation_data>")]
@@ -106,4 +106,24 @@ pub async fn api_overdue_fee_info(
         .map_err(|_| Status::Unauthorized)?;
     let repo = ReservationRepository::new(pool);
     repo.get_overdue_fee_info(user_id, reservation_id).await
+}
+
+#[get("/api/reservation?<reservation_payment_query..>")]
+pub async fn api_get_reservation_info_by_reservation_id_payment_id(
+    pool: &State<MySqlPool>,
+    auth_token: AuthToken,
+    reservation_payment_query: ReservationQuery,
+) -> Result<Json<ReservationInfo>, Status> {
+    let user_id = auth_token
+        .0
+        .sub
+        .parse::<i32>()
+        .map_err(|_| Status::Unauthorized)?;
+    let repo = ReservationRepository::new(pool);
+    repo.get_reservation_info_by_reservation_id_payment_id(
+        user_id,
+        reservation_payment_query.reservation_id.clone(),
+        reservation_payment_query.payment_id.clone(),
+    )
+    .await
 }

@@ -439,7 +439,7 @@
                             if (paymentResponse.ok) {
                                 const paymentData = await paymentResponse.json();
                                 if (paymentData.success) {
-                                    window.location.href = `/reservation/success?id=${reservationId}&payment_id=${paymentData.transaction_id || "가상"}`;
+                                    window.location.href = `/reservation/success?reservation_id=${reservationId}&payment_id=${paymentData.transaction_id}`;
                                 } else {
                                     alert(`결제 실패: ${paymentData.message}`);
                                     await cancelReservation(reservationId, authToken);

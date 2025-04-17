@@ -1,4 +1,4 @@
-use chrono::{NaiveDate, NaiveDateTime};
+use chrono::{DateTime, NaiveDate, NaiveDateTime, Utc};
 use rocket::serde::{Deserialize, Serialize}; // rocket의 Serialize/Deserialize 사용
 use sqlx::FromRow;
 
@@ -23,7 +23,7 @@ pub struct ReservationDetails {
     pub return_date: NaiveDateTime,
     pub rental_period_days: i32,
     pub pickup_location: String,
-    pub total_price: f64, // DB 타입과 일치 확인 (DECIMAL -> f64 or Decimal type)
+    pub total_price: f64,
     pub reservation_status: String,
 }
 
@@ -66,4 +66,29 @@ pub struct OverdueFeeInfo {
     pub base_fee: i32,
     pub overdue_hours: i64,
     pub total_overdue_fee: i32,
+}
+
+#[derive(Debug, FromForm)]
+pub struct ReservationQuery {
+    pub reservation_id: String,
+    pub payment_id: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, FromRow)]
+pub struct ReservationInfo {
+    pub car_id: i32,
+    pub year: u64,
+    pub manufacturer: String,
+    pub name: String,
+    pub image_url: Option<String>,
+    pub rental_date: NaiveDateTime,
+    pub return_date: NaiveDateTime,
+    pub daily_rate: f64,
+    pub total_price: f64,
+    pub request: Option<String>,
+    pub payment_date: Option<DateTime<Utc>>,
+    pub payment_reservation_id: Option<String>,
+    pub payment_method: Option<String>,
+    pub amount: f64,
+    pub reservation_status: String,
 }

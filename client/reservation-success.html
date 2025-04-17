@@ -28,7 +28,6 @@
                     opacity: 0;
                 }
             }
-
             .checkmark {
                 width: 100px;
                 height: 100px;
@@ -142,6 +141,28 @@
             .right::after {
                 border-color: #10b981;
             }
+
+            .info-card {
+                border-left: 4px solid #3b82f6;
+                transition: all 0.3s ease;
+            }
+
+            .info-card:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            }
+
+            .copy-btn {
+                transition: all 0.2s ease;
+            }
+
+            .copy-btn:hover {
+                background-color: #e5e7eb;
+            }
+
+            .copy-btn:active {
+                transform: scale(0.95);
+            }
         </style>
     </head>
     <body class="font-sans antialiased text-gray-800 bg-gray-50">
@@ -192,11 +213,12 @@
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <!-- 차량 정보 -->
                             <div class="flex items-start space-x-4">
-                                <img src="https://placehold.co/600x400" alt="차량 이미지" class="w-24 h-16 object-cover rounded-lg" />
+                                <img alt="차량 이미지" class="w-36 h-24 object-cover rounded-lg" id="car-img" />
                                 <div>
-                                    <h3 class="font-bold">2023 현대 그랜저</h3>
-                                    <p class="text-sm text-gray-600">대여 기간: 2023.11.15 ~ 2023.11.17 (2일)</p>
-                                    <p class="text-sm text-gray-600">픽업 위치: 서울시 강남구 테헤란로</p>
+                                    <h3 class="font-bold" id="car-full-name"></h3>
+                                    <p class="text-sm text-gray-600" id="rental-date"></p>
+                                    <p class="text-sm text-gray-600" id="return-date"></p>
+                                    <p class="text-sm text-gray-600" id="location"></p>
                                 </div>
                             </div>
 
@@ -204,82 +226,68 @@
                             <div class="border-l border-gray-200 pl-4">
                                 <div class="flex justify-between mb-1">
                                     <span class="text-gray-600">대여 요금</span>
-                                    <span class="font-medium">120,000원</span>
+                                    <span class="font-medium" id="rental-fee"></span>
                                 </div>
                                 <div class="flex justify-between mb-1">
                                     <span class="text-gray-600">서비스 수수료</span>
-                                    <span class="font-medium">12,000원</span>
+                                    <span class="font-medium" id="fee"></span>
                                 </div>
                                 <div class="flex justify-between mt-2 pt-2 border-t border-gray-200">
                                     <span class="font-bold">총 결제 금액</span>
-                                    <span class="font-bold text-blue-600" id="total-price">132,000원</span>
+                                    <span class="font-bold text-blue-600" id="total-price"></span>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- 예약 진행 상태 -->
-                    <div class="mb-8">
-                        <h2 class="text-xl font-bold mb-6 text-center">예약 진행 상태</h2>
-
-                        <div class="timeline">
-                            <!-- 1단계: 예약 요청 완료 -->
-                            <div class="timeline-item left">
-                                <div class="timeline-content">
-                                    <div class="flex items-center">
-                                        <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mr-3">
-                                            <i class="fas fa-check text-blue-600"></i>
-                                        </div>
-                                        <div>
-                                            <h3 class="font-bold">예약 요청 완료</h3>
-                                            <p class="text-sm text-gray-600">2023.11.10 14:30</p>
-                                        </div>
+                    <!-- 추가 예약 상세 정보 -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                        <!-- 예약 번호 및 결제 정보 -->
+                        <div class="bg-white rounded-lg shadow-sm p-6 info-card">
+                            <h3 class="font-bold text-lg mb-4 flex items-center">
+                                <i class="fas fa-receipt text-blue-600 mr-2"></i>
+                                예약 및 결제 정보
+                            </h3>
+                            <div class="space-y-4">
+                                <div>
+                                    <p class="text-sm text-gray-500 mb-1">예약 번호</p>
+                                    <div class="flex justify-between items-center">
+                                        <p class="font-medium" id="reservation-id"></p>
+                                        <button class="copy-btn p-1 rounded-full text-gray-500 hover:text-gray-700" onclick="copyToClipboard('reservation-id')">
+                                            <i class="fas fa-copy"></i>
+                                        </button>
                                     </div>
                                 </div>
-                            </div>
-
-                            <!-- 2단계: 호스트 승인 대기 -->
-                            <div class="timeline-item right">
-                                <div class="timeline-content">
-                                    <div class="flex items-center">
-                                        <div class="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center mr-3">
-                                            <i class="fas fa-clock text-gray-500"></i>
-                                        </div>
-                                        <div>
-                                            <h3 class="font-bold">호스트 승인 대기</h3>
-                                            <p class="text-sm text-gray-600">호스트가 24시간 내에 응답할 예정입니다</p>
-                                        </div>
+                                <div>
+                                    <p class="text-sm text-gray-500 mb-1">결제 번호</p>
+                                    <div class="flex justify-between items-center">
+                                        <p class="font-medium" id="payment-id"></p>
+                                        <button class="copy-btn p-1 rounded-full text-gray-500 hover:text-gray-700" onclick="copyToClipboard('payment-id')">
+                                            <i class="fas fa-copy"></i>
+                                        </button>
                                     </div>
                                 </div>
-                            </div>
-
-                            <!-- 3단계: 결제 진행 -->
-                            <div class="timeline-item left">
-                                <div class="timeline-content">
-                                    <div class="flex items-center">
-                                        <div class="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center mr-3">
-                                            <i class="fas fa-credit-card text-gray-500"></i>
-                                        </div>
-                                        <div>
-                                            <h3 class="font-bold">결제 진행</h3>
-                                            <p class="text-sm text-gray-600">호스트 승인 후 자동 결제됩니다</p>
-                                        </div>
-                                    </div>
+                                <div>
+                                    <p class="text-sm text-gray-500 mb-1">결제 유형</p>
+                                    <p class="font-medium" id="payment-type"></p>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-gray-500 mb-1">예약 상태</p>
+                                    <p class="font-medium text-blue-600" id="reservation-status">호스트 승인 대기 중</p>
                                 </div>
                             </div>
+                        </div>
 
-                            <!-- 4단계: 픽업 준비 -->
-                            <div class="timeline-item right">
-                                <div class="timeline-content">
-                                    <div class="flex items-center">
-                                        <div class="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center mr-3">
-                                            <i class="fas fa-car text-gray-500"></i>
-                                        </div>
-                                        <div>
-                                            <h3 class="font-bold">픽업 준비</h3>
-                                            <p class="text-sm text-gray-600">픽업 전 상세 안내가 전송됩니다</p>
-                                        </div>
-                                    </div>
+                        <!-- 요청사항 및 기타 정보 -->
+                        <div class="bg-white rounded-lg shadow-sm p-6 info-card" style="border-left-color: #10b981">
+                            <h3 class="font-bold text-lg mb-4 flex items-center">
+                                <i class="fas fa-comment-alt text-green-500 mr-2"></i>
+                                추가 정보
+                            </h3>
+                            <div class="space-y-4">
+                                <div>
+                                    <p class="text-sm text-gray-500 mb-1">요청사항</p>
+                                    <p class="font-medium" id="special-requests"></p>
                                 </div>
                             </div>
                         </div>
@@ -390,22 +398,81 @@
         </footer>
 
         <script>
-            // 페이지 로드 시 컨페티 효과
-            document.addEventListener("DOMContentLoaded", function () {
-                createConfetti();
+            window.addEventListener("DOMContentLoaded", function () {
+                // 페이지 로드 시 컨페티 효과
+                {
+                    createConfetti();
+                }
+                // URL 파라미터에서 데이터 가져오기
+                {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const reservation_id = urlParams.get("reservation_id");
+                    const payment_id = urlParams.get("payment_id");
 
-                // URL에서 예약 정보 가져오기 (실제 구현에서는 서버에서 데이터를 가져와야 함)
-                const urlParams = new URLSearchParams(window.location.search);
-                const carName = urlParams.get("car") || "2023 현대 그랜저";
-                const startDate = urlParams.get("start") || "2023.11.15";
-                const endDate = urlParams.get("end") || "2023.11.17";
-                const totalPrice = urlParams.get("price") || "132,000";
-
-                // DOM 요소 업데이트
-                document.querySelector(".timeline-content h3").textContent = carName;
-                document.querySelector(".timeline-content p:nth-of-type(1)").textContent = `대여 기간: ${startDate} ~ ${endDate} (2일)`;
-                document.querySelector("#total-price").textContent = `${totalPrice}원`;
+                    loadReservationDetail(reservation_id, payment_id);
+                }
             });
+
+            async function loadReservationDetail(reservation_id, payment_id) {
+                try {
+                    const token = localStorage.getItem("jwt"); // 저장 위치에 따라 sessionStorage일 수도 있어
+
+                    const response = await fetch(`/api/reservation?reservation_id=${reservation_id}&payment_id=${payment_id}`, {
+                        method: "GET",
+                        headers: {
+                            Authorization: `Bearer ${localStorage.getItem("token")}`,
+                            "Content-Type": "application/json",
+                        },
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+
+                    const data = await response.json();
+                    if (data.error) {
+                        throw new Error(data.error);
+                    }
+                    // 예약 정보 표시
+                    document.querySelector("#car-img").src = data.image_url || "https://placehold.co/600x400";
+                    document.querySelector("#car-full-name").textContent = data.year + " " + data.manufacturer + " " + data.name;
+                    document.querySelector("#rental-fee").textContent = `${data.daily_rate.toLocaleString()}원`;
+                    document.querySelector("#fee").textContent = `${(data.daily_rate / 10).toLocaleString()}원`;
+                    document.querySelector("#total-price").textContent = `${data.total_price.toLocaleString()}원`;
+                    document.querySelector("#reservation-id").textContent = reservation_id;
+                    document.querySelector("#payment-id").textContent = payment_id;
+                    document.querySelector("#special-requests").textContent = data.request || "없음";
+                    document.querySelector("#rental-date").textContent = `대여일 : ${data.rental_date}`;
+                    document.querySelector("#return-date").textContent = `반납일 : ${data.return_date}`;
+
+                    const paymentMethod = data.payment_method;
+                    if (paymentMethod === "credit_card") {
+                        document.querySelector("#payment-type").textContent = "신용카드";
+                    } else if (paymentMethod === "paypal") {
+                        document.querySelector("#payment-type").textContent = "PayPal";
+                    } else if (paymentMethod === "bank") {
+                        document.querySelector("#payment-type").textContent = "은행 이체";
+                    } else {
+                        document.querySelector("#payment-type").textContent = "기타";
+                    }
+
+                    const reservationStatus = data.reservation_status;
+                    console.log(reservationStatus);
+                    if (reservationStatus === "pending") {
+                        document.querySelector("#reservation-status").textContent = "호스트 승인 대기 중";
+                    } else if (reservationStatus === "approved") {
+                        document.querySelector("#reservation-status").textContent = "예약 승인됨";
+                    } else if (reservationStatus === "rejected") {
+                        document.querySelector("#reservation-status").textContent = "예약 거절됨";
+                    } else {
+                        document.querySelector("#reservation-status").textContent = "예약 상태 불명";
+                    }
+                } catch (error) {
+                    console.error("예약 정보 로딩 실패:", error);
+                    alert("예약 정보를 불러오는 데 실패했습니다.");
+                    window.location.href = "/";
+                }
+            }
 
             function createConfetti() {
                 const colors = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6"];
@@ -414,19 +481,60 @@
                     const confetti = document.createElement("div");
                     confetti.className = "confetti";
                     confetti.style.left = Math.random() * 100 + "vw";
+                    confetti.style.top = "-50px";
                     confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
                     confetti.style.width = Math.random() * 10 + 5 + "px";
                     confetti.style.height = Math.random() * 10 + 5 + "px";
                     confetti.style.animationDuration = Math.random() * 3 + 2 + "s";
                     confetti.style.animationDelay = Math.random() * 2 + "s";
+                    confetti.style.zIndex = 9999;
+                    confetti.style.opacity = 1;
+
+                    confetti.style.animation = `confetti-fall ${confetti.style.animationDuration} ease-in-out ${confetti.style.animationDelay}s forwards`;
 
                     document.body.appendChild(confetti);
 
-                    // 애니메이션 종료 후 제거
                     setTimeout(() => {
                         confetti.remove();
                     }, 5000);
                 }
+            }
+
+            function copyToClipboard(elementId) {
+                const element = document.getElementById(elementId);
+                const text = element.textContent;
+
+                navigator.clipboard
+                    .writeText(text)
+                    .then(() => {
+                        // 복사 성공 시 토스트 메시지 표시
+                        showToast("클립보드에 복사되었습니다");
+                    })
+                    .catch((err) => {
+                        console.error("클립보드 복사 실패:", err);
+                    });
+            }
+
+            function showToast(message) {
+                const toast = document.createElement("div");
+                toast.className = "fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-4 py-2 rounded-lg shadow-lg opacity-0 transition-opacity duration-300";
+                toast.textContent = message;
+                document.body.appendChild(toast);
+
+                // 나타나는 애니메이션
+                setTimeout(() => {
+                    toast.classList.add("opacity-100");
+                }, 10);
+
+                // 사라지는 애니메이션
+                setTimeout(() => {
+                    toast.classList.remove("opacity-100");
+                }, 2000);
+
+                // 완전히 제거
+                setTimeout(() => {
+                    toast.remove();
+                }, 2300);
             }
         </script>
     </body>

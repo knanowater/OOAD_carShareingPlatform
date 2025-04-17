@@ -1,6 +1,6 @@
 use rocket::form::FromForm;
 use serde::{Deserialize, Serialize};
-use server::CarInfo; // server 모듈/크레이트의 CarInfo 사용
+use server::CarInfo;
 
 #[derive(Serialize)]
 #[serde(crate = "rocket::serde")] // Json 응답을 위해 필요할 수 있음
@@ -21,7 +21,3 @@ pub struct CarQuery {
     pub transmission: Option<String>,
     pub status: Option<String>,
 }
-
-// 참고: server::CarInfo 구조체도 여기에 정의하거나,
-// server 모듈을 그대로 사용한다면 이 파일에는 CarListResponse, CarQuery만 둡니다.
-// 만약 server::CarInfo를 여기로 옮긴다면 server 모듈의 의존성을 제거해야 합니다.

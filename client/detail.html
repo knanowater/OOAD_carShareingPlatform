@@ -115,7 +115,7 @@
                             </div>
 
                             <!-- 예약 버튼 -->
-                            <button class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition mb-3" id="reservation-button">예약하기</button>
+                            <button class="w-full py-3" id="reservation-button">예약하기</button>
                         </div>
                     </div>
                 </div>
@@ -368,9 +368,18 @@
                                 document.querySelector("#car-daily-rate").innerHTML = getSafeValue(car.daily_rate.toLocaleString(), "원");
                                 document.querySelector("#car-trim").innerHTML = getSafeValue(car.car_trim);
                                 document.querySelector("#car-color").innerHTML = getSafeValue(car.color);
-                                document.querySelector("#reservation-button").addEventListener("click", () => {
-                                    location.href = `/reservation?id=${car.id}`;
-                                });
+                                const reservationBtn = document.querySelector("#reservation-button");
+                                if (car.status == "Available") {
+                                    reservationBtn.disabled = false;
+                                    reservationBtn.classList.add("bg-blue-600", "hover:bg-blue-700", "text-white", "font-medium", "rounded-lg", "transition", "mb-3");
+                                    reservationBtn.addEventListener("click", () => {
+                                        location.href = `/reservation?id=${car.id}`;
+                                    });
+                                } else {
+                                    reservationBtn.disabled = true;
+                                    reservationBtn.classList.add("w-full", "py-3", "bg-gray-400", "text-white", "font-medium", "rounded-lg", "transition", "mb-3", "cursor-not-allowed");
+                                    reservationBtn.innerHTML = "예약 불가";
+                                }
                             })
                             .catch((error) => {
                                 console.error("차량 정보 로딩 실패: ", error);

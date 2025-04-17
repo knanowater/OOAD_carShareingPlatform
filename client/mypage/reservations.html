@@ -79,19 +79,7 @@
             </div>
 
             <!-- 페이지네이션 -->
-            <div class="mt-8 flex justify-center" id="page-nav">
-                <nav class="inline-flex rounded-md shadow">
-                    <a href="#" class="px-4 py-2 border border-gray-300 bg-white text-gray-500 hover:bg-gray-50 rounded-l-md">
-                        <i class="fas fa-chevron-left"></i>
-                    </a>
-                    <a href="#" class="px-4 py-2 border-t border-b border-gray-300 bg-white text-blue-600 font-medium">1</a>
-                    <a href="#" class="px-4 py-2 border-t border-b border-gray-300 bg-white text-gray-500 hover:bg-gray-50">2</a>
-                    <a href="#" class="px-4 py-2 border-t border-b border-gray-300 bg-white text-gray-500 hover:bg-gray-50">3</a>
-                    <a href="#" class="px-4 py-2 border border-gray-300 bg-white text-gray-500 hover:bg-gray-50 rounded-r-md">
-                        <i class="fas fa-chevron-right"></i>
-                    </a>
-                </nav>
-            </div>
+            <div class="mt-8 flex justify-center" id="pagination-container"></div>
         </main>
 
         <footer class="bg-gray-900 text-white py-12">
@@ -186,7 +174,6 @@
 
                         // 여기에 실제 필터링 로직을 구현할 수 있습니다.
                         const filterType = this.getAttribute("onclick").replace("filterReservations('", "").replace("')", "");
-                        console.log(`Filtering by: ${filterType}`);
                     });
                 });
             });
@@ -237,7 +224,7 @@
                     if (response.ok) {
                         const data = await response.json();
                         const reservations = data.reservations || [];
-                        totalPages = data.totalPages || 1;
+                        totalPages = data.total_pages || 1;
                         renderReservations(reservations);
                         renderPagination(totalPages);
                     } else {
@@ -292,9 +279,12 @@
             }
 
             function renderPagination(totalPages) {
-                const paginationNav = document.querySelector("#page-nav");
-                if (!paginationNav) return;
-                paginationNav.innerHTML = ""; // 기존 페이지 번호 제거
+                const paginationContainer = document.getElementById("pagination-container");
+                if (!paginationContainer) return;
+                paginationContainer.innerHTML = "";
+
+                const nav = document.createElement("nav");
+                nav.classList.add("inline-flex", "rounded-md", "shadow");
 
                 const prevButton = document.createElement("a");
                 prevButton.href = "#";
@@ -304,12 +294,12 @@
                     e.preventDefault();
                     if (currentPage > 1) {
                         currentPage--;
-                        loadCarsWithFiltersAndSorting((currentPage - 1) * carsPerPage, currentSort, currentFilters);
+                        fetchReservations();
                     }
                 });
-                paginationNav.appendChild(prevButton);
+                nav.appendChild(prevButton);
 
-                const maxVisiblePages = 5; // 최대로 보여줄 페이지 번호 개수
+                const maxVisiblePages = 5;
                 let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
                 let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
 
@@ -324,14 +314,17 @@
                     pageLink.classList.add("px-4", "py-2", "border-t", "border-b", "border-gray-300", "bg-white", "text-gray-500", "hover:bg-gray-50");
                     if (i === currentPage) {
                         pageLink.classList.remove("text-gray-500", "hover:bg-gray-50");
-                        pageLink.classList.add("text-blue-600", "font-medium");
+                        pageLink.classList.add("text-blue-600", "font-medium", "pagination-active");
                     }
                     pageLink.addEventListener("click", (e) => {
                         e.preventDefault();
-                        currentPage = i;
-                        loadCarsWithFiltersAndSorting((currentPage - 1) * carsPerPage, currentSort, currentFilters);
+                        const clickedPage = i;
+                        if (currentPage !== clickedPage) {
+                            currentPage = clickedPage;
+                            fetchReservations();
+                        }
                     });
-                    paginationNav.appendChild(pageLink);
+                    nav.appendChild(pageLink);
                 }
 
                 const nextButton = document.createElement("a");
@@ -342,10 +335,12 @@
                     e.preventDefault();
                     if (currentPage < totalPages) {
                         currentPage++;
-                        loadCarsWithFiltersAndSorting((currentPage - 1) * carsPerPage, currentSort, currentFilters);
+                        fetchReservations();
                     }
                 });
-                paginationNav.appendChild(nextButton);
+                nav.appendChild(nextButton);
+
+                paginationContainer.appendChild(nav);
             }
 
             function formatDate(dateString) {
