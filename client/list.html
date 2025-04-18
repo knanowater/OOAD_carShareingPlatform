@@ -109,26 +109,35 @@
                         <div>
                             <label class="block text-gray-700 text-sm font-medium mb-1">대여일</label>
                             <div class="relative">
-                                <i class="fas fa-calendar-alt absolute left-3 top-3 text-gray-400"></i>
-                                <input type="text" placeholder="날짜 선택" class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                                <input
+                                    type="date"
+                                    placeholder="날짜 선택"
+                                    class="w-full pl-6 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-400"
+                                />
                             </div>
                         </div>
                         <div>
                             <label class="block text-gray-700 text-sm font-medium mb-1">반납일</label>
                             <div class="relative">
-                                <i class="fas fa-calendar-alt absolute left-3 top-3 text-gray-400"></i>
-                                <input type="text" placeholder="날짜 선택" class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                                <input
+                                    type="date"
+                                    placeholder="날짜 선택"
+                                    class="w-full pl-6 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-400"
+                                />
                             </div>
                         </div>
                     </div>
-                    <button class="mt-4 w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition"><i class="fas fa-search mr-2"></i> 차량 검색</button>
+                    <button class="mt-4 w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition" id="search-car"><i class="fas fa-search mr-2"></i> 차량 검색</button>
                 </div>
             </div>
         </section>
 
         <!-- 메인 컨텐츠 -->
-        <main class="container mx-auto px-4 py-8">
-            <div class="flex flex-col md:flex-row gap-8">
+        <main class="container mx-auto px-4 py-8 hidden" id="main-content">
+            <div id="loading-spinner" class="flex justify-center items-center py-10">
+                <div class="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+            <div class="flex flex-col md:flex-row gap-8 hidden filter-section">
                 <!-- 필터 사이드바 -->
                 <aside class="w-full md:w-64 flex-shrink-0">
                     <div class="bg-white rounded-lg shadow p-6 sticky top-24 filter-section overflow-y-auto max-h-[calc(100vh-120px)]">
@@ -269,7 +278,6 @@
         </footer>
 
         <script>
-            // 필터 칩 클릭 이벤트
             document.querySelectorAll(".filter-chip").forEach((chip) => {
                 chip.addEventListener("click", function () {
                     const filterTypeElement = this.parentElement.previousElementSibling;
@@ -322,9 +330,7 @@
                         }
                         applyFilters();
 
-                        // 필터 그룹에 선택된 필터가 없으면 "전체" 버튼 활성화
                         setTimeout(() => {
-                            // applyFilters 이후 currentFilters 상태가 반영되도록 약간의 지연
                             if (currentFilters[filterType] && currentFilters[filterType].length === 0) {
                                 const allButton = parentElement.querySelector(".filter-chip:first-child");
                                 if (allButton) {
@@ -337,7 +343,6 @@
                 });
             });
 
-            // 차량 카드 호버 시 애니메이션
             document.querySelectorAll(".car-card").forEach((card) => {
                 card.addEventListener("mouseenter", function () {
                     this.style.transform = "translateY(-5px)";
@@ -350,13 +355,13 @@
                 });
             });
 
-            const sortSelect = document.querySelector(".flex.items-center > select"); // 정렬 select 요소 선택
+            const sortSelect = document.querySelector(".flex.items-center > select");
             const carGrid = document.getElementById("car-grid");
             let currentSort = "";
 
             sortSelect.addEventListener("change", () => {
                 currentSort = sortSelect.value;
-                loadCarsWithFiltersAndSorting(0, currentSort, currentFilters); // 정렬 기준 및 필터 함께 전달하며 첫 페이지 로드
+                loadCarsWithFiltersAndSorting(0, currentSort, currentFilters);
             });
 
             const priceSlider = document.querySelector(".price-slider");
@@ -367,22 +372,21 @@
 
             let currentFilters = {
                 minPrice: 0,
-                maxPrice: 1000000, // 초기 최댓값 설정
+                maxPrice: 1000000,
                 carType: [],
                 fuelType: [],
                 transmission: [],
             };
 
-            // noUiSlider 초기화
             if (priceSlider) {
                 noUiSlider.create(priceSlider, {
-                    start: [0, 1000000], // 초기 최소값, 최대값 설정
+                    start: [0, 1000000],
                     connect: true,
                     range: {
                         min: 0,
                         max: 1000000,
                     },
-                    step: 10000, // 가격 단위
+                    step: 10000,
                     format: {
                         to: function (value) {
                             return value.toLocaleString();
@@ -393,17 +397,22 @@
                     },
                 });
 
-                // 슬라이더 값 변경 이벤트 리스너
+                let isInitialLoad = true;
+
                 priceSlider.noUiSlider.on("update", function (values, handle) {
+                    if (isInitialLoad) return;
+
                     currentFilters.minPrice = Number(values[0].replace(/,/g, ""));
                     currentFilters.maxPrice = Number(values[1].replace(/,/g, ""));
                     priceMinValueSpan.textContent = `${values[0]}원`;
                     priceMaxValueSpan.textContent = `${values[1]}원`;
                     applyFilters();
                 });
+
+                priceSlider.noUiSlider.set([0, 1000000]);
+                isInitialLoad = false;
             }
 
-            // 필터 초기화 버튼 이벤트 리스너
             resetButton.addEventListener("click", () => {
                 console.log("reset");
                 currentFilters = { minPrice: 0, maxPrice: 1000000, carType: [], fuelType: [], transmission: [] };
@@ -445,7 +454,7 @@
             function renderPagination(totalPages) {
                 const paginationNav = document.querySelector("#page-nav");
                 if (!paginationNav) return;
-                paginationNav.innerHTML = ""; // 기존 페이지 번호 제거
+                paginationNav.innerHTML = "";
 
                 const prevButton = document.createElement("a");
                 prevButton.href = "#";
@@ -460,7 +469,7 @@
                 });
                 paginationNav.appendChild(prevButton);
 
-                const maxVisiblePages = 5; // 최대로 보여줄 페이지 번호 개수
+                const maxVisiblePages = 5;
                 let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
                 let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
 
@@ -513,7 +522,7 @@
                         case "평점 높은순":
                             sortParam = "rating_desc";
                             break;
-                        default: // 이름순 (기본 정렬)
+                        default:
                             sortParam = "name_asc";
                             break;
                     }
@@ -529,17 +538,14 @@
                     apiUrl += `&max_daily_rate=${filters.maxPrice}`;
                 }
 
-                // 차량 유형 필터 추가
                 if (filters.carType.length > 0) {
                     apiUrl += `&car_type=${filters.carType.join(",")}`;
                 }
 
-                // 연료 유형 필터 추가 (기존 코드에 있다면 확인)
                 if (filters.fuelType.length > 0) {
                     apiUrl += `&fuel_type=${filters.fuelType.join(",")}`;
                 }
 
-                // 변속기 필터 추가 (기존 코드에 있다면 확인)
                 if (filters.transmission.length > 0) {
                     apiUrl += `&transmission=${filters.transmission.join(",")}`;
                 }
@@ -559,7 +565,7 @@
                     }
 
                     if (carGrid) {
-                        carGrid.innerHTML = ""; // 기존 차량 목록 초기화
+                        carGrid.innerHTML = "";
                         if (cars && cars.length > 0) {
                             cars.forEach((car) => {
                                 const carCardHTML = `
@@ -616,14 +622,31 @@
                     }
                 }
             }
+            const searchButton = document.querySelector("#search-car");
+            const mainContent = document.querySelector("#main-content");
+            const spinner = document.querySelector("#loading-spinner");
+
+            let hasSearchedOnce = false;
+
+            searchButton.addEventListener("click", async (e) => {
+                document.querySelector(".filter-section").classList.add("hidden");
+                document.querySelector("#page-nav").classList.add("hidden");
+                if (!hasSearchedOnce) {
+                    mainContent.classList.remove("hidden");
+                    hasSearchedOnce = true;
+                }
+                spinner.classList.remove("hidden");
+                carGrid.innerHTML = "";
+                try {
+                    await loadCarsWithFiltersAndSorting(0, currentSort, currentFilters);
+                } finally {
+                    spinner.classList.add("hidden");
+                    document.querySelector(".filter-section").classList.remove("hidden");
+                    document.querySelector("#page-nav").classList.remove("hidden");
+                }
+            });
 
             window.addEventListener("DOMContentLoaded", () => {
-                // JWT 디코딩
-                {
-                    const token = localStorage.getItem("token");
-                    const loginButtonContainer = document.querySelector(".flex.items-center.space-x-4");
-                    // ...
-                }
                 // 자동차 목록 로딩 및 초기 필터 UI 설정
                 {
                     document.querySelectorAll(".filter-section > div").forEach((filterGroup) => {
@@ -646,7 +669,6 @@
                             }
                         });
                     });
-                    loadCarsWithFiltersAndSorting(0, currentSort, currentFilters);
                 }
             });
         </script>
