@@ -51,6 +51,21 @@ impl CarRepository for MySqlCarRepository {
         let mut where_clauses = Vec::new();
         let mut query_params: Vec<String> = Vec::new();
 
+        if let (Some(rental), Some(return_)) = (&query.rental_date, &query.return_date) {
+            where_clauses.push(
+                "id NOT IN (
+                    SELECT car_id FROM reservation
+                    WHERE NOT (
+                        return_date < ? OR rental_date > ?
+                    )
+                    AND reservation_status NOT IN ('completed', 'canceled')
+                )"
+                .to_string(),
+            );
+            query_params.push(rental.clone());
+            query_params.push(return_.clone());
+        }
+
         if let Some(min) = min_price {
             where_clauses.push("daily_rate >= ?".to_string());
             query_params.push(min.to_string());

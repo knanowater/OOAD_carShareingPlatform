@@ -113,6 +113,7 @@
                                     type="date"
                                     placeholder="날짜 선택"
                                     class="w-full pl-6 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-400"
+                                    id="rental-date"
                                 />
                             </div>
                         </div>
@@ -123,6 +124,7 @@
                                     type="date"
                                     placeholder="날짜 선택"
                                     class="w-full pl-6 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-400"
+                                    id="return-date"
                                 />
                             </div>
                         </div>
@@ -361,7 +363,7 @@
 
             sortSelect.addEventListener("change", () => {
                 currentSort = sortSelect.value;
-                loadCarsWithFiltersAndSorting(0, currentSort, currentFilters);
+                loadCarsWithFiltersAndSorting(0, currentSort, rental_date, return_date, currentFilters);
             });
 
             const priceSlider = document.querySelector(".price-slider");
@@ -444,7 +446,7 @@
             });
 
             function applyFilters() {
-                loadCarsWithFiltersAndSorting(0, currentSort, currentFilters);
+                loadCarsWithFiltersAndSorting(0, currentSort, rental_date, return_date, currentFilters);
             }
 
             let currentPage = 1;
@@ -464,7 +466,7 @@
                     e.preventDefault();
                     if (currentPage > 1) {
                         currentPage--;
-                        loadCarsWithFiltersAndSorting((currentPage - 1) * carsPerPage, currentSort, currentFilters);
+                        loadCarsWithFiltersAndSorting((currentPage - 1) * carsPerPage, rental_date, return_date, currentSort, currentFilters);
                     }
                 });
                 paginationNav.appendChild(prevButton);
@@ -489,7 +491,7 @@
                     pageLink.addEventListener("click", (e) => {
                         e.preventDefault();
                         currentPage = i;
-                        loadCarsWithFiltersAndSorting((currentPage - 1) * carsPerPage, currentSort, currentFilters);
+                        loadCarsWithFiltersAndSorting((currentPage - 1) * carsPerPage, rental_date, return_date, currentSort, currentFilters);
                     });
                     paginationNav.appendChild(pageLink);
                 }
@@ -502,14 +504,14 @@
                     e.preventDefault();
                     if (currentPage < totalPages) {
                         currentPage++;
-                        loadCarsWithFiltersAndSorting((currentPage - 1) * carsPerPage, currentSort, currentFilters);
+                        loadCarsWithFiltersAndSorting((currentPage - 1) * carsPerPage, rental_date, return_date, currentSort, currentFilters);
                     }
                 });
                 paginationNav.appendChild(nextButton);
             }
 
-            async function loadCarsWithFiltersAndSorting(startIndex = 0, sort = "", filters = currentFilters) {
-                let apiUrl = `/api/cars?start=${startIndex}`;
+            async function loadCarsWithFiltersAndSorting(startIndex = 0, sort = "", rental_date, return_date, filters = currentFilters) {
+                let apiUrl = `/api/cars?start=${startIndex}&rental_date=${rental_date}&return_date=${return_date}`;
                 if (sort) {
                     let sortParam = "";
                     switch (sort) {
@@ -626,19 +628,51 @@
             const mainContent = document.querySelector("#main-content");
             const spinner = document.querySelector("#loading-spinner");
 
+            let rental_date = "";
+            let return_date = "";
             let hasSearchedOnce = false;
 
             searchButton.addEventListener("click", async (e) => {
+                const rentalInput = document.querySelector("#rental-date").value;
+                const returnInput = document.querySelector("#return-date").value;
+
+                if (!rentalInput || !returnInput) {
+                    alert("대여일과 반납일을 선택해주세요.");
+                    return;
+                }
+
+                const [rYear, rMonth, rDay] = rentalInput.split("-").map(Number);
+                const [retYear, retMonth, retDay] = returnInput.split("-").map(Number);
+                const rentalDate = new Date(rYear, rMonth - 1, rDay);
+                const returnDate = new Date(retYear, retMonth - 1, retDay);
+
+                const today = new Date();
+                const twoDaysLater = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 2);
+
+                // 유효성 검사
+                if (rentalDate < twoDaysLater) {
+                    alert("대여일은 오늘 기준으로 최소 2일 이후여야 합니다.");
+                    return;
+                }
+
+                if (returnDate <= rentalDate) {
+                    alert("반납일은 대여일보다 이후여야 합니다.");
+                    return;
+                }
+
                 document.querySelector(".filter-section").classList.add("hidden");
                 document.querySelector("#page-nav").classList.add("hidden");
+
                 if (!hasSearchedOnce) {
                     mainContent.classList.remove("hidden");
                     hasSearchedOnce = true;
                 }
+
                 spinner.classList.remove("hidden");
                 carGrid.innerHTML = "";
+
                 try {
-                    await loadCarsWithFiltersAndSorting(0, currentSort, currentFilters);
+                    await loadCarsWithFiltersAndSorting(0, currentSort, rentalInput, returnInput, currentFilters);
                 } finally {
                     spinner.classList.add("hidden");
                     document.querySelector(".filter-section").classList.remove("hidden");
@@ -647,7 +681,30 @@
             });
 
             window.addEventListener("DOMContentLoaded", () => {
-                // 자동차 목록 로딩 및 초기 필터 UI 설정
+                // 기본 날짜 지정
+                {
+                    const rentalDateInput = document.querySelector("#rental-date");
+                    const returnDateInput = document.querySelector("#return-date");
+
+                    // 오늘 날짜 계산
+                    const today = new Date();
+                    today.setDate(today.getDate() + 2);
+
+                    // 브라우저의 로컬 시간대에 맞게 'YYYY-MM-DD' 형식으로 변환
+                    const formattedDate = new Intl.DateTimeFormat("en-CA").format(today);
+
+                    // 기본 대여일 및 반납일 설정
+                    rentalDateInput.value = formattedDate;
+                    rentalDateInput.min = formattedDate;
+
+                    // 반납일은 대여일 +1일로 설정
+                    const returnDate = new Date(today);
+                    returnDate.setDate(returnDate.getDate() + 1);
+                    returnDateInput.value = new Intl.DateTimeFormat("en-CA").format(returnDate);
+                    returnDateInput.min = formattedDate;
+                }
+
+                // 초기 필터 UI 설정
                 {
                     document.querySelectorAll(".filter-section > div").forEach((filterGroup) => {
                         const filterTypeTitle = filterGroup.querySelector("h3.font-medium.mb-3")?.textContent;

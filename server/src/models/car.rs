@@ -14,6 +14,8 @@ pub struct CarListResponse {
 pub struct CarQuery {
     pub start: Option<usize>,
     pub sort: Option<String>,
+    pub rental_date: Option<String>,
+    pub return_date: Option<String>,
     pub min_daily_rate: Option<i32>,
     pub max_daily_rate: Option<i32>,
     pub car_type: Option<String>,
