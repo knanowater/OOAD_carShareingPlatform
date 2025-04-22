@@ -1,6 +1,6 @@
 use crate::models::reservation::*;
 use crate::utils::generate_reservation_id;
-use chrono::{Datelike, Duration, Local, NaiveDate, Utc};
+use chrono::{Datelike, Duration, Local, Utc};
 use rocket::http::Status;
 use rocket::serde::json::Json;
 use sqlx::{Acquire, MySqlPool};
@@ -594,8 +594,8 @@ impl<'a> ReservationRepository<'a> {
     pub async fn get_reservation_calendar(
         &self,
         car_id: i32,
-        year: u64,
-        month: u64,
+        default_rental_date: MyDate,
+        default_return_date: MyDate,
     ) -> Result<Json<ReservationCalendar>, Status> {
         let mut conn = self
             .pool
@@ -603,15 +603,8 @@ impl<'a> ReservationRepository<'a> {
             .await
             .map_err(|_| Status::InternalServerError)?;
 
-        let start_date =
-            NaiveDate::from_ymd_opt(year as i32, month as u32, 1).ok_or(Status::BadRequest)?;
-
-        let end_date = if month == 12 {
-            NaiveDate::from_ymd_opt(year as i32 + 1, 1, 1)
-        } else {
-            NaiveDate::from_ymd_opt(year as i32, month as u32 + 1, 1)
-        }
-        .ok_or(Status::BadRequest)?;
+        let start_date = default_rental_date.0;
+        let end_date = default_return_date.0;
 
         let reservations = sqlx::query!(
             r#"
@@ -633,13 +626,12 @@ impl<'a> ReservationRepository<'a> {
             let mut day = res.rental_date;
             while day < res.return_date {
                 if day.month() == start_date.month() {
-                    reserved_days.push(day.day() as u8); // 날짜의 '일(day)'만 추출
+                    reserved_days.push(day.day() as u8);
                 }
                 day += Duration::days(1);
             }
         }
 
-        // 중복 제거 + 정렬
         reserved_days.sort_unstable();
         reserved_days.dedup();
 

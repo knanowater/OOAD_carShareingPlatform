@@ -736,9 +736,15 @@
                 }
             });
 
-            async function fetchReservedDays(carId, year, month) {
+            async function fetchReservedDays(carId, defaultRentalDate, defaulReturnDate) {
                 try {
-                    const res = await fetch(`/api/reservation/calendar?car_id=${carId}&year=${year}&month=${month}`);
+                    const res = await fetch(`/api/reservation/calendar?car_id=${carId}&default_rental_date=${defaultRentalDate}&default_return_date=${defaulReturnDate}`, {
+                        method: "GET",
+                        headers: {
+                            "Content-Type": "application/json",
+                            Authorization: `Bearer ${localStorage.getItem("token")}`,
+                        },
+                    });
                     if (!res.ok) throw new Error("예약 정보를 불러오는 데 실패했습니다.");
                     const data = await res.json();
                     return data.reserved_days || [];
@@ -754,8 +760,10 @@
                 const calendarMonthYear = document.getElementById("calendar-month-year");
 
                 const urlParams = new URLSearchParams(window.location.search);
-                carId = urlParams.get("id");
-                const reservedDays = await fetchReservedDays(carId, year, month);
+                const carId = urlParams.get("id");
+                const defaultRentalDate = urlParams.get("rental_date");
+                const defaulReturnDate = urlParams.get("return_date");
+                const reservedDays = await fetchReservedDays(carId, defaultRentalDate, defaulReturnDate);
 
                 const currentDate = new Date();
                 const today = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
@@ -903,6 +911,11 @@
                     // carId가 존재하는 경우, 차량 정보 로드
                     if (carId) {
                         loadCarDetails(carId).then(() => {
+                            const urlParams = new URLSearchParams(window.location.search);
+                            const carId = urlParams.get("id");
+                            const defaultRentalDate = urlParams.get("rental_date");
+                            const defaultReturnDate = urlParams.get("return_date");
+
                             // Promise가 완료된 후 실행
                             // 기본 결제 방법 선택 및 날짜 설정
                             {
@@ -913,23 +926,32 @@
                                     document.getElementById("payment-details").classList.remove("hidden");
                                 }
 
-                                // 오늘 날짜를 기준으로 2일 뒤 날짜 계산
-                                const today = new Date();
-                                const rentalDate = new Date();
-                                rentalDate.setDate(today.getDate() + 2); // 2일 뒤로 설정
+                                // 날짜 유효성 검사
+                                const now = new Date();
+                                const minRentalDate = new Date();
+                                minRentalDate.setDate(now.getDate() + 2); // 오늘 + 2일
 
-                                // 반납일은 대여일 + 1일로 설정
-                                const returnDate = new Date(rentalDate);
-                                returnDate.setDate(rentalDate.getDate() + 1); // 대여일로부터 1일 뒤
+                                // minRentalDate를 YYYY-MM-DD 형식으로 변환
+                                function formatDate(date) {
+                                    const year = date.getFullYear();
+                                    const month = `${date.getMonth() + 1}`.padStart(2, "0");
+                                    const day = `${date.getDate()}`.padStart(2, "0");
+                                    return `${year}-${month}-${day}`;
+                                }
 
-                                // 날짜를 'YYYY-MM-DD' 형식으로 변환하는 함수
-                                const formatDate = (date) => {
-                                    return date.toLocaleDateString("en-CA"); // 'en-CA' 형식으로 날짜를 변환 (ISO 8601 형식)
-                                };
+                                const formattedMinRentalDate = formatDate(minRentalDate);
+
+                                if (
+                                    defaultRentalDate > defaultReturnDate || // 대여일이 반납일보다 늦음
+                                    defaultRentalDate < formattedMinRentalDate // 대여일이 오늘 + 2일보다 빠름
+                                ) {
+                                    alert("잘못된 접근입니다.");
+                                    window.location.href = "/list";
+                                }
 
                                 // 날짜를 입력 필드에 적용
-                                document.querySelector("#rental-date").value = formatDate(rentalDate);
-                                document.querySelector("#return-date").value = formatDate(returnDate);
+                                document.querySelector("#rental-date").value = defaultRentalDate;
+                                document.querySelector("#return-date").value = defaultReturnDate;
                             }
 
                             // 달력 초기 렌더링

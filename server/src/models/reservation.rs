@@ -1,4 +1,5 @@
 use chrono::{DateTime, NaiveDate, NaiveDateTime, Utc};
+use rocket::form::{self, FromFormField, ValueField};
 use rocket::serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 
@@ -96,4 +97,18 @@ pub struct ReservationInfo {
 #[serde(crate = "rocket::serde")]
 pub struct ReservationCalendar {
     pub reserved_days: Vec<u8>,
+}
+
+#[derive(Debug)]
+pub struct MyDate(pub NaiveDate);
+
+#[rocket::async_trait]
+impl<'v> FromFormField<'v> for MyDate {
+    fn from_value(field: ValueField<'v>) -> form::Result<'v, Self> {
+        NaiveDate::parse_from_str(field.value, "%Y-%m-%d")
+            .map(MyDate)
+            .map_err(|_| {
+                form::Error::validation("날짜 형식이 잘못되었습니다 (예: YYYY-MM-DD)").into()
+            })
+    }
 }
