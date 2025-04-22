@@ -72,6 +72,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     routes::reservations::api_get_reservation_info_by_reservation_id_payment_id,
                     routes::reservations::api_return_car,
                     routes::reservations::api_cancel_reservation,
+                    routes::reservations::api_get_reservation_calendar,
                     routes::reservations::cancel_reservation_due_to_payment_failed,
                     routes::reservations::api_overdue_fee_info,
                     routes::users::api_mypage,

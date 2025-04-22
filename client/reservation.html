@@ -57,6 +57,115 @@
                 background-position: right 0.75rem center;
                 background-size: 16px 12px;
             }
+
+            /* 달력 스타일 추가 */
+            .calendar-container {
+                margin-top: 1rem;
+                border: 1px solid #e5e7eb;
+                border-radius: 0.5rem;
+                overflow: hidden;
+                width: 100%;
+                max-width: 350px; /* 최대 너비 제한 */
+            }
+            .calendar-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 0.5rem; /* 패딩 줄임 */
+                background-color: #f9fafb;
+                border-bottom: 1px solid #e5e7eb;
+                font-size: 0.875rem; /* 폰트 크기 줄임 */
+            }
+            .calendar-title {
+                font-weight: 600;
+                color: #111827;
+            }
+            .calendar-nav {
+                display: flex;
+                gap: 0.5rem;
+            }
+            .calendar-nav button {
+                padding: 0.25rem;
+                border-radius: 0.25rem;
+                background-color: #f3f4f6;
+                color: #4b5563;
+                border: none;
+                cursor: pointer;
+                font-size: 0.75rem; /* 버튼 폰트 크기 줄임 */
+            }
+            .calendar-nav button:hover {
+                background-color: #e5e7eb;
+            }
+            .calendar-weekdays {
+                display: grid;
+                grid-template-columns: repeat(7, 1fr);
+                background-color: #f3f4f6;
+                padding: 0.25rem 0; /* 패딩 줄임 */
+                text-align: center;
+                font-size: 0.75rem; /* 폰트 크기 줄임 */
+                color: #6b7280;
+            }
+            .calendar-days {
+                display: grid;
+                grid-template-columns: repeat(7, 1fr);
+                gap: 0.125rem; /* 갭 줄임 */
+                padding: 0.25rem; /* 패딩 줄임 */
+            }
+            .calendar-day {
+                aspect-ratio: 1;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 0.25rem;
+                cursor: pointer;
+                font-size: 0.75rem; /* 폰트 크기 줄임 */
+                min-height: 28px; /* 최소 높이 설정 */
+            }
+            .calendar-day:hover {
+                background-color: #f3f4f6;
+            }
+            .calendar-day.disabled {
+                color: #d1d5db;
+                cursor: not-allowed;
+                background-color: #f9fafb;
+            }
+            .calendar-day.unavailable {
+                color: #ef4444;
+                text-decoration: line-through;
+                cursor: not-allowed;
+                background-color: #fef2f2;
+            }
+            .calendar-day.selected {
+                background-color: #3b82f6;
+                color: white;
+                font-weight: 600;
+            }
+            .calendar-day.today {
+                font-weight: 600;
+                color: #3b82f6;
+            }
+            .calendar-day.range {
+                background-color: #3b82f6;
+                color: white;
+                font-weight: 600;
+            }
+            .calendar-legend {
+                display: flex;
+                justify-content: center;
+                gap: 1rem;
+                margin-top: 0.5rem;
+                font-size: 0.75rem;
+            }
+            .legend-item {
+                display: flex;
+                align-items: center;
+                gap: 0.25rem;
+            }
+            .legend-color {
+                width: 0.75rem;
+                height: 0.75rem;
+                border-radius: 0.125rem;
+            }
         </style>
     </head>
     <body class="font-sans antialiased text-gray-800 bg-gray-50">
@@ -117,13 +226,60 @@
                                 <div>
                                     <label class="block text-gray-700 text-sm font-medium mb-1">대여일</label>
                                     <div class="relative">
-                                        <input type="date" id="rental-date" class="w-full pr-3 pl-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                                        <input
+                                            type="date"
+                                            id="rental-date"
+                                            class="w-full pr-3 pl-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                                            readonly
+                                        />
                                     </div>
                                 </div>
                                 <div>
                                     <label class="block text-gray-700 text-sm font-medium mb-1">반납일</label>
                                     <div class="relative">
-                                        <input type="date" id="return-date" class="w-full pr-3 pl-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                                        <input
+                                            type="date"
+                                            id="return-date"
+                                            class="w-full pr-3 pl-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                                            readonly
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex justify-center">
+                                <div class="calendar-container mt-4">
+                                    <div class="calendar-header">
+                                        <div class="calendar-title" id="calendar-month-year">2023년 11월</div>
+                                        <div class="calendar-nav">
+                                            <button id="prev-month"><i class="fas fa-chevron-left text-xs"></i></button>
+                                            <button id="next-month"><i class="fas fa-chevron-right text-xs"></i></button>
+                                        </div>
+                                    </div>
+                                    <div class="calendar-weekdays">
+                                        <div>일</div>
+                                        <div>월</div>
+                                        <div>화</div>
+                                        <div>수</div>
+                                        <div>목</div>
+                                        <div>금</div>
+                                        <div>토</div>
+                                    </div>
+                                    <div class="calendar-days" id="calendar-days">
+                                        <!-- 달력 날짜가 여기에 동적으로 생성됩니다 -->
+                                    </div>
+                                    <div class="calendar-legend">
+                                        <div class="legend-item">
+                                            <div class="legend-color bg-blue-500"></div>
+                                            <span class="text-xs">선택</span>
+                                        </div>
+                                        <div class="legend-item">
+                                            <div class="legend-color bg-red-100"></div>
+                                            <span class="text-xs">예약 불가</span>
+                                        </div>
+                                        <div class="legend-item">
+                                            <div class="legend-color bg-gray-100"></div>
+                                            <span class="text-xs">지난 날짜</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -306,6 +462,7 @@
             let car_id,
                 daily_rate = 0,
                 comission = 0;
+
             // 결제 방법 선택 함수
             function selectPaymentMethod(element) {
                 // 모든 결제 방법에서 selected 클래스 제거
@@ -383,7 +540,7 @@
                         }
 
                         const timeDiff = endDate.getTime() - startDate.getTime();
-                        const days = Math.ceil(timeDiff / (1000 * 3600 * 24));
+                        const days = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1;
                         return days;
                     };
                     const dailyRate = daily_rate;
@@ -579,6 +736,164 @@
                 }
             });
 
+            async function fetchReservedDays(carId, year, month) {
+                try {
+                    const res = await fetch(`/api/reservation/calendar?car_id=${carId}&year=${year}&month=${month}`);
+                    if (!res.ok) throw new Error("예약 정보를 불러오는 데 실패했습니다.");
+                    const data = await res.json();
+                    return data.reserved_days || [];
+                } catch (err) {
+                    console.error("예약 정보 요청 실패:", err);
+                    return [];
+                }
+            }
+
+            // 달력 관련 함수들
+            async function renderCalendar(year, month) {
+                const calendarDays = document.getElementById("calendar-days");
+                const calendarMonthYear = document.getElementById("calendar-month-year");
+
+                const urlParams = new URLSearchParams(window.location.search);
+                carId = urlParams.get("id");
+                const reservedDays = await fetchReservedDays(carId, year, month);
+
+                const currentDate = new Date();
+                const today = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
+
+                const rentalDateInput = document.getElementById("rental-date");
+                const returnDateInput = document.getElementById("return-date");
+                const rentalDate = rentalDateInput.value ? new Date(rentalDateInput.value) : null;
+                const returnDate = returnDateInput.value ? new Date(returnDateInput.value) : null;
+
+                const firstDay = new Date(year, month, 1);
+                const lastDay = new Date(year, month + 1, 0);
+                const firstDayOfWeek = firstDay.getDay();
+                const lastDate = lastDay.getDate();
+
+                calendarMonthYear.textContent = `${year}년 ${month + 1}월`;
+                calendarDays.innerHTML = "";
+
+                for (let i = 0; i < firstDayOfWeek; i++) {
+                    const dayElement = document.createElement("div");
+                    dayElement.className = "calendar-day disabled";
+                    calendarDays.appendChild(dayElement);
+                }
+
+                for (let i = 1; i <= lastDate; i++) {
+                    const date = new Date(year, month, i);
+                    const dayElement = document.createElement("div");
+                    dayElement.className = "calendar-day";
+                    dayElement.textContent = i;
+
+                    const minimumReservationDate = new Date(today);
+                    minimumReservationDate.setDate(minimumReservationDate.getDate() + 2);
+
+                    if (date < minimumReservationDate) {
+                        dayElement.classList.add("disabled");
+                    } else {
+                        // 실제 예약된 날 처리
+                        if (reservedDays.includes(i)) {
+                            dayElement.classList.add("unavailable");
+                        }
+
+                        if (date.getTime() === today.getTime()) {
+                            dayElement.classList.add("today");
+                        }
+
+                        // 날짜 선택 표시
+                        const normalizedDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+                        // 대여일과 반납일이 모두 선택된 경우
+                        if (rentalDate && returnDate) {
+                            const normalizedRental = new Date(rentalDate.getFullYear(), rentalDate.getMonth(), rentalDate.getDate());
+                            const normalizedReturn = new Date(returnDate.getFullYear(), returnDate.getMonth(), returnDate.getDate());
+
+                            if (normalizedDate >= normalizedRental && normalizedDate <= normalizedReturn) {
+                                dayElement.classList.add("range");
+                                if (normalizedDate.getTime() === normalizedRental.getTime() || normalizedDate.getTime() === normalizedReturn.getTime()) {
+                                    dayElement.classList.add("selected");
+                                }
+                            }
+                        }
+                        //  대여일만 선택된 경우
+                        else if (rentalDate) {
+                            const normalizedRental = new Date(rentalDate.getFullYear(), rentalDate.getMonth(), rentalDate.getDate());
+                            if (normalizedDate.getTime() === normalizedRental.getTime()) {
+                                dayElement.classList.add("range", "selected");
+                            }
+                        }
+
+                        dayElement.addEventListener("click", function () {
+                            if (dayElement.classList.contains("unavailable") || dayElement.classList.contains("disabled")) {
+                                return;
+                            }
+                            const selectedDateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(i).padStart(2, "0")}`;
+                            handleDateSelection(selectedDateStr);
+                        });
+                    }
+
+                    calendarDays.appendChild(dayElement);
+                }
+
+                const totalDaysDisplayed = firstDayOfWeek + lastDate;
+                const remainingCells = totalDaysDisplayed % 7 === 0 ? 0 : 7 - (totalDaysDisplayed % 7);
+
+                for (let i = 0; i < remainingCells; i++) {
+                    const dayElement = document.createElement("div");
+                    dayElement.className = "calendar-day disabled";
+                    calendarDays.appendChild(dayElement);
+                }
+            }
+
+            function handleDateSelection(dateStr) {
+                const rentalDateInput = document.getElementById("rental-date");
+                const returnDateInput = document.getElementById("return-date");
+
+                const clickedDate = new Date(dateStr); // ← 문자열로 들어오니까 여기서 변환
+
+                const year = clickedDate.getFullYear();
+                const month = String(clickedDate.getMonth() + 1).padStart(2, "0");
+                const day = String(clickedDate.getDate()).padStart(2, "0");
+                const normalizedDateStr = `${year}-${month}-${day}`;
+
+                const rentalDateStr = rentalDateInput.value;
+                const returnDateStr = returnDateInput.value;
+
+                const rentalDate = rentalDateStr ? new Date(rentalDateStr) : null;
+                const returnDate = returnDateStr ? new Date(returnDateStr) : null;
+
+                if (!rentalDate || (rentalDate && returnDate)) {
+                    rentalDateInput.value = normalizedDateStr;
+                    returnDateInput.value = "";
+                } else if (clickedDate >= rentalDate) {
+                    returnDateInput.value = normalizedDateStr;
+                } else {
+                    rentalDateInput.value = normalizedDateStr;
+                    returnDateInput.value = "";
+                }
+
+                renderCalendar(clickedDate.getFullYear(), clickedDate.getMonth());
+                updateRentalFee();
+            }
+
+            function updateRentalFee() {
+                const rentalDateInput = document.getElementById("rental-date");
+                const returnDateInput = document.getElementById("return-date");
+
+                if (rentalDateInput.value && returnDateInput.value) {
+                    const startDate = new Date(rentalDateInput.value);
+                    const endDate = new Date(returnDateInput.value);
+
+                    const timeDiff = endDate.getTime() - startDate.getTime();
+                    const days = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1;
+
+                    document.getElementById("summary-rental-days").textContent = days.toLocaleString();
+                    document.querySelector("#summary-rental-total").textContent = `${(daily_rate * days).toLocaleString()}원`;
+
+                    const totalFee = daily_rate * days + comission;
+                    document.getElementById("summary-total").textContent = `${totalFee.toLocaleString()}원`;
+                }
+            }
+
             window.addEventListener("DOMContentLoaded", function () {
                 // 차량 정보 로드
                 {
@@ -598,20 +913,40 @@
                                     document.getElementById("payment-details").classList.remove("hidden");
                                 }
 
-                                // 오늘 날짜를 기본 대여일로 설정
+                                // 오늘 날짜를 기준으로 2일 뒤 날짜 계산
                                 const today = new Date();
-                                const tomorrow = new Date();
-                                tomorrow.setDate(today.getDate() + 1);
+                                const rentalDate = new Date();
+                                rentalDate.setDate(today.getDate() + 2); // 2일 뒤로 설정
 
+                                // 반납일은 대여일 + 1일로 설정
+                                const returnDate = new Date(rentalDate);
+                                returnDate.setDate(rentalDate.getDate() + 1); // 대여일로부터 1일 뒤
+
+                                // 날짜를 'YYYY-MM-DD' 형식으로 변환하는 함수
                                 const formatDate = (date) => {
-                                    const year = date.getFullYear();
-                                    const month = (date.getMonth() + 1).toString().padStart(2, "0");
-                                    const day = date.getDate().toString().padStart(2, "0");
-                                    return `${year}-${month}-${day}`;
+                                    return date.toLocaleDateString("en-CA"); // 'en-CA' 형식으로 날짜를 변환 (ISO 8601 형식)
                                 };
-                                document.querySelector("#rental-date").value = formatDate(today);
-                                document.querySelector("#return-date").value = formatDate(tomorrow);
+
+                                // 날짜를 입력 필드에 적용
+                                document.querySelector("#rental-date").value = formatDate(rentalDate);
+                                document.querySelector("#return-date").value = formatDate(returnDate);
                             }
+
+                            // 달력 초기 렌더링
+                            const currentDate = new Date();
+                            renderCalendar(currentDate.getFullYear(), currentDate.getMonth());
+
+                            // 달력 네비게이션 이벤트
+                            document.getElementById("prev-month").addEventListener("click", function () {
+                                currentDate.setMonth(currentDate.getMonth() - 1);
+                                renderCalendar(currentDate.getFullYear(), currentDate.getMonth());
+                            });
+
+                            document.getElementById("next-month").addEventListener("click", function () {
+                                currentDate.setMonth(currentDate.getMonth() + 1);
+                                renderCalendar(currentDate.getFullYear(), currentDate.getMonth());
+                            });
+
                             // 대여 기간 계산 및 요금 업데이트
                             {
                                 const rentalDateInput = document.getElementById("rental-date");
@@ -621,12 +956,12 @@
                                     const startDate = new Date(rentalDateInput.value);
                                     const endDate = new Date(returnDateInput.value);
 
-                                    if (isNaN(startDate) || isNaN(endDate) || startDate >= endDate) {
+                                    if (isNaN(startDate) || isNaN(endDate) || startDate > endDate) {
                                         return 0; // 유효하지 않은 경우 0 반환
                                     }
 
                                     const timeDiff = endDate.getTime() - startDate.getTime();
-                                    const days = Math.ceil(timeDiff / (1000 * 3600 * 24));
+                                    const days = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1;
                                     return days;
                                 };
 

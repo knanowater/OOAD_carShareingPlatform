@@ -1,6 +1,6 @@
 use crate::models::reservation::*;
 use crate::utils::generate_reservation_id;
-use chrono::{Local, Utc};
+use chrono::{Datelike, Duration, Local, NaiveDate, Utc};
 use rocket::http::Status;
 use rocket::serde::json::Json;
 use sqlx::{Acquire, MySqlPool};
@@ -80,9 +80,34 @@ impl<'a> ReservationRepository<'a> {
         .execute(&mut *tx)
         .await;
 
+        let insert_log_res = sqlx::query!(
+            r#"
+            INSERT INTO reservation_log 
+            (user_id, car_id, reservation_timestamp, rental_date, return_date, total_price, request, reservation_status, reservation_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?)
+            "#,
+            user_id,
+            data.car_id,
+            now,
+            data.rental_date,
+            data.return_date,
+            data.total_price,
+            data.request,
+            reservation_id,
+        )
+        .execute(&mut *tx)
+        .await;
+
         if let Err(e) = insert_res {
             tx.rollback().await.ok();
             return Err((Status::InternalServerError, format!("예약 실패: {}", e)));
+        }
+        if let Err(e) = insert_log_res {
+            tx.rollback().await.ok();
+            return Err((
+                Status::InternalServerError,
+                format!("로그 저장 실패: {}", e),
+            ));
         }
         let update_res = sqlx::query!(
             "UPDATE cars SET status = 'Unavailable' WHERE id = ?",
@@ -90,6 +115,14 @@ impl<'a> ReservationRepository<'a> {
         )
         .execute(&mut *tx)
         .await;
+
+        if let Err(e) = update_res {
+            tx.rollback().await.ok();
+            return Err((
+                Status::InternalServerError,
+                format!("차 상태 업데이트 실패: {}", e),
+            ));
+        }
 
         match update_res {
             Ok(result) if result.rows_affected() > 0 => {
@@ -145,6 +178,21 @@ impl<'a> ReservationRepository<'a> {
                 .await;
 
                 match delete_res {
+                    Ok(_) => {}
+                    Err(_) => {
+                        tx.rollback().await.ok();
+                        return Err(Status::InternalServerError);
+                    }
+                }
+
+                let delete_log_res = sqlx::query!(
+                    "DELETE FROM reservation_log WHERE reservation_id = ?",
+                    reservation_id
+                )
+                .execute(&mut *tx)
+                .await;
+
+                match delete_log_res {
                     Ok(_) => {}
                     Err(_) => {
                         tx.rollback().await.ok();
@@ -316,7 +364,16 @@ impl<'a> ReservationRepository<'a> {
         }
 
         sqlx::query!(
-            "UPDATE reservation SET reservation_status = 'canceled' WHERE reservation_id = ?",
+            "UPDATE reservation_log SET reservation_status = 'canceled' WHERE reservation_id = ?",
+            reservation_id
+        )
+        .execute(&mut *tx)
+        .await
+        .map_err(|_| Status::InternalServerError)?;
+
+        // reservation에서 삭제
+        sqlx::query!(
+            "DELETE FROM reservation WHERE reservation_id = ?",
             reservation_id
         )
         .execute(&mut *tx)
@@ -528,11 +585,64 @@ impl<'a> ReservationRepository<'a> {
             rocket::http::Status::InternalServerError
         })?;
 
-        println!("{:?}", reservation);
-
         match reservation {
             Some(reservation) => Ok(rocket::serde::json::Json(reservation)),
             None => Err(rocket::http::Status::NotFound),
         }
+    }
+
+    pub async fn get_reservation_calendar(
+        &self,
+        car_id: i32,
+        year: u64,
+        month: u64,
+    ) -> Result<Json<ReservationCalendar>, Status> {
+        let mut conn = self
+            .pool
+            .acquire()
+            .await
+            .map_err(|_| Status::InternalServerError)?;
+
+        let start_date =
+            NaiveDate::from_ymd_opt(year as i32, month as u32, 1).ok_or(Status::BadRequest)?;
+
+        let end_date = if month == 12 {
+            NaiveDate::from_ymd_opt(year as i32 + 1, 1, 1)
+        } else {
+            NaiveDate::from_ymd_opt(year as i32, month as u32 + 1, 1)
+        }
+        .ok_or(Status::BadRequest)?;
+
+        let reservations = sqlx::query!(
+            r#"
+            SELECT rental_date, return_date 
+            FROM reservation
+            WHERE car_id = ? AND rental_date < ? AND return_date >= ?
+            "#,
+            car_id,
+            end_date,
+            start_date,
+        )
+        .fetch_all(&mut *conn)
+        .await
+        .map_err(|_| Status::InternalServerError)?;
+
+        let mut reserved_days = vec![];
+
+        for res in reservations {
+            let mut day = res.rental_date;
+            while day < res.return_date {
+                if day.month() == start_date.month() {
+                    reserved_days.push(day.day() as u8); // 날짜의 '일(day)'만 추출
+                }
+                day += Duration::days(1);
+            }
+        }
+
+        // 중복 제거 + 정렬
+        reserved_days.sort_unstable();
+        reserved_days.dedup();
+
+        Ok(Json(ReservationCalendar { reserved_days }))
     }
 }

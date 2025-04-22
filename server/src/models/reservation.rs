@@ -1,5 +1,5 @@
 use chrono::{DateTime, NaiveDate, NaiveDateTime, Utc};
-use rocket::serde::{Deserialize, Serialize}; // rocket의 Serialize/Deserialize 사용
+use rocket::serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 
 #[derive(Deserialize, Serialize)]
@@ -34,7 +34,6 @@ pub struct ReservationsResponse {
     pub total_pages: u64,
 }
 
-// 이름 변경: Request -> ReservationActionRequest 또는 유사한 이름
 #[derive(Deserialize)]
 #[serde(crate = "rocket::serde")]
 pub struct ReservationActionRequest {
@@ -91,4 +90,10 @@ pub struct ReservationInfo {
     pub payment_method: Option<String>,
     pub amount: f64,
     pub reservation_status: String,
+}
+
+#[derive(Serialize)]
+#[serde(crate = "rocket::serde")]
+pub struct ReservationCalendar {
+    pub reserved_days: Vec<u8>,
 }

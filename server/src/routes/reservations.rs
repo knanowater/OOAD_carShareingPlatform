@@ -1,3 +1,5 @@
+use std::i32;
+
 use crate::auth::AuthToken;
 use crate::models::reservation::ReservationQuery;
 use crate::models::reservation::*;
@@ -126,4 +128,15 @@ pub async fn api_get_reservation_info_by_reservation_id_payment_id(
         reservation_payment_query.payment_id.clone(),
     )
     .await
+}
+
+#[get("/api/reservation/calendar?<car_id>&<year>&<month>")]
+pub async fn api_get_reservation_calendar(
+    pool: &State<MySqlPool>,
+    car_id: i32,
+    year: u64,
+    month: u64,
+) -> Result<Json<ReservationCalendar>, Status> {
+    let repo = ReservationRepository::new(pool);
+    repo.get_reservation_calendar(car_id, year, month).await
 }
