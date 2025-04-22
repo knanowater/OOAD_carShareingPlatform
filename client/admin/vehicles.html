@@ -655,10 +655,6 @@
                     }
                 }
 
-                if (filters.status.length > 0) {
-                    apiUrl += `&status=${filters.status === "이용 가능" ? "Available" : "Unavailable"}`;
-                }
-
                 try {
                     const response = await fetch(apiUrl);
                     if (!response.ok) {

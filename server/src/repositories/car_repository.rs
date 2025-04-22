@@ -58,7 +58,6 @@ impl CarRepository for MySqlCarRepository {
                     WHERE NOT (
                         return_date < ? OR rental_date > ?
                     )
-                    AND reservation_status NOT IN ('completed', 'canceled')
                 )"
                 .to_string(),
             );
