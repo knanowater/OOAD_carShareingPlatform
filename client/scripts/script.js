@@ -36,7 +36,7 @@ async function checkAndAddDashboardButton() {
         const isAdmin = await response.json();
         if (isAdmin) {
             const dashboardLink = document.querySelector("#header-mypage");
-            dashboardLink.href = "/admin";
+            dashboardLink.href = "/admin/dashboard";
             dashboardLink.textContent = "관리자 페이지";
         }
     }

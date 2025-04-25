@@ -64,3 +64,8 @@ pub async fn car_management_page() -> Option<NamedFile> {
 pub async fn car_detail_page(id: Option<String>) -> Option<NamedFile> {
     serve_html("../client/detail.html").await
 }
+
+#[get("/mypage/host/add_car")]
+pub async fn host_add_car_page() -> Option<NamedFile> {
+    serve_html("../client/mypage/host/add_car.html").await
+}
