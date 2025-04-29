@@ -24,7 +24,7 @@ impl MySqlCarRepository {
 #[async_trait]
 impl CarRepository for MySqlCarRepository {
     async fn get_car_by_id(&self, id: i32) -> Result<Option<CarInfo>, Error> {
-        let sql = "SELECT id, plate_number, manufacturer, name, year, car_type, fuel_type, transmission, seat_num, color, image_url, car_trim, daily_rate, location, rating, description, status FROM cars WHERE id = ?";
+        let sql = "SELECT id, plate_number, manufacturer, name, year, car_type, fuel_type, transmission, seat_num, color, car_trim, daily_rate, location, rating, description, status FROM cars WHERE id = ?";
         sqlx::query_as::<_, CarInfo>(sql)
             .bind(id)
             .fetch_optional(&self.pool)
@@ -123,7 +123,7 @@ impl CarRepository for MySqlCarRepository {
         };
 
         let sql = format!(
-            "SELECT id, plate_number, manufacturer, name, year, car_type, fuel_type, transmission, seat_num, daily_rate, location, rating, description, status, image_url FROM cars {} {} LIMIT ? OFFSET ?",
+            "SELECT id, plate_number, manufacturer, name, year, car_type, fuel_type, transmission, seat_num, daily_rate, location, rating, description, status FROM cars {} {} LIMIT ? OFFSET ?",
             where_clause, order_by_clause
         );
 
@@ -151,7 +151,7 @@ impl CarRepository for MySqlCarRepository {
     }
 
     async fn add_car(&self, car_info: CarInfo) -> Result<String, Error> {
-        let result = sqlx::query("INSERT INTO cars (plate_number, manufacturer, name, year, car_type, fuel_type, transmission, seat_num, color, image_url, car_trim, daily_rate, location, rating, description, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+        let result = sqlx::query("INSERT INTO cars (plate_number, manufacturer, name, year, car_type, fuel_type, transmission, seat_num, color, car_trim, daily_rate, location, rating, description, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
             .bind(&car_info.plate_number())
             .bind(&car_info.manufacturer())
             .bind(&car_info.name())
@@ -161,7 +161,6 @@ impl CarRepository for MySqlCarRepository {
             .bind(&car_info.transmission())
             .bind(car_info.seat_num())
             .bind(&car_info.color())
-            .bind(&car_info.image_url())
             .bind(&car_info.car_trim())
             .bind(car_info.daily_rate())
             .bind(&car_info.location())
@@ -178,7 +177,7 @@ impl CarRepository for MySqlCarRepository {
     }
 
     async fn update_car(&self, car_info: CarInfo) -> Result<String, Error> {
-        let result = sqlx::query("UPDATE cars SET plate_number = ?, manufacturer = ?, name = ?, year = ?, car_type = ?, fuel_type = ?, transmission = ?, seat_num = ?, color = ?, image_url = ?, car_trim = ?, daily_rate = ?, location = ?, rating = ?, description = ?, status = ? WHERE id = ?")
+        let result = sqlx::query("UPDATE cars SET plate_number = ?, manufacturer = ?, name = ?, year = ?, car_type = ?, fuel_type = ?, transmission = ?, seat_num = ?, color = ?, car_trim = ?, daily_rate = ?, location = ?, rating = ?, description = ?, status = ? WHERE id = ?")
             .bind(&car_info.plate_number())
             .bind(&car_info.manufacturer())
             .bind(&car_info.name())
@@ -188,7 +187,6 @@ impl CarRepository for MySqlCarRepository {
             .bind(&car_info.transmission())
             .bind(car_info.seat_num())
             .bind(&car_info.color())
-            .bind(&car_info.image_url())
             .bind(&car_info.car_trim())
             .bind(car_info.daily_rate())
             .bind(&car_info.location())

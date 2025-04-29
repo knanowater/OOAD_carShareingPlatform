@@ -455,7 +455,7 @@ impl<'a> ReservationRepository<'a> {
 
         let select_query = format!(
             r#"
-            SELECT r.reservation_id, c.image_url AS car_image_url, c.manufacturer AS car_manufacturer,
+            SELECT r.reservation_id, c.manufacturer AS car_manufacturer,
                 c.name AS car_model, r.rental_date, r.return_date,
                 DATEDIFF(r.return_date, r.rental_date) AS rental_period_days,
                 COALESCE(c.location, '미정') AS pickup_location,
@@ -558,7 +558,6 @@ impl<'a> ReservationRepository<'a> {
                 CAST(c.year AS UNSIGNED) as year, -- 강제 형 변환
                 c.manufacturer,
                 c.name,
-                c.image_url,
                 r.rental_date,
                 r.return_date,
                 c.daily_rate,

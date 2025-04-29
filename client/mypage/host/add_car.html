@@ -87,6 +87,49 @@
                 color: white;
                 content: "✓";
             }
+            .photo-container {
+                position: relative;
+                width: 100%;
+                height: 200px;
+            }
+            .preview-image {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+                border-radius: 0.5rem;
+            }
+            .delete-photo {
+                position: absolute;
+                top: 10px;
+                right: 10px;
+                background-color: rgba(255, 255, 255, 0.9);
+                color: #ef4444;
+                border-radius: 50%;
+                width: 28px;
+                height: 28px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+                z-index: 10;
+                transition: all 0.2s;
+            }
+            .delete-photo:hover {
+                background-color: #ef4444;
+                color: white;
+            }
+            .photo-label {
+                position: absolute;
+                top: 10px;
+                left: 10px;
+                background-color: rgba(37, 99, 235, 0.9);
+                color: white;
+                padding: 4px 12px;
+                border-radius: 4px;
+                font-size: 12px;
+                font-weight: 500;
+                z-index: 10;
+            }
         </style>
     </head>
     <body class="font-sans antialiased text-gray-800 bg-gray-50">
@@ -312,46 +355,15 @@
                                 <p class="text-sm text-gray-500 mb-4">최소 3장 이상의 사진을 업로드해주세요. (최대 10장)</p>
 
                                 <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                                    <!-- 메인 사진 -->
-                                    <div class="file-upload">
-                                        <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center h-40 flex flex-col items-center justify-center">
-                                            <i class="fas fa-camera text-gray-400 text-2xl mb-2"></i>
-                                            <p class="text-sm text-gray-500">메인 사진</p>
-                                            <input type="file" id="main-image" class="file-upload-input" accept="image/*" required />
-                                        </div>
-                                        <div id="main-image-preview" class="hidden mt-2"></div>
+                                    <div id="photo-container" class="contents">
+                                        <!-- 사진이 여기에 동적으로 추가됩니다 -->
                                     </div>
-
-                                    <!-- 추가 사진들 -->
-                                    <div class="file-upload">
-                                        <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center h-40 flex flex-col items-center justify-center">
+                                    <!-- 사진 추가 버튼 (최대 10장까지) -->
+                                    <div id="add-photo-btn" class="file-upload h-full">
+                                        <div class="border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center h-[200px]">
                                             <i class="fas fa-camera text-gray-400 text-2xl mb-2"></i>
                                             <p class="text-sm text-gray-500">사진 추가</p>
-                                            <input type="file" class="file-upload-input" accept="image/*" />
-                                        </div>
-                                    </div>
-
-                                    <div class="file-upload">
-                                        <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center h-40 flex flex-col items-center justify-center">
-                                            <i class="fas fa-camera text-gray-400 text-2xl mb-2"></i>
-                                            <p class="text-sm text-gray-500">사진 추가</p>
-                                            <input type="file" class="file-upload-input" accept="image/*" />
-                                        </div>
-                                    </div>
-
-                                    <div class="file-upload">
-                                        <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center h-40 flex flex-col items-center justify-center">
-                                            <i class="fas fa-camera text-gray-400 text-2xl mb-2"></i>
-                                            <p class="text-sm text-gray-500">사진 추가</p>
-                                            <input type="file" class="file-upload-input" accept="image/*" />
-                                        </div>
-                                    </div>
-
-                                    <div class="file-upload">
-                                        <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center h-40 flex flex-col items-center justify-center">
-                                            <i class="fas fa-camera text-gray-400 text-2xl mb-2"></i>
-                                            <p class="text-sm text-gray-500">사진 추가</p>
-                                            <input type="file" class="file-upload-input" accept="image/*" />
+                                            <input type="file" id="photo-upload" class="file-upload-input" accept="image/*" />
                                         </div>
                                     </div>
                                 </div>
@@ -477,23 +489,111 @@
         </footer>
 
         <script>
-            // 이미지 미리보기 기능
-            document.getElementById("main-image").addEventListener("change", function (e) {
-                const file = e.target.files[0];
-                if (file) {
+            // 전역 변수로 photoCount 선언
+            let photoCount = 0;
+
+            document.addEventListener("DOMContentLoaded", function () {
+                const photoContainer = document.getElementById("photo-container");
+                const photoUpload = document.getElementById("photo-upload");
+                const addPhotoBtn = document.getElementById("add-photo-btn");
+                const maxPhotos = 10;
+
+                // 초기 photoCount 설정
+                photoCount = document.querySelectorAll(".photo-container").length;
+                updateAddPhotoButton();
+
+                // 사진 업로드 이벤트 리스너
+                photoUpload.addEventListener("change", function (e) {
+                    const files = e.target.files;
+
+                    for (let i = 0; i < files.length; i++) {
+                        if (photoCount >= maxPhotos) {
+                            alert("최대 10장까지만 업로드할 수 있습니다.");
+                            break;
+                        }
+
+                        const file = files[i];
+                        if (file.type.match("image.*")) {
+                            addPhotoPreview(file);
+                            photoCount++;
+                            updateAddPhotoButton();
+                        }
+                    }
+
+                    // 파일 입력 초기화
+                    e.target.value = "";
+                });
+
+                // 사진 미리보기 추가 함수
+                function addPhotoPreview(file) {
                     const reader = new FileReader();
+
                     reader.onload = function (event) {
-                        const previewContainer = document.getElementById("main-image-preview");
-                        previewContainer.innerHTML = `<img src="${event.target.result}" alt="미리보기" class="preview-image w-full">`;
-                        previewContainer.classList.remove("hidden");
+                        const photoDiv = document.createElement("div");
+                        photoDiv.className = "photo-container";
+
+                        const isMainPhoto = document.querySelectorAll(".photo-container").length === 0;
+                        const mainPhotoLabel = isMainPhoto ? '<div class="photo-label">메인</div>' : "";
+
+                        photoDiv.innerHTML = `
+                            <img src="${event.target.result}" alt="미리보기" class="preview-image">
+                            <div class="delete-photo" onclick="removePhoto(this)">
+                                <i class="fas fa-times"></i>
+                            </div>
+                            ${mainPhotoLabel}
+                            <input type="hidden" name="car-photos[]" value="${event.target.result}">
+                        `;
+
+                        photoContainer.appendChild(photoDiv);
                     };
+
                     reader.readAsDataURL(file);
                 }
             });
 
+            // 사진 추가 버튼 업데이트 함수
+            function updateAddPhotoButton() {
+                const addPhotoBtn = document.getElementById("add-photo-btn");
+                if (photoCount >= 10) {
+                    addPhotoBtn.style.display = "none";
+                } else {
+                    addPhotoBtn.style.display = "block";
+                }
+            }
+
+            // 사진 삭제 함수
+            function removePhoto(deleteBtn) {
+                const photoDiv = deleteBtn.closest(".photo-container");
+                const isMainPhoto = photoDiv.querySelector(".photo-label") !== null;
+                photoDiv.remove();
+
+                // photoCount 감소
+                photoCount--;
+
+                // 메인 사진이 삭제된 경우 다음 사진을 메인으로 표시
+                if (isMainPhoto && photoCount > 0) {
+                    const firstPhoto = document.querySelector(".photo-container");
+                    if (firstPhoto) {
+                        const labelDiv = document.createElement("div");
+                        labelDiv.className = "photo-label";
+                        labelDiv.textContent = "메인 사진";
+                        firstPhoto.appendChild(labelDiv);
+                    }
+                }
+
+                // 사진 추가 버튼 표시 업데이트
+                updateAddPhotoButton();
+            }
+
             // 폼 제출 처리
             document.getElementById("car-registration-form").addEventListener("submit", function (e) {
                 e.preventDefault();
+
+                // 최소 3장의 사진이 필요
+                if (photoCount < 3) {
+                    alert("최소 3장 이상의 사진을 업로드해주세요.");
+                    return;
+                }
 
                 // 여기에 실제 폼 제출 로직을 구현할 수 있습니다.
                 // 예: AJAX 요청으로 서버에 데이터 전송
@@ -503,12 +603,10 @@
             });
 
             // 로그인 상태 확인
-            document.addEventListener("DOMContentLoaded", function () {
-                const token = localStorage.getItem("token");
-                if (!token) {
-                    window.location.href = "/login";
-                }
-            });
+            const token = localStorage.getItem("token");
+            if (!token) {
+                window.location.href = "/login";
+            }
         </script>
     </body>
 </html>

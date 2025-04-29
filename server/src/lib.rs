@@ -17,7 +17,6 @@ pub struct CarInfo {
     transmission: String,
     seat_num: u8,
     color: Option<String>,
-    image_url: Option<String>,
     car_trim: Option<String>,
     daily_rate: f64,
     location: String,
@@ -56,9 +55,6 @@ impl CarInfo {
     }
     fn set_color(&mut self, color: Option<String>) {
         self.color = color;
-    }
-    fn set_image_url(&mut self, image_url: Option<String>) {
-        self.image_url = image_url;
     }
     fn set_car_trim(&mut self, car_trim: Option<String>) {
         self.car_trim = car_trim;
@@ -105,9 +101,6 @@ impl CarInfo {
     pub fn color(&self) -> &Option<String> {
         &self.color
     }
-    pub fn image_url(&self) -> &Option<String> {
-        &self.image_url
-    }
     pub fn car_trim(&self) -> &Option<String> {
         &self.car_trim
     }
@@ -141,7 +134,6 @@ impl FromRow<'_, MySqlRow> for CarInfo {
             transmission: String::new(),
             seat_num: 0,
             color: None,
-            image_url: None,
             car_trim: None,
             daily_rate: 0.0,
             location: String::new(),
@@ -159,7 +151,6 @@ impl FromRow<'_, MySqlRow> for CarInfo {
         car_info.set_transmission(row.try_get("transmission")?);
         car_info.set_seat_num(row.try_get("seat_num")?);
         car_info.set_color(row.try_get("color").ok());
-        car_info.set_image_url(row.try_get("image_url").ok());
         car_info.set_car_trim(row.try_get("car_trim").ok());
         car_info.set_daily_rate(row.try_get("daily_rate")?);
         car_info.set_location(row.try_get("location")?);
@@ -184,8 +175,8 @@ pub async fn add_car(pool: &MySqlPool, info: CarInfo) -> Result<String, String> 
         Ok(None) => {
             // plate_number가 존재하지 않으므로 차량 추가 진행
             let query = r#"
-                INSERT INTO cars (plate_number, manufacturer, name, year, car_type, fuel_type, transmission, seat_num, color, image_url, car_trim, daily_rate, location, rating, description, status)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO cars (plate_number, manufacturer, name, year, car_type, fuel_type, transmission, seat_num, color, car_trim, daily_rate, location, rating, description, status)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             "#;
 
             let result = sqlx::query(query)
@@ -198,7 +189,6 @@ pub async fn add_car(pool: &MySqlPool, info: CarInfo) -> Result<String, String> 
                 .bind(&info.transmission)
                 .bind(&info.seat_num)
                 .bind(&info.color)
-                .bind(&info.image_url)
                 .bind(&info.car_trim)
                 .bind(&info.daily_rate)
                 .bind(&info.location)
@@ -230,7 +220,7 @@ pub async fn update_car(pool: &MySqlPool, info: CarInfo) -> Result<String, Strin
             // 차량이 존재하므로 업데이트 수행
             let query = r#"
                 UPDATE cars
-                SET manufacturer = ?, name = ?, year = ?, car_type = ?, fuel_type = ?, transmission = ?, seat_num = ?, daily_rate = ?, rating = ?, status = ?, image_url = ?
+                SET manufacturer = ?, name = ?, year = ?, car_type = ?, fuel_type = ?, transmission = ?, seat_num = ?, daily_rate = ?, rating = ?, status = ?,
                 WHERE plate_number = ?
             "#;
 
@@ -244,7 +234,6 @@ pub async fn update_car(pool: &MySqlPool, info: CarInfo) -> Result<String, Strin
                 .bind(&info.transmission)
                 .bind(&info.seat_num)
                 .bind(&info.color)
-                .bind(&info.image_url)
                 .bind(&info.car_trim)
                 .bind(&info.daily_rate)
                 .bind(&info.location)

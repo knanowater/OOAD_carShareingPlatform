@@ -80,7 +80,6 @@ pub struct ReservationInfo {
     pub year: u64,
     pub manufacturer: String,
     pub name: String,
-    pub image_url: Option<String>,
     pub rental_date: NaiveDateTime,
     pub return_date: NaiveDateTime,
     pub daily_rate: f64,
