@@ -26,52 +26,72 @@ pub struct CarInfo {
 }
 
 impl CarInfo {
+    pub fn new() -> Self {
+        CarInfo {
+            id: None,
+            plate_number: String::new(),
+            manufacturer: String::new(),
+            name: String::new(),
+            year: 0,
+            car_type: String::new(),
+            fuel_type: String::new(),
+            transmission: String::new(),
+            seat_num: 0,
+            color: None,
+            car_trim: None,
+            daily_rate: 0.0,
+            location: String::new(),
+            rating: 0.0,
+            description: None,
+            status: String::new(),
+        }
+    }
     pub fn id(&self) -> Option<i32> {
         self.id
     }
-    fn set_plate_number(&mut self, plate_number: String) {
+    pub fn set_plate_number(&mut self, plate_number: String) {
         self.plate_number = plate_number;
     }
-    fn set_manufacturer(&mut self, manufacturer: String) {
+    pub fn set_manufacturer(&mut self, manufacturer: String) {
         self.manufacturer = manufacturer;
     }
-    fn set_name(&mut self, name: String) {
+    pub fn set_name(&mut self, name: String) {
         self.name = name;
     }
-    fn set_year(&mut self, year: u16) {
+    pub fn set_year(&mut self, year: u16) {
         self.year = year;
     }
-    fn set_car_type(&mut self, car_type: String) {
+    pub fn set_car_type(&mut self, car_type: String) {
         self.car_type = car_type;
     }
-    fn set_fuel_type(&mut self, fuel_type: String) {
+    pub fn set_fuel_type(&mut self, fuel_type: String) {
         self.fuel_type = fuel_type;
     }
-    fn set_transmission(&mut self, transmission: String) {
+    pub fn set_transmission(&mut self, transmission: String) {
         self.transmission = transmission;
     }
-    fn set_seat_num(&mut self, seat_num: u8) {
+    pub fn set_seat_num(&mut self, seat_num: u8) {
         self.seat_num = seat_num;
     }
-    fn set_color(&mut self, color: Option<String>) {
+    pub fn set_color(&mut self, color: Option<String>) {
         self.color = color;
     }
-    fn set_car_trim(&mut self, car_trim: Option<String>) {
+    pub fn set_car_trim(&mut self, car_trim: Option<String>) {
         self.car_trim = car_trim;
     }
-    fn set_daily_rate(&mut self, daily_rate: f64) {
+    pub fn set_daily_rate(&mut self, daily_rate: f64) {
         self.daily_rate = daily_rate;
     }
-    fn set_location(&mut self, location: String) {
+    pub fn set_location(&mut self, location: String) {
         self.location = location;
     }
-    fn set_rating(&mut self, rating: f64) {
+    pub fn set_rating(&mut self, rating: f64) {
         self.rating = rating;
     }
-    fn set_description(&mut self, description: Option<String>) {
+    pub fn set_description(&mut self, description: Option<String>) {
         self.description = description;
     }
-    fn set_status(&mut self, status: String) {
+    pub fn set_status(&mut self, status: String) {
         self.status = status;
     }
     pub fn plate_number(&self) -> &str {

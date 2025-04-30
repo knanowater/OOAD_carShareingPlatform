@@ -1,5 +1,6 @@
 use crate::models::car::{CarListResponse, CarQuery};
 use async_trait::async_trait;
+use rocket::fs::TempFile;
 use server::CarInfo;
 use sqlx::{Error, MySqlPool};
 
@@ -7,7 +8,7 @@ use sqlx::{Error, MySqlPool};
 pub trait CarRepository {
     async fn get_car_by_id(&self, id: i32) -> Result<Option<CarInfo>, Error>;
     async fn get_cars(&self, query: CarQuery) -> Result<CarListResponse, Error>;
-    async fn add_car(&self, car_info: CarInfo) -> Result<String, Error>;
+    async fn add_car(&self, car_info: CarInfo, images: Vec<TempFile<'_>>) -> Result<String, Error>;
     async fn update_car(&self, car_info: CarInfo) -> Result<String, Error>;
 }
 
@@ -150,8 +151,8 @@ impl CarRepository for MySqlCarRepository {
         }
     }
 
-    async fn add_car(&self, car_info: CarInfo) -> Result<String, Error> {
-        let result = sqlx::query("INSERT INTO cars (plate_number, manufacturer, name, year, car_type, fuel_type, transmission, seat_num, color, car_trim, daily_rate, location, rating, description, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+    async fn add_car(&self, car_info: CarInfo, images: Vec<TempFile<'_>>) -> Result<String, Error> {
+        let result = sqlx::query("INSERT INTO cars (plate_number, manufacturer, name, year, car_type, fuel_type, transmission, seat_num, color, car_trim, daily_rate, location, rating, description, status, image_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
             .bind(&car_info.plate_number())
             .bind(&car_info.manufacturer())
             .bind(&car_info.name())
@@ -167,13 +168,51 @@ impl CarRepository for MySqlCarRepository {
             .bind(car_info.rating())
             .bind(&car_info.description())
             .bind(&car_info.status())
+            .bind("[]") // Temporarily set image_url as an empty JSON array
             .execute(&self.pool)
-            .await;
+            .await?;
 
-        match result {
-            Ok(_) => Ok("Car added successfully".to_string()),
-            Err(e) => Err(Error::from(e)),
+        let car_id = result.last_insert_id();
+
+        let mut image_urls = Vec::new();
+
+        if !images.is_empty() {
+            use chrono::Utc;
+            use std::fs;
+            let image_dir = "static/car_images";
+            fs::create_dir_all(image_dir).ok();
+
+            for (idx, mut image) in images.into_iter().enumerate() {
+                let filename = format!("car_{}_{}_{}.jpg", car_id, Utc::now().timestamp(), idx);
+                let save_path = format!("{}/{}", image_dir, filename);
+                image.copy_to(&save_path).await.map_err(|e| Error::Io(e))?;
+
+                let is_main = idx == 0;
+                sqlx::query(
+                    "INSERT INTO car_images (car_id, image_path, is_main) VALUES (?, ?, ?)",
+                )
+                .bind(car_id as i64)
+                .bind(&save_path)
+                .bind(is_main)
+                .execute(&self.pool)
+                .await?;
+
+                image_urls.push(save_path);
+            }
         }
+
+        println!("{:?}", image_urls);
+
+        // Update the cars table with the JSON-encoded image URLs
+        let image_urls_json = serde_json::to_string(&image_urls)
+            .map_err(|e| Error::Io(std::io::Error::new(std::io::ErrorKind::Other, e)))?;
+        sqlx::query("UPDATE cars SET image_url = ? WHERE id = ?")
+            .bind(image_urls_json)
+            .bind(car_id as i64)
+            .execute(&self.pool)
+            .await?;
+
+        Ok("Car added successfully".to_string())
     }
 
     async fn update_car(&self, car_info: CarInfo) -> Result<String, Error> {

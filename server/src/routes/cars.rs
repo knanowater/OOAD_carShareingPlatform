@@ -1,22 +1,44 @@
-use crate::models::car::{CarListResponse, CarQuery};
+use crate::models::car::{CarForm, CarListResponse, CarQuery};
 use crate::repositories::car_repository::{CarRepository, MySqlCarRepository};
 use rocket::State;
+use rocket::form::Form;
 use rocket::http::Status;
 use rocket::serde::json::Json;
 use rocket::{get, post};
 use server::CarInfo;
 use sqlx::MySqlPool;
 
-#[post("/api/add_car", format = "json", data = "<car_info>")]
+#[post("/api/add_car", data = "<form>")]
 pub async fn api_add_car(
-    car_info: Json<CarInfo>,
+    mut form: Form<CarForm<'_>>,
     pool: &State<MySqlPool>,
 ) -> Result<String, (Status, String)> {
     let car_repo = MySqlCarRepository::new(pool.inner().clone());
-    car_repo
-        .add_car(car_info.into_inner())
-        .await
-        .map_err(|e| (Status::InternalServerError, e.to_string()))
+
+    // CarForm -> CarInfo 변환
+    let mut car_info = CarInfo::new();
+    car_info.set_plate_number(form.plate_number.clone());
+    car_info.set_manufacturer(form.manufacturer.clone());
+    car_info.set_name(form.name.clone());
+    car_info.set_year(form.year);
+    car_info.set_car_type(form.car_type.clone());
+    car_info.set_fuel_type(form.fuel_type.clone());
+    car_info.set_transmission(form.transmission.clone());
+    car_info.set_seat_num(form.seat_num);
+    car_info.set_car_trim(Some(form.car_trim.clone()));
+    car_info.set_daily_rate(form.daily_rate);
+    car_info.set_location(form.location.clone());
+    car_info.set_rating(0.0);
+    car_info.set_description(Some(form.description.clone()));
+    car_info.set_status("Available".to_string());
+
+    // images 소유권 이동
+    let images = std::mem::take(&mut form.images);
+
+    car_repo.add_car(car_info, images).await.map_err(|e| {
+        eprintln!("Error adding car: {:?}", e); // 에러 로그 출력
+        (Status::InternalServerError, e.to_string())
+    })
 }
 
 #[post("/api/update_car", format = "json", data = "<car_info>")]

@@ -3,3 +3,4 @@
 /mysql-data
 docker-compose.yml
 server/README.md
+server/static

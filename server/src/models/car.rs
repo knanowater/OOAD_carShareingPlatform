@@ -1,4 +1,5 @@
 use rocket::form::FromForm;
+use rocket::fs::TempFile;
 use serde::{Deserialize, Serialize};
 use server::CarInfo;
 
@@ -22,4 +23,22 @@ pub struct CarQuery {
     pub fuel_type: Option<String>,
     pub transmission: Option<String>,
     pub status: Option<String>,
+}
+
+#[derive(FromForm)]
+pub struct CarForm<'r> {
+    pub plate_number: String,
+    pub manufacturer: String,
+    pub name: String,
+    pub year: u16,
+    pub car_type: String,
+    pub fuel_type: String,
+    pub transmission: String,
+    pub seat_num: u8,
+    pub car_trim: String,
+    pub daily_rate: f64,
+    pub location: String,
+    pub description: String,
+    #[field(name = "images")]
+    pub images: Vec<TempFile<'r>>,
 }
