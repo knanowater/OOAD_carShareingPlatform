@@ -34,7 +34,12 @@ impl CarRepository for MySqlCarRepository {
 
     async fn get_cars(&self, query: CarQuery) -> Result<CarListResponse, Error> {
         let start_index = query.start.unwrap_or(0);
-        let limit = 6;
+        let requested_limit = query.limit.unwrap_or(6);
+        let limit = if requested_limit > 0 {
+            requested_limit
+        } else {
+            6
+        };
         let sort_by = query.sort.unwrap_or_else(|| "plate_number ASC".to_string());
         let min_price = query.min_daily_rate;
         let max_price = query.max_daily_rate;
@@ -70,6 +75,7 @@ impl CarRepository for MySqlCarRepository {
             where_clauses.push("daily_rate >= ?".to_string());
             query_params.push(min.to_string());
         }
+
         if let Some(max) = max_price {
             where_clauses.push("daily_rate <= ?".to_string());
             query_params.push(max.to_string());
@@ -102,6 +108,11 @@ impl CarRepository for MySqlCarRepository {
             query_params.push(status.clone());
         }
 
+        if let Some(owner_id_val) = query.owner_id {
+            where_clauses.push("owner = ?".to_string());
+            query_params.push(owner_id_val.to_string());
+        }
+
         let where_clause = if !where_clauses.is_empty() {
             format!("WHERE {}", where_clauses.join(" AND "))
         } else {
@@ -124,7 +135,7 @@ impl CarRepository for MySqlCarRepository {
         };
 
         let sql = format!(
-            "SELECT id, plate_number, manufacturer, name, year, car_type, fuel_type, transmission, seat_num, daily_rate, location, rating, description, status FROM cars {} {} LIMIT ? OFFSET ?",
+            "SELECT id, plate_number, manufacturer, name, year, car_type, fuel_type, transmission, seat_num, color, image_url, daily_rate, location, rating, description, status FROM cars {} {} LIMIT ? OFFSET ?",
             where_clause, order_by_clause
         );
 

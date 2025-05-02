@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="ko">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>DriveShare - 내 차량 관리</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script src="/scripts/script.js"></script>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+        <style>
+            .profile-gradient {
+                background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            }
+            .card-hover:hover {
+                transform: translateY(-3px);
+                box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            }
+            .active-tab {
+                border-bottom: 3px solid #3b82f6;
+                color: #3b82f6;
+                font-weight: 600;
+            }
+            .car-card:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            }
+            .status-badge {
+                font-size: 0.75rem;
+                padding: 0.25rem 0.5rem;
+                border-radius: 9999px;
+            }
+            .tab-content {
+                display: none;
+            }
+            .tab-content.active {
+                display: block;
+            }
+            .dropdown-content {
+                display: none;
+                position: absolute;
+                right: 0;
+                background-color: white;
+                min-width: 160px;
+                box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.1);
+                z-index: 1;
+                border-radius: 0.5rem;
+            }
+            .dropdown:hover .dropdown-content {
+                display: block;
+            }
+        </style>
+    </head>
+    <body class="font-sans antialiased text-gray-800 bg-gray-50">
+        <!-- 헤더 영역 -->
+        <header class="bg-white shadow-sm sticky top-0 z-50">
+            <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+                <div class="flex items-center" onclick="location.href='/'" style="cursor: pointer">
+                    <i class="fas fa-car text-blue-600 text-3xl mr-2"></i>
+                    <span class="text-2xl font-bold text-blue-600">DriveShare</span>
+                </div>
+                <nav class="hidden md:flex space-x-8">
+                    <a href="/" class="text-gray-600 hover:text-blue-600">홈</a>
+                    <a href="/list" class="text-gray-600 hover:text-blue-600">차량 찾기</a>
+                    <a href="#" class="text-gray-600 hover:text-blue-600">이용 방법</a>
+                    <a href="#" class="text-gray-600 hover:text-blue-600">고객센터</a>
+                    <a href="/mypage" class="text-blue-600 font-medium">마이페이지</a>
+                </nav>
+                <div class="flex items-center space-x-4">
+                    <button class="px-4 py-2 rounded-full bg-blue-600 text-white hover:bg-blue-700 transition" onclick="location.href='/login'">로그인 / 회원가입</button>
+                    <button class="md:hidden text-gray-600">
+                        <i class="fas fa-bars text-xl"></i>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- 프로필 섹션 -->
+        <section class="profile-gradient text-white py-8 md:py-12">
+            <div class="container mx-auto px-4">
+                <div class="flex flex-col md:flex-row items-center justify-between">
+                    <div class="text-center md:text-left">
+                        <h1 class="text-2xl md:text-3xl font-bold mb-2">내 차량 관리</h1>
+                        <p class="text-blue-100">등록하신 차량을 관리하고 예약 현황을 확인하세요</p>
+                    </div>
+                    <button class="mt-4 md:mt-0 px-6 py-3 bg-white text-blue-600 font-medium rounded-full hover:bg-blue-50 transition flex items-center" onclick="location.href='/mypage/host/add_car'">
+                        <i class="fas fa-plus mr-2"></i> 새 차량 등록하기
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 메인 컨텐츠 영역 -->
+        <main class="container mx-auto px-4 py-8">
+            <div class="flex flex-col lg:flex-row gap-8">
+                <!-- 사이드바 -->
+                <aside class="w-full lg:w-1/4">
+                    <div class="bg-white rounded-xl shadow-md p-6 mb-6">
+                        <h3 class="font-bold text-lg mb-4">내 정보</h3>
+                        <ul class="space-y-3">
+                            <li class="flex items-center text-gray-700">
+                                <i class="fas fa-user-circle text-blue-500 mr-3 w-5 text-center"></i>
+                                <span>개인정보 관리</span>
+                            </li>
+                            <li class="flex items-center text-gray-700">
+                                <i class="fas fa-id-card text-blue-500 mr-3 w-5 text-center"></i>
+                                <span>운전면허 정보</span>
+                            </li>
+                            <li class="flex items-center text-gray-700">
+                                <i class="fas fa-credit-card text-blue-500 mr-3 w-5 text-center"></i>
+                                <span>결제 수단 관리</span>
+                            </li>
+                            <li class="flex items-center text-gray-700">
+                                <i class="fas fa-lock text-blue-500 mr-3 w-5 text-center"></i>
+                                <span>비밀번호 변경</span>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="bg-white rounded-xl shadow-md p-6 mb-6">
+                        <h3 class="font-bold text-lg mb-4">호스트 메뉴</h3>
+                        <ul class="space-y-3">
+                            <li class="flex items-center text-gray-700 cursor-pointer" onclick="location.href='/mypage/host/add_car'">
+                                <i class="fas fa-car text-blue-500 mr-3 w-5 text-center"></i>
+                                <span>내 차량 등록하기</span>
+                            </li>
+                            <li class="flex items-center text-gray-700 cursor-pointer" onclick="location.href='/mypage/host/management'">
+                                <i class="fas fa-list-alt text-blue-500 mr-3 w-5 text-center"></i>
+                                <span style="color: #1d4ed8">내 차량 관리</span>
+                            </li>
+                            <li class="flex items-center text-gray-700 cursor-pointer">
+                                <i class="fas fa-chart-line text-blue-500 mr-3 w-5 text-center"></i>
+                                <span>수익 현황</span>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="bg-white rounded-xl shadow-md p-6">
+                        <h3 class="font-bold text-lg mb-4">고객 지원</h3>
+                        <ul class="space-y-3">
+                            <li class="flex items-center text-gray-700">
+                                <i class="fas fa-question-circle text-blue-500 mr-3 w-5 text-center"></i>
+                                <span>도움말 센터</span>
+                            </li>
+                            <li class="flex items-center text-gray-700">
+                                <i class="fas fa-headset text-blue-500 mr-3 w-5 text-center"></i>
+                                <span>1:1 문의</span>
+                            </li>
+                            <li class="flex items-center text-gray-700">
+                                <i class="fas fa-exclamation-triangle text-blue-500 mr-3 w-5 text-center"></i>
+                                <span>신고하기</span>
+                            </li>
+                        </ul>
+                    </div>
+                </aside>
+
+                <!-- 메인 컨텐츠 -->
+                <div class="w-full lg:w-3/4">
+                    <!-- 탭 메뉴 -->
+                    <div class="bg-white rounded-xl shadow-md p-6 mb-6">
+                        <div class="flex space-x-6 border-b">
+                            <button class="pb-3 px-1 font-medium text-blue-600 border-b-2 border-blue-600" onclick="switchTab('all-cars')">전체 차량</button>
+                            <button class="pb-3 px-1 font-medium text-gray-500 hover:text-blue-600" onclick="switchTab('available-cars')">대여 가능</button>
+                            <button class="pb-3 px-1 font-medium text-gray-500 hover:text-blue-600" onclick="switchTab('reserved-cars')">예약 중</button>
+                            <button class="pb-3 px-1 font-medium text-gray-500 hover:text-blue-600" onclick="switchTab('maintenance-cars')">점검 중</button>
+                        </div>
+                    </div>
+
+                    <!-- 검색 및 필터 -->
+                    <div class="bg-white rounded-xl shadow-md p-6 mb-6">
+                        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                            <div class="relative flex-1">
+                                <input type="text" placeholder="차량 모델명으로 검색" class="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                                <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                            </div>
+                            <div class="flex space-x-2">
+                                <select class="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <option>최신순</option>
+                                    <option>예약 많은순</option>
+                                    <option>수익 높은순</option>
+                                </select>
+                                <button class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center"><i class="fas fa-filter mr-2"></i> 필터</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 차량 목록 -->
+                    <div id="all-cars" class="tab-content active">
+                        <div class="grid grid-cols-1 gap-6"></div>
+                        <!-- 페이지네이션 -->
+                        <div class="mt-8 flex justify-center" id="all-cars-pagination-container">
+                            <nav class="inline-flex rounded-md shadow">
+                                <a href="#" class="px-3 py-2 rounded-l-md border border-gray-300 bg-white text-gray-500 hover:bg-gray-50">
+                                    <i class="fas fa-chevron-left"></i>
+                                </a>
+                                <a href="#" class="px-4 py-2 border-t border-b border-gray-300 bg-white text-blue-600 font-medium">1</a>
+                                <a href="#" class="px-4 py-2 border-t border-b border-gray-300 bg-white text-gray-500 hover:bg-gray-50">2</a>
+                                <a href="#" class="px-4 py-2 border-t border-b border-gray-300 bg-white text-gray-500 hover:bg-gray-50">3</a>
+                                <a href="#" class="px-4 py-2 rounded-r-md border border-gray-300 bg-white text-gray-500 hover:bg-gray-50">
+                                    <i class="fas fa-chevron-right"></i>
+                                </a>
+                            </nav>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- 푸터 영역 -->
+        <footer class="bg-gray-900 text-white py-12">
+            <div class="container mx-auto px-4">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                    <div>
+                        <div class="flex items-center mb-4">
+                            <i class="fas fa-car text-blue-400 text-2xl mr-2"></i>
+                            <span class="text-xl font-bold">DriveShare</span>
+                        </div>
+                        <p class="text-gray-400 mb-4">국내 최고의 카셰어링 플랫폼</p>
+                        <div class="flex space-x-4">
+                            <a href="#" class="text-gray-400 hover:text-white"><i class="fab fa-facebook-f"></i></a>
+                            <a href="#" class="text-gray-400 hover:text-white"><i class="fab fa-instagram"></i></a>
+                            <a href="#" class="text-gray-400 hover:text-white"><i class="fab fa-twitter"></i></a>
+                            <a href="#" class="text-gray-400 hover:text-white"><i class="fab fa-youtube"></i></a>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h3 class="font-bold text-lg mb-4">이용안내</h3>
+                        <ul class="space-y-2">
+                            <li><a href="#" class="text-gray-400 hover:text-white">이용 방법</a></li>
+                            <li><a href="#" class="text-gray-400 hover:text-white">요금 안내</a></li>
+                            <li><a href="#" class="text-gray-400 hover:text-white">보험 안내</a></li>
+                            <li><a href="#" class="text-gray-400 hover:text-white">자주 묻는 질문</a></li>
+                        </ul>
+                    </div>
+
+                    <div>
+                        <h3 class="font-bold text-lg mb-4">호스트 안내</h3>
+                        <ul class="space-y-2">
+                            <li><a href="#" class="text-gray-400 hover:text-white">호스트 가이드</a></li>
+                            <li><a href="#" class="text-gray-400 hover:text-white">호스트 등록하기</a></li>
+                            <li><a href="#" class="text-gray-400 hover:text-white">수익 계산기</a></li>
+                            <li><a href="#" class="text-gray-400 hover:text-white">호스트 지원</a></li>
+                        </ul>
+                    </div>
+
+                    <div>
+                        <h3 class="font-bold text-lg mb-4">고객센터</h3>
+                        <ul class="space-y-2">
+                            <li class="text-gray-400">평일 09:00 ~ 18:00</li>
+                            <li class="text-gray-400">(점심시간 12:00 ~ 13:00)</li>
+                            <li class="mt-4"><a href="tel:1670-1234" class="text-blue-400 hover:text-blue-300">1670-1234</a></li>
+                            <li><a href="mailto:help@driveshare.co.kr" class="text-blue-400 hover:text-blue-300">help@driveshare.co.kr</a></li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="border-t border-gray-800 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center">
+                    <div class="text-gray-500 text-sm mb-4 md:mb-0">© 2023 DriveShare Inc. All rights reserved.</div>
+                    <div class="flex space-x-6">
+                        <a href="#" class="text-gray-500 hover:text-white text-sm">이용약관</a>
+                        <a href="#" class="text-gray-500 hover:text-white text-sm">개인정보처리방침</a>
+                        <a href="#" class="text-gray-500 hover:text-white text-sm">위치기반서비스 이용약관</a>
+                    </div>
+                </div>
+            </div>
+        </footer>
+
+        <script>
+            // 탭 전환 기능 (기존 코드 유지)
+            function switchTab(tabId) {
+                // 모든 탭 콘텐츠 숨기기
+                document.querySelectorAll(".tab-content").forEach((tab) => {
+                    tab.classList.remove("active");
+                });
+
+                // 모든 탭 버튼 비활성화
+                document.querySelectorAll(".flex.space-x-6.border-b button").forEach((button) => {
+                    button.classList.remove("text-blue-600", "border-blue-600");
+                    button.classList.add("text-gray-500", "hover:text-blue-600");
+                });
+
+                // 선택한 탭 콘텐츠 보이기
+                document.getElementById(tabId).classList.add("active");
+
+                // 선택한 탭 버튼 활성화
+                event.currentTarget.classList.remove("text-gray-500", "hover:text-blue-600");
+                event.currentTarget.classList.add("text-blue-600", "border-blue-600");
+
+                // TODO: 각 탭 클릭 시 해당 상태에 맞는 차량 목록 로드
+                // API에 status 필터링 기능이 필요하며, fetchUserDataAndCars 함수에 status 인자 전달 필요
+                // 예: if (tabId === 'available-cars') { fetchUserDataAndCars(1, 'available'); }
+                // 현재는 전체 차량 탭에 대해서만 동적 로딩 구현됨
+            }
+
+            // 드롭다운 메뉴 닫기 (바깥 클릭 시) (기존 코드 유지)
+            document.addEventListener("click", function (event) {
+                if (!event.target.matches(".dropdown button") && !event.target.closest(".dropdown-content")) {
+                    var dropdowns = document.getElementsByClassName("dropdown-content");
+                    for (var i = 0; i < dropdowns.length; i++) {
+                        var openDropdown = dropdowns[i];
+                        if (openDropdown.style.display === "block") {
+                            openDropdown.style.display = "none";
+                        }
+                    }
+                }
+            });
+
+            // --- 차량 목록 및 페이지네이션 동적 로딩 스크립트 (mypage.html 및 reservations.html 참조) ---
+
+            const carsApiEndpoint = "/api/cars";
+            const userApiEndpoint = "/api/mypage"; // 또는 사용자 ID를 가져오는 다른 API 엔드포인트
+            const itemsPerPage = 5; // 페이지당 보여줄 차량 수 (백엔드 limit과 일치시켜야 합니다)
+
+            let currentPage = 1; // 현재 페이지 (계산됨)
+            let totalItems = 0; // 전체 차량 개수 (API 응답에서 받아옴 - list.html 방식)
+            let loggedInUserId = null; // 로그인된 사용자 ID를 저장할 변수
+
+            // 사용자 정보를 가져오고 차량 목록을 로드하는 함수 (페이지네이션 포함)
+            // page 대신 startIndex (offset)를 인자로 받도록 수정
+            async function fetchUserDataAndCars(startIndex = 0) {
+                const token = localStorage.getItem("token"); // mypage.html처럼 토큰 가져오기
+
+                // 차량 목록 컨테이너와 페이지네이션 컨테이너를 미리 찾아서 에러 메시지 표시 준비
+                const carListContainer = document.querySelector("#all-cars .grid");
+                // 페이지네이션 컨테이너 ID 수정: all-cars-pagination-container 안의 nav
+                const paginationContainer = document.querySelector("#all-cars-pagination-container nav");
+
+                if (!token) {
+                    // 토큰이 없으면 로그인 페이지로 리다이렉트
+                    console.warn("인증 토큰이 없습니다. 로그인 페이지로 이동합니다.");
+                    window.location.href = "/login";
+                    return;
+                }
+
+                if (!carListContainer) {
+                    console.error("오류: 차량 목록 컨테이너 (#all-cars .grid)를 찾을 수 없습니다.");
+                    // return; // 컨테이너 없으면 진행 중단
+                    // 컨테이너가 없어도 로딩 스피너 등 처리를 위해 계속 진행할 수 있습니다.
+                    // 여기서는 오류 메시지를 띄우고 진행은 하되, 렌더링은 안되도록 합니다.
+                }
+                // 페이지네이션 컨테이너는 없을 수도 있으므로 필수 체크는 아닙니다.
+
+                try {
+                    // loggedInUserId가 아직 없으면 사용자 정보를 먼저 가져옴
+                    if (!loggedInUserId) {
+                        const userResponse = await fetch(userApiEndpoint, {
+                            method: "GET",
+                            headers: {
+                                Authorization: `Bearer ${token}`, // 토큰 사용
+                                "Content-Type": "application/json",
+                            },
+                        });
+
+                        if (!userResponse.ok) {
+                            if (userResponse.status === 401) {
+                                localStorage.removeItem("token");
+                                window.location.href = "/login";
+                                return; // 리다이렉트 후 함수 종료
+                            } else {
+                                throw new Error(`사용자 정보 로드 실패: ${userResponse.status}`);
+                            }
+                        }
+
+                        const userData = await userResponse.json();
+                        // TODO: userData 객체에서 실제 사용자 ID 필드 이름을 확인하고 할당해야 합니다.
+                        // 예: userData.id 또는 userData.userId 또는 userData.uid
+                        loggedInUserId = userData.id; // 예시: userData.id에 사용자 ID가 있다고 가정
+
+                        if (!loggedInUserId) {
+                            throw new Error("사용자 ID 필드를 찾을 수 없습니다. API 응답 구조를 확인하세요.");
+                        }
+                        console.log("사용자 ID 확보:", loggedInUserId);
+                    } else {
+                        console.log("기존 사용자 ID 사용:", loggedInUserId);
+                    }
+
+                    // 2. 사용자 ID를 사용하여 차량 목록 가져오기
+                    const params = new URLSearchParams({
+                        start: startIndex, // startIndex (offset) 파라미터 사용
+                        limit: itemsPerPage, // itemsPerPage (limit) 파라미터 사용
+                        owner_id: loggedInUserId, // 가져온 사용자 ID 사용
+                        // TODO: 검색어, 정렬 기준 등 필터링 파라미터 여기에 추가
+                        // search_term: currentSearchTerm,
+                        // sort_by: currentSortBy,
+                        // status: currentFilter // 탭 필터링 적용 시
+                    });
+
+                    console.log(`차량 목록 요청: ${carsApiEndpoint}?${params.toString()}`);
+
+                    const carsResponse = await fetch(`${carsApiEndpoint}?${params.toString()}`, {
+                        method: "GET",
+                        headers: {
+                            Authorization: `Bearer ${token}`, // 차량 목록 API도 인증 필요할 수 있음
+                            "Content-Type": "application/json",
+                        },
+                    });
+
+                    if (!carsResponse.ok) {
+                        if (carsResponse.status === 401) {
+                            localStorage.removeItem("token");
+                            window.location.href = "/login";
+                            return; // 리다이렉트 후 함수 종료
+                        } else {
+                            throw new Error(`차량 목록 로드 실패: ${carsResponse.status}`);
+                        }
+                    }
+
+                    const data = await carsResponse.json();
+
+                    // list.html 방식처럼 data.total (전체 항목 수)를 받아와서 totalPages를 계산합니다.
+                    if (typeof data.total !== "undefined") {
+                        totalItems = data.total; // 전체 항목 수 저장
+                        // 전체 페이지 수 계산
+                        const totalPages = Math.ceil(totalItems / itemsPerPage);
+
+                        // 현재 페이지 번호 계산 (startIndex와 itemsPerPage 기반)
+                        currentPage = Math.floor(startIndex / itemsPerPage) + 1;
+
+                        renderCars(data.cars || []); // 차량 목록 렌더링 (data.cars가 배열인지 확인)
+                        renderPagination(totalPages); // 계산된 totalPages로 페이지네이션 렌더링
+                    } else {
+                        // data.total이 없는 경우 오류 처리 또는 기본값 설정
+                        console.warn("API 응답에 전체 항목 수 (data.total)가 없습니다. 페이지네이션을 그릴 수 없습니다.");
+                        totalItems = data.cars ? data.cars.length : 0; // 받아온 차량 수로 totalItems 임시 설정
+                        currentPage = 1;
+                        // 페이지네이션 숨김
+                        if (paginationContainer) paginationContainer.innerHTML = "";
+                        renderCars(data.cars || []); // 차량 목록 렌더링
+                    }
+                } catch (error) {
+                    console.error("데이터 요청 중 오류 발생:", error);
+                    // 오류 메시지 표시
+                    if (carListContainer) {
+                        carListContainer.innerHTML = `<p class="text-red-600">데이터 로드 중 오류가 발생했습니다: ${error.message}</p>`;
+                    }
+                    // 페이지네이션 숨김
+                    if (paginationContainer) {
+                        paginationContainer.innerHTML = "";
+                    }
+                }
+            }
+
+            // 차량 카드 HTML을 생성하고 화면에 표시하는 함수 (기존 코드 유지)
+            // 이 함수는 변경되지 않았습니다. 필요시 이전에 제시된 이미지 src 수정 코드 적용
+            function renderCars(cars) {
+                const carListContainer = document.querySelector("#all-cars .grid");
+                if (!carListContainer) {
+                    console.error("renderCars: 차량 목록 컨테이너를 찾을 수 없습니다.");
+                    return;
+                }
+
+                carListContainer.innerHTML = ""; // 기존 목록 비우기
+
+                if (!cars || cars.length === 0) {
+                    carListContainer.innerHTML = '<p class="text-gray-600">등록된 차량이 없습니다.</p>';
+                    return;
+                }
+
+                cars.forEach((car) => {
+                    // 차량 상태에 따른 뱃지 스타일 설정 (기존 로직 유지)
+                    let statusBadgeClass = "";
+                    let statusText = "";
+                    // car.status 필드 값은 백엔드에서 내려주는 실제 값에 맞춰야 합니다.
+                    // 예시: 백엔드에서 "Available"로 내려온다고 가정
+                    switch (car.status) {
+                        case "Available":
+                            statusBadgeClass = "bg-green-100 text-green-800";
+                            statusText = "대여 가능";
+                            break;
+                        case "reserved": // 백엔드에서 'reserved'로 내려온다고 가정
+                            statusBadgeClass = "bg-yellow-100 text-yellow-800";
+                            statusText = "예약 중";
+                            break;
+                        case "maintenance": // 백엔드에서 'maintenance'로 내려온다고 가정
+                            statusBadgeClass = "bg-red-100 text-red-800";
+                            statusText = "점검 중";
+                            break;
+                        default:
+                            statusBadgeClass = "bg-gray-100 text-gray-800";
+                            statusText = "알 수 없음";
+                    }
+
+                    // 예시: 이미지 URL 처리 (list.html 방식 참고)
+                    // list.html에서는 car.image_url을 바로 src에 사용하고 있습니다.
+                    // 만약 management.html에서도 백엔드가 단일 이미지 URL 문자열을 준다면 list.html처럼 사용 가능합니다.
+                    // 이전에 image_url이 배열이거나 JSON이라는 오류가 있었다면, 여기서 배열의 첫 요소를 사용하거나 JSON 파싱 필요
+                    const imageUrl =
+                        Array.isArray(car.image_url) && car.image_url.length > 0
+                            ? car.image_url[0]
+                            : typeof car.image_url === "string"
+                            ? car.image_url
+                            : "https://via.placeholder.com/500x300?text=No+Image";
+
+                    const carCardHtml = `
+                        <div class="bg-white rounded-xl shadow-md overflow-hidden car-card transition duration-300">
+                            <div class="md:flex">
+                                <div class="md:w-1/3">
+                                    <img
+                                        class="w-full h-full object-cover" // h-full로 변경했다고 가정 (이미지를 컨테이너에 꽉 채우기 위함)
+                                        src="/${imageUrl}" // 앞에 '/'를 붙여 루트 기준 경로로 만듭니다.
+                                        alt="${car.model} image"
+                                    />
+                                </div>
+                                <div class="p-6 md:w-2/3">
+                                    <div class="flex justify-between items-start">
+                                        <div>
+                                            <div class="uppercase tracking-wide text-sm text-blue-600 font-semibold">${car.manufacturer || "정보 없음"}</div>
+                                            <h3 class="mt-1 text-xl font-semibold">${car.name || "정보 없음"} ${car.year || ""}</h3>
+                                            <div class="mt-2 flex items-center">
+                                                <span class="${statusBadgeClass} text-xs font-medium px-2.5 py-0.5 rounded">${statusText}</span>
+                                                <span class="ml-2 text-gray-500 text-sm"><i class="fas fa-star text-yellow-400 mr-1"></i>${car.rating?.toFixed(1) || "N/A"} (${
+                        car.total_reviews || "0"
+                    })</span>
+                                            </div>
+                                        </div>
+                                        <div class="dropdown relative">
+                                            <button class="text-gray-500 hover:text-gray-700">
+                                                <i class="fas fa-ellipsis-v"></i>
+                                            </button>
+                                            <div class="dropdown-content mt-1 py-1">
+                                                <a href="/mypage/host/edit_car/${car.id}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">수정하기</a>
+                                                <a href="/mypage/host/reservations/${car.id}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">예약 현황</a>
+                                                <button class="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100" onclick="deleteCar(${car.id})">삭제하기</button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="mt-4 grid grid-cols-2 gap-4">
+                                        <div>
+                                            <p class="text-gray-500 text-sm">일일 대여료</p>
+                                            <p class="font-semibold">${car.daily_rate?.toLocaleString() || "정보 없음"}원</p>
+                                        </div>
+                                        <div>
+                                            <p class="text-gray-500 text-sm">이번 달 예약</p>
+                                            <p class="font-semibold">${car.monthly_reservations || "0"}건</p>
+                                        </div>
+                                        <div>
+                                            <p class="text-gray-500 text-sm">이번 달 수익</p>
+                                            <p class="font-semibold">${car.monthly_revenue?.toLocaleString() || "0"}원</p>
+                                        </div>
+                                        <div>
+                                            <p class="text-gray-500 text-sm">총 예약 횟수</p>
+                                            <p class="font-semibold">${car.total_reservations || "0"}건</p>
+                                        </div>
+                                    </div>
+
+                                    <div class="mt-4 flex space-x-2">
+                                        <a href="/mypage/host/reservations/${car.id}" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm">예약 현황 보기</a>
+                                        <a href="/mypage/host/edit_car/${car.id}" class="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 text-sm">차량 정보 수정</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    carListContainer.insertAdjacentHTML("beforeend", carCardHtml);
+                });
+            }
+
+            // 페이지네이션 컨트롤을 생성하고 화면에 표시하는 함수 (list.html 방식 참조)
+            // totalPages를 인자로 받는 것은 동일
+            function renderPagination(totalPages) {
+                // 페이지네이션 컨테이너를 ID로 정확히 찾음
+                const paginationContainer = document.querySelector("#all-cars-pagination-container nav");
+                if (!paginationContainer) {
+                    console.error("renderPagination: 페이지네이션 컨테이너 (#all-cars-pagination-container nav)를 찾을 수 없습니다.");
+                    return;
+                }
+
+                // 기존 페이지네이션 비우기
+                paginationContainer.innerHTML = "";
+
+                if (totalPages <= 1) {
+                    // 페이지가 1개 이하면 페이지네이션 숨김
+                    return;
+                }
+
+                const nav = document.createElement("nav"); // <nav> 요소 생성
+                nav.classList.add("inline-flex", "rounded-md", "shadow");
+
+                // 이전 페이지 버튼 (list.html 방식)
+                const prevButton = document.createElement("a");
+                prevButton.href = "#";
+                prevButton.classList.add("px-4", "py-2", "border", "border-gray-300", "bg-white", "text-gray-500", "hover:bg-gray-50", "rounded-l-md");
+                prevButton.innerHTML = '<i class="fas fa-chevron-left"></i>'; // reservations.html 아이콘 사용
+                if (currentPage === 1) {
+                    prevButton.classList.add("opacity-50", "cursor-not-allowed");
+                    prevButton.style.pointerEvents = "none";
+                } else {
+                    prevButton.addEventListener("click", (e) => {
+                        e.preventDefault();
+                        // 이전 페이지의 startIndex 계산 후 데이터 로드 요청
+                        // 현재 페이지 (currentPage)는 1부터 시작, startIndex는 0부터 시작
+                        // 이전 페이지의 startIndex = (currentPage - 1 - 1) * itemsPerPage = (currentPage - 2) * itemsPerPage
+                        fetchUserDataAndCars((currentPage - 2) * itemsPerPage);
+                    });
+                }
+                nav.appendChild(prevButton);
+
+                // 페이지 번호 버튼 (list.html 방식)
+                const maxVisiblePages = 5; // 화면에 보여줄 최대 페이지 번호 개수 (reservations.html/list.html 동일)
+                let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+                let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+                // 끝 페이지가 totalPages와 같을 때 시작 페이지 조정 (list.html 방식)
+                if (totalPages > maxVisiblePages && endPage === totalPages) {
+                    startPage = Math.max(1, endPage - maxVisiblePages + 1);
+                }
+                // 시작 페이지가 1일 때 끝 페이지 조정 (list.html 방식)
+                if (totalPages > maxVisiblePages && startPage === 1) {
+                    endPage = Math.min(totalPages, maxVisiblePages);
+                }
+
+                for (let i = startPage; i <= endPage; i++) {
+                    const pageLink = document.createElement("a");
+                    pageLink.href = "#";
+                    pageLink.textContent = i; // 페이지 번호 표시
+                    pageLink.classList.add("px-4", "py-2", "border-t", "border-b", "border-gray-300", "bg-white");
+
+                    if (i === currentPage) {
+                        pageLink.classList.remove("text-gray-500", "hover:bg-gray-50");
+                        pageLink.classList.add("text-blue-600", "font-medium", "pagination-active"); // active 클래스 사용
+                    } else {
+                        pageLink.classList.add("text-gray-500", "hover:bg-gray-50");
+                    }
+
+                    pageLink.addEventListener("click", (e) => {
+                        e.preventDefault();
+                        const clickedPage = i;
+                        if (currentPage !== clickedPage) {
+                            // 클릭된 페이지의 startIndex 계산 후 데이터 로드 요청
+                            // 클릭된 페이지는 1부터 시작, startIndex는 0부터 시작
+                            fetchUserDataAndCars((clickedPage - 1) * itemsPerPage);
+                        }
+                    });
+                    nav.appendChild(pageLink);
+                }
+
+                // 다음 페이지 버튼 (list.html 방식)
+                const nextButton = document.createElement("a");
+                nextButton.href = "#";
+                nextButton.classList.add("px-4", "py-2", "border", "border-gray-300", "bg-white", "text-gray-500", "hover:bg-gray-50", "rounded-r-md");
+                nextButton.innerHTML = '<i class="fas fa-chevron-right"></i>'; // reservations.html 아이콘 사용
+                if (currentPage === totalPages) {
+                    nextButton.classList.add("opacity-50", "cursor-not-allowed");
+                    nextButton.style.pointerEvents = "none";
+                } else {
+                    nextButton.addEventListener("click", (e) => {
+                        e.preventDefault();
+                        // 다음 페이지의 startIndex 계산 후 데이터 로드 요청
+                        // 현재 페이지는 1부터 시작, startIndex는 0부터 시작
+                        // 다음 페이지의 startIndex = currentPage * itemsPerPage
+                        fetchUserDataAndCars(currentPage * itemsPerPage);
+                    });
+                }
+                nav.appendChild(nextButton);
+
+                paginationContainer.appendChild(nav); // 컨테이너에 생성한 nav(페이지네이션 링크 묶음) 삽입
+            }
+
+            // 차량 삭제 함수 (fetchUserDataAndCars 호출 방식으로 수정)
+            async function deleteCar(carId) {
+                if (confirm("정말로 이 차량을 삭제하시겠습니까?")) {
+                    console.log(`차량 ID ${carId} 삭제 요청 (더미)`);
+                    try {
+                        // TODO: 실제 DELETE 요청 로직 구현
+
+                        // 삭제 후 현재 페이지의 차량 목록 새로고침
+                        // 삭제 성공 로직 내에서 이 함수 호출
+                        // 현재 페이지의 첫 항목 인덱스를 전달
+                        fetchUserDataAndCars((currentPage - 1) * itemsPerPage);
+                    } catch (error) {
+                        console.error("차량 삭제 오류:", error);
+                        alert(`차량 삭제 중 오류가 발생했습니다: ${error.message}`);
+                    }
+                }
+            }
+
+            // 페이지 로드 시 사용자 정보 및 차량 목록 로드 (수정됨)
+            document.addEventListener("DOMContentLoaded", () => {
+                // 'all-cars' 탭의 차량 목록 컨테이너 비우기
+                const allCarsGrid = document.querySelector("#all-cars .grid");
+                if (allCarsGrid) {
+                    allCarsGrid.innerHTML = "";
+                }
+                // 페이지네이션 컨테이너 비우기
+                const paginationNav = document.querySelector("#all-cars-pagination-container nav");
+                if (paginationNav) {
+                    paginationNav.innerHTML = "";
+                }
+
+                // 사용자 정보를 가져오고 차량 목록 로드를 시작 (startIndex 0부터 - 1페이지)
+                fetchUserDataAndCars(0);
+            });
+
+            // TODO: 검색 및 필터 기능 추가
+            // 검색 입력란과 필터 버튼에 이벤트 리스너를 추가하여
+            // 검색어, 정렬 기준, 상태 필터 값 등을 변수에 저장하고,
+            // fetchUserDataAndCars 함수를 호출할 때 이 값들을 함께 전달해야 합니다.
+            // 필터 변경/검색 시 currentPage는 1로 리셋해야 합니다.
+            // 예: fetchUserDataAndCars(1, currentFilter, currentSearchTerm, currentSortBy);
+        </script>
+    </body>
+</html>

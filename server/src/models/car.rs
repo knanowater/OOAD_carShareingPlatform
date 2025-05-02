@@ -14,6 +14,7 @@ pub struct CarListResponse {
 #[serde(crate = "rocket::serde")] // 쿼리 파라미터 디시리얼라이즈를 위해 필요할 수 있음
 pub struct CarQuery {
     pub start: Option<usize>,
+    pub limit: Option<usize>,
     pub sort: Option<String>,
     pub rental_date: Option<String>,
     pub return_date: Option<String>,
@@ -23,6 +24,7 @@ pub struct CarQuery {
     pub fuel_type: Option<String>,
     pub transmission: Option<String>,
     pub status: Option<String>,
+    pub owner_id: Option<i32>,
 }
 
 #[derive(FromForm)]

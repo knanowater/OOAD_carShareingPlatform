@@ -282,23 +282,21 @@
                                     <div>
                                         <label for="car-type" class="block text-sm font-medium text-gray-700 mb-1">차종</label>
                                         <select id="car-type" name="car-type" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" required>
-                                            <option value="">차종 선택</option>
-                                            <option value="sedan">세단</option>
-                                            <option value="suv">SUV</option>
-                                            <option value="">승합차</option>
-                                            <option value="">프리미엄</option>
-                                            <option value="">기타</option>
+                                            <option value="세단">세단</option>
+                                            <option value="SUV">SUV</option>
+                                            <option value="승합차">승합차</option>
+                                            <option value="프리미엄">프리미엄</option>
+                                            <option value="기타">기타</option>
                                         </select>
                                     </div>
 
                                     <div>
                                         <label for="car-fuel" class="block text-sm font-medium text-gray-700 mb-1">연료</label>
                                         <select id="car-fuel" name="car-fuel" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" required>
-                                            <option>연료 선택</option>
-                                            <option>가솔린</option>
-                                            <option>디젤</option>
-                                            <option>전기</option>
-                                            <option>하이브리드</option>
+                                            <option value="가솔린">가솔린</option>
+                                            <option value="디젤">디젤</option>
+                                            <option value="전기">전기</option>
+                                            <option value="하이브리드">하이브리드</option>
                                             <option>기타 (하단 설명에 기재)</option>
                                         </select>
                                     </div>
@@ -311,9 +309,8 @@
                                             class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                                             required
                                         >
-                                            <option value="">변속기 선택</option>
-                                            <option value="automatic">자동</option>
-                                            <option value="manual">수동</option>
+                                            <option>자동</option>
+                                            <option>수동</option>
                                         </select>
                                     </div>
 
@@ -648,11 +645,6 @@
                     formData.append("images", file);
                 }
 
-                console.log("FormData 내용:");
-                for (let pair of formData.entries()) {
-                    console.log(pair[0], pair[1]);
-                }
-
                 try {
                     const response = await fetch("/api/add_car", {
                         method: "POST",
@@ -660,6 +652,7 @@
                     });
                     if (!response.ok) throw new Error("차량 등록 실패");
                     alert("차량 정보가 성공적으로 등록되었습니다.");
+                    window.location.href = "/mypage/host/management";
                 } catch (err) {
                     alert("차량 등록 중 오류 발생: " + err.message);
                 }

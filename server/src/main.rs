@@ -19,7 +19,6 @@ use rocket::fs::FileServer;
 use rocket::{build, get, routes};
 use sqlx::mysql::MySqlPoolOptions;
 use std::env;
-
 // 기존 모듈 임포트
 use auth::{api_is_admin, api_login, api_logout, api_signup}; // AuthToken은 routes에서 사용
 use payment::process_payment;
@@ -63,6 +62,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     routes::pages::car_management_page,
                     routes::pages::car_detail_page,
                     routes::pages::host_add_car_page,
+                    routes::pages::host_management_page,
                     // API routes from various modules
                     routes::cars::api_get_cars,
                     routes::cars::api_get_car_by_id,
@@ -90,6 +90,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 "/scripts",                            // 정적 파일 경로 확인
                 FileServer::from("../client/scripts"), // FileServer 사용
             )
+            .mount("/static", FileServer::from("../server/static")) // 정적 파일 경로 확인
             .manage(pool.clone()); // DB Pool 관리
 
     // 백그라운드 작업 시작

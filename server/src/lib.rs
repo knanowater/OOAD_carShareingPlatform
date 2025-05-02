@@ -17,6 +17,7 @@ pub struct CarInfo {
     transmission: String,
     seat_num: u8,
     color: Option<String>,
+    image_url: serde_json::Value,
     car_trim: Option<String>,
     daily_rate: f64,
     location: String,
@@ -38,6 +39,7 @@ impl CarInfo {
             transmission: String::new(),
             seat_num: 0,
             color: None,
+            image_url: serde_json::Value::Null,
             car_trim: None,
             daily_rate: 0.0,
             location: String::new(),
@@ -75,6 +77,9 @@ impl CarInfo {
     }
     pub fn set_color(&mut self, color: Option<String>) {
         self.color = color;
+    }
+    pub fn set_image_url(&mut self, image_url: serde_json::Value) {
+        self.image_url = image_url;
     }
     pub fn set_car_trim(&mut self, car_trim: Option<String>) {
         self.car_trim = car_trim;
@@ -154,6 +159,7 @@ impl FromRow<'_, MySqlRow> for CarInfo {
             transmission: String::new(),
             seat_num: 0,
             color: None,
+            image_url: serde_json::Value::Null,
             car_trim: None,
             daily_rate: 0.0,
             location: String::new(),
@@ -171,6 +177,7 @@ impl FromRow<'_, MySqlRow> for CarInfo {
         car_info.set_transmission(row.try_get("transmission")?);
         car_info.set_seat_num(row.try_get("seat_num")?);
         car_info.set_color(row.try_get("color").ok());
+        car_info.set_image_url(row.try_get("image_url")?);
         car_info.set_car_trim(row.try_get("car_trim").ok());
         car_info.set_daily_rate(row.try_get("daily_rate")?);
         car_info.set_location(row.try_get("location")?);
@@ -178,104 +185,6 @@ impl FromRow<'_, MySqlRow> for CarInfo {
         car_info.set_description(row.try_get("description")?);
         car_info.set_status(row.try_get("status")?);
         Ok(car_info)
-    }
-}
-
-pub async fn add_car(pool: &MySqlPool, info: CarInfo) -> Result<String, String> {
-    let check_query = "SELECT plate_number FROM cars WHERE plate_number = ?";
-    let existing_car = sqlx::query(check_query)
-        .bind(&info.plate_number)
-        .fetch_optional(pool)
-        .await;
-
-    match existing_car {
-        Ok(Some(_)) => {
-            return Err(format!("'{}' 차량은 이미 존재합니다!", info.plate_number));
-        }
-        Ok(None) => {
-            // plate_number가 존재하지 않으므로 차량 추가 진행
-            let query = r#"
-                INSERT INTO cars (plate_number, manufacturer, name, year, car_type, fuel_type, transmission, seat_num, color, car_trim, daily_rate, location, rating, description, status)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            "#;
-
-            let result = sqlx::query(query)
-                .bind(&info.plate_number)
-                .bind(&info.manufacturer)
-                .bind(&info.name)
-                .bind(&info.year)
-                .bind(&info.car_type)
-                .bind(&info.fuel_type)
-                .bind(&info.transmission)
-                .bind(&info.seat_num)
-                .bind(&info.color)
-                .bind(&info.car_trim)
-                .bind(&info.daily_rate)
-                .bind(&info.location)
-                .bind(&info.rating)
-                .bind(&info.description)
-                .bind(&info.status)
-                .execute(pool)
-                .await;
-
-            match result {
-                Ok(_) => Ok(format!("'{}' 이(가) 성공적으로 추가되었습니다!", info.name)),
-                Err(e) => Err(format!("차량 추가에 실패했습니다 ! : {}", e)),
-            }
-        }
-        Err(e) => Err(format!("DB에러! : {}", e)),
-    }
-}
-
-pub async fn update_car(pool: &MySqlPool, info: CarInfo) -> Result<String, String> {
-    // plate_number를 기준으로 차량이 존재하는지 확인
-    let check_query = "SELECT plate_number FROM cars WHERE plate_number = ?";
-    let existing_car = sqlx::query(check_query)
-        .bind(&info.plate_number)
-        .fetch_optional(pool)
-        .await;
-
-    match existing_car {
-        Ok(Some(_)) => {
-            // 차량이 존재하므로 업데이트 수행
-            let query = r#"
-                UPDATE cars
-                SET manufacturer = ?, name = ?, year = ?, car_type = ?, fuel_type = ?, transmission = ?, seat_num = ?, daily_rate = ?, rating = ?, status = ?,
-                WHERE plate_number = ?
-            "#;
-
-            let result = sqlx::query(query)
-                .bind(&info.plate_number)
-                .bind(&info.manufacturer)
-                .bind(&info.name)
-                .bind(&info.year)
-                .bind(&info.car_type)
-                .bind(&info.fuel_type)
-                .bind(&info.transmission)
-                .bind(&info.seat_num)
-                .bind(&info.color)
-                .bind(&info.car_trim)
-                .bind(&info.daily_rate)
-                .bind(&info.location)
-                .bind(&info.rating)
-                .bind(&info.description)
-                .bind(&info.status)
-                .execute(pool)
-                .await;
-
-            match result {
-                Ok(_) => Ok(format!(
-                    "Car with plate number '{}' updated successfully!",
-                    info.plate_number
-                )),
-                Err(e) => Err(format!("Failed to update car: {}", e)),
-            }
-        }
-        Ok(None) => Err(format!(
-            "Car with plate number '{}' not found!",
-            info.plate_number
-        )),
-        Err(e) => Err(format!("Database error: {}", e)),
     }
 }
 
