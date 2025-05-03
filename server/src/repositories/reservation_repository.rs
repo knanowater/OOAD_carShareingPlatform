@@ -1,6 +1,6 @@
 use crate::models::reservation::*;
 use crate::utils::generate_reservation_id;
-use chrono::{Datelike, Duration, Local, Utc};
+use chrono::{Local, Utc};
 use rocket::http::Status;
 use rocket::serde::json::Json;
 use sqlx::{Acquire, MySqlPool};
