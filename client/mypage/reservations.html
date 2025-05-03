@@ -253,7 +253,7 @@
                     reservationCard.classList.add("bg-white", "rounded-xl", "shadow-md", "p-6", "mb-4", "reservation-card");
                     reservationCard.innerHTML = `
                     <div class="flex flex-col md:flex-row md:items-center">
-                        <img src="${reservation.car_image_url || "https://placehold.co/200x150"}" alt="${
+                        <img src="/${reservation.car_image_url[0] || "https://placehold.co/200x150"}" alt="${
                         reservation.car_model
                     }" class="w-full md:w-48 h-32 object-cover rounded-lg mb-3 md:mb-0 md:mr-6">
                         <div class="flex-1">

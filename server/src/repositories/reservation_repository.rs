@@ -376,11 +376,10 @@ impl<'a> ReservationRepository<'a> {
         end_date: Option<String>,
         car_type: Option<String>,
     ) -> Result<Json<ReservationsResponse>, Status> {
-        let mut conn = self
-            .pool
-            .acquire()
-            .await
-            .map_err(|_| Status::InternalServerError)?;
+        let mut conn = self.pool.acquire().await.map_err(|e| {
+            eprintln!("[get_user_reservations] DB 연결 실패: {}", e);
+            Status::InternalServerError
+        })?;
 
         let page = page.unwrap_or(1);
         let limit = limit.unwrap_or(10);
@@ -418,15 +417,15 @@ impl<'a> ReservationRepository<'a> {
         for p in &params {
             query = query.bind(p);
         }
-        let total_items = query
-            .fetch_one(&mut *conn)
-            .await
-            .map_err(|_| Status::InternalServerError)?;
+        let total_items = query.fetch_one(&mut *conn).await.map_err(|e| {
+            eprintln!("[get_user_reservations] COUNT 쿼리 실패: {}", e);
+            Status::InternalServerError
+        })?;
         let total_pages = (total_items as f64 / limit as f64).ceil() as u64;
 
         let select_query = format!(
             r#"
-            SELECT r.reservation_id, c.manufacturer AS car_manufacturer,
+            SELECT r.reservation_id, c.image_url AS car_image_url, c.manufacturer AS car_manufacturer,
                 c.name AS car_model, r.rental_date, r.return_date,
                 DATEDIFF(r.return_date, r.rental_date) AS rental_period_days,
                 COALESCE(c.location, '미정') AS pickup_location,
@@ -451,7 +450,10 @@ impl<'a> ReservationRepository<'a> {
             .bind(offset as i64)
             .fetch_all(&mut *conn)
             .await
-            .map_err(|_| Status::InternalServerError)?;
+            .map_err(|e| {
+                eprintln!("[get_user_reservations] SELECT 쿼리 실패: {}", e);
+                Status::InternalServerError
+            })?;
 
         Ok(Json(ReservationsResponse {
             reservations,

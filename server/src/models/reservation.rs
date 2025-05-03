@@ -17,7 +17,8 @@ pub struct CreateReservationRequest {
 #[serde(crate = "rocket::serde")]
 pub struct ReservationDetails {
     pub reservation_id: String,
-    pub car_image_url: String,
+    #[sqlx(json)]
+    pub car_image_url: Vec<String>,
     pub car_manufacturer: String,
     pub car_model: String,
     pub rental_date: NaiveDateTime,
