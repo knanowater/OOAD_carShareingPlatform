@@ -109,36 +109,7 @@ impl<'a> ReservationRepository<'a> {
                 format!("로그 저장 실패: {}", e),
             ));
         }
-        let update_res = sqlx::query!(
-            "UPDATE cars SET status = 'Unavailable' WHERE id = ?",
-            data.car_id
-        )
-        .execute(&mut *tx)
-        .await;
-
-        if let Err(e) = update_res {
-            tx.rollback().await.ok();
-            return Err((
-                Status::InternalServerError,
-                format!("차 상태 업데이트 실패: {}", e),
-            ));
-        }
-
-        match update_res {
-            Ok(result) if result.rows_affected() > 0 => {
-                tx.commit()
-                    .await
-                    .map_err(|e| (Status::InternalServerError, format!("커밋 실패: {}", e)))?;
-                Ok(reservation_id)
-            }
-            _ => {
-                tx.rollback().await.ok();
-                Err((
-                    Status::InternalServerError,
-                    "차량 상태 업데이트 실패".into(),
-                ))
-            }
-        }
+        Ok(reservation_id)
     }
     pub async fn cancel_due_to_payment_failure(
         &self,
@@ -609,7 +580,7 @@ impl<'a> ReservationRepository<'a> {
             r#"
             SELECT rental_date, return_date 
             FROM reservation
-            WHERE car_id = ? AND rental_date < ? AND return_date >= ?
+            WHERE car_id = ? AND rental_date < ? AND return_date > ?
             "#,
             car_id,
             end_date,
@@ -623,15 +594,14 @@ impl<'a> ReservationRepository<'a> {
 
         for res in reservations {
             let mut day = res.rental_date;
+            // 예약 구간 전체를 포함 (반납일 전날까지)
             while day < res.return_date {
-                if day.month() == start_date.month() {
-                    reserved_days.push(day.day() as u8);
-                }
-                day += Duration::days(1);
+                reserved_days.push(day.format("%Y-%m-%d").to_string());
+                day += chrono::Duration::days(1);
             }
         }
 
-        reserved_days.sort_unstable();
+        reserved_days.sort();
         reserved_days.dedup();
 
         Ok(Json(ReservationCalendar { reserved_days }))

@@ -5,7 +5,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>DriveShare - 차량 상세정보</title>
         <script src="https://cdn.tailwindcss.com"></script>
-        <script src="scripts/script.js"></script>
+        <script src="/scripts/script.js"></script>
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
         <style>
             .car-detail-hero {
@@ -39,10 +39,93 @@
             .datepicker-input {
                 background-color: #f9fafb;
             }
+            .datepicker-container {
+                position: relative;
+            }
+            .datepicker-container i {
+                position: absolute;
+                top: 50%;
+                left: 12px;
+                transform: translateY(-50%);
+                color: #6b7280;
+            }
+            .datepicker-container input {
+                padding-left: 36px;
+            }
+            .main-image-container {
+                position: relative;
+            }
+            .nav-arrow {
+                position: absolute;
+                top: 50%;
+                transform: translateY(-50%);
+                background-color: rgba(255, 255, 255, 0.8);
+                width: 40px;
+                height: 40px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+                z-index: 10;
+                box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+                transition: all 0.3s ease;
+            }
+            .nav-arrow:hover {
+                background-color: rgba(255, 255, 255, 1);
+                transform: translateY(-50%) scale(1.1);
+            }
+            .nav-arrow.left {
+                left: 20px;
+            }
+            .nav-arrow.right {
+                right: 20px;
+            }
+            .thumbnail-container {
+                display: flex;
+                overflow-x: auto;
+                gap: 8px;
+                padding: 8px 0;
+                scrollbar-width: thin;
+                scrollbar-color: #3b82f6 #f1f1f1;
+            }
+            .thumbnail-container::-webkit-scrollbar {
+                height: 6px;
+            }
+            .thumbnail-container::-webkit-scrollbar-track {
+                background: #f1f1f1;
+                border-radius: 10px;
+            }
+            .thumbnail-container::-webkit-scrollbar-thumb {
+                background-color: #3b82f6;
+                border-radius: 10px;
+            }
+            .thumbnail-item {
+                flex: 0 0 auto;
+                width: 160px;
+                height: 120px;
+                border-radius: 4px;
+                overflow: hidden;
+                cursor: pointer;
+                border: 2px solid transparent;
+                transition: all 0.2s ease;
+            }
+            .thumbnail-item:hover {
+                border-color: #3b82f6;
+                transform: scale(1.05);
+            }
+            .thumbnail-item.active {
+                border-color: #3b82f6;
+                border-width: 5px;
+            }
+            .thumbnail-img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+            }
         </style>
     </head>
     <body class="font-sans antialiased text-gray-800 bg-gray-50">
-        <!-- 헤더 영역 -->
         <header class="bg-white shadow-sm sticky top-0 z-50">
             <div class="container mx-auto px-4 py-4 flex justify-between items-center">
                 <div class="flex items-center" onclick="location.href='/'" style="cursor: pointer">
@@ -65,19 +148,25 @@
             </div>
         </header>
 
-        <!-- 차량 상세정보 메인 섹션 -->
         <main class="container mx-auto px-4 py-8">
-            <!-- 차량 기본 정보 섹션 -->
             <section class="mb-12">
                 <div class="flex flex-col md:flex-row gap-8">
-                    <!-- 차량 이미지 -->
                     <div class="w-full md:w-2/3">
-                        <div class="bg-white rounded-xl shadow-md overflow-hidden mb-4">
+                        <div class="bg-white rounded-xl shadow-md overflow-hidden mb-4 main-image-container">
                             <img id="main-image" alt="차량 메인 이미지" class="w-full h-96 object-cover" />
+
+                            <div class="nav-arrow left" onclick="prevImage()">
+                                <i class="fas fa-chevron-left text-gray-800"></i>
+                            </div>
+
+                            <div class="nav-arrow right" onclick="nextImage()">
+                                <i class="fas fa-chevron-right text-gray-800"></i>
+                            </div>
                         </div>
+
+                        <div class="thumbnail-container" id="thumbnail-gallery"></div>
                     </div>
 
-                    <!-- 차량 기본 정보 -->
                     <div class="w-full md:w-1/3">
                         <div class="bg-white rounded-xl shadow-md p-6 sticky-booking">
                             <h1 class="text-2xl font-bold mb-2 car-full-name"></h1>
@@ -90,6 +179,40 @@
                                 <div>
                                     <p class="text-gray-500 text-sm">하루 기준</p>
                                     <p class="text-2xl font-bold text-blue-600" id="car-daily-rate"></p>
+                                </div>
+                            </div>
+
+                            <div class="mb-6 border border-gray-200 rounded-lg p-4 bg-gray-50">
+                                <h3 class="font-medium text-gray-700 mb-3">예상 금액 계산</h3>
+
+                                <div class="space-y-4">
+                                    <div class="flex items-center justify-between">
+                                        <label for="manual-total-days" class="text-sm text-gray-600 mr-2">총 대여일수:</label>
+                                        <div class="flex items-center">
+                                            <input
+                                                type="number"
+                                                id="manual-total-days"
+                                                min="1"
+                                                value="1"
+                                                class="h-10 w-20 py-2 px-3 border border-gray-300 rounded-l-lg text-center focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-800 font-medium"
+                                            />
+                                            <span
+                                                id="total-days-unit"
+                                                class="inline-flex items-center px-3 py-2 text-sm text-gray-800 bg-gray-200 border border-l-0 border-gray-300 rounded-r-lg font-medium h-10"
+                                                >일</span
+                                            >
+                                        </div>
+                                    </div>
+
+                                    <div class="flex justify-between items-center border-t border-gray-200 pt-3">
+                                        <span class="text-sm text-gray-600">서비스 수수료 (1일 요금의 10%):</span>
+                                        <span id="service-fee" class="text-lg font-bold text-blue-600">0원</span>
+                                    </div>
+
+                                    <div class="flex justify-between items-center border-t border-gray-200 pt-3">
+                                        <span class="text-sm text-gray-600">총 예상 금액 (수수료 포함):</span>
+                                        <span id="total-price" class="text-lg font-bold text-blue-600">0원</span>
+                                    </div>
                                 </div>
                             </div>
 
@@ -114,7 +237,6 @@
                                 </div>
                             </div>
 
-                            <!-- 예약 버튼 -->
                             <button class="w-full py-3" id="reservation-button">예약하기</button>
                         </div>
                     </div>
@@ -167,7 +289,6 @@
                 </div>
             </div>
 
-            <!-- 유의사항 -->
             <section class="mb-12">
                 <div class="bg-white rounded-xl shadow-md p-6">
                     <h2 class="text-xl font-bold mb-6">이용 안내 및 유의사항</h2>
@@ -222,7 +343,6 @@
             </section>
         </main>
 
-        <!-- 푸터 영역 -->
         <footer class="bg-gray-100 py-8 mt-12">
             <div class="container mx-auto px-4">
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
@@ -245,7 +365,7 @@
                     <div>
                         <h3 class="font-bold text-gray-800 mb-4">지원</h3>
                         <ul class="space-y-2">
-                            <li><a href="#" class="text-gray-600 hover:text-blue-600 text-sm">도움말 센터</a></li>
+                            <li><a href="#" class="text-gray-600 hover:text-blue-600 text-sm"> 도움말 센터</a></li>
                             <li><a href="#" class="text-gray-600 hover:text-blue-600 text-sm">안전 정보</a></li>
                             <li><a href="#" class="text-gray-600 hover:text-blue-600 text-sm">취소 옵션</a></li>
                             <li><a href="#" class="text-gray-600 hover:text-blue-600 text-sm">고객 지원</a></li>
@@ -274,37 +394,173 @@
         </footer>
 
         <script>
-            // 이미지 갤러리 기능
-            function changeMainImage(thumbnail) {
-                const mainImage = document.getElementById("main-image");
-                mainImage.src = thumbnail.src;
+            // 이미지 갤러리 관련 변수
+            let currentImageIndex = 0;
+            let imageUrls = [];
+            // dailyRate 전역 변수 선언 및 초기화
+            let dailyRate = 0;
+            // 수수료 비율 (10%)
+            const commissionRate = 0.1;
 
-                // 모든 썸네일에서 active 클래스 제거
-                document.querySelectorAll(".image-gallery-thumbnail").forEach((item) => {
-                    item.classList.remove("active");
-                });
+            // 이전 이미지 보기
+            function prevImage() {
+                if (imageUrls.length === 0) return;
 
-                // 클릭한 썸네일에 active 클래스 추가
-                thumbnail.classList.add("active");
+                currentImageIndex = (currentImageIndex - 1 + imageUrls.length) % imageUrls.length;
+                updateMainImage();
+                updateActiveThumbnail();
             }
 
-            // 탭 전환 기능
-            function changeTab(tabId) {
-                // 모든 탭 컨텐츠 숨기기
-                document.querySelectorAll(".tab-content").forEach((content) => {
-                    content.classList.add("hidden");
+            // 다음 이미지 보기
+            function nextImage() {
+                if (imageUrls.length === 0) return;
+
+                currentImageIndex = (currentImageIndex + 1) % imageUrls.length;
+                updateMainImage();
+                updateActiveThumbnail();
+            }
+
+            // 메인 이미지 업데이트
+            function updateMainImage() {
+                const mainImage = document.getElementById("main-image");
+                if (imageUrls.length > 0) {
+                    mainImage.src = imageUrls[currentImageIndex];
+                } else {
+                    // 이미지가 없을 경우 기본 이미지 설정
+                    mainImage.src = "https://placehold.co/600x400";
+                }
+            }
+
+            // 활성 썸네일 업데이트
+            function updateActiveThumbnail() {
+                const thumbnails = document.querySelectorAll(".thumbnail-item");
+                thumbnails.forEach((thumb, index) => {
+                    if (index === currentImageIndex) {
+                        thumb.classList.add("active");
+                    } else {
+                        thumb.classList.remove("active");
+                    }
                 });
+                // 활성 썸네일이 스크롤 영역에 보이도록 스크롤 이동
+                const activeThumbnail = document.querySelector(".thumbnail-item.active");
+                if (activeThumbnail) {
+                    activeThumbnail.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+                }
+            }
 
-                // 모든 탭 버튼 비활성화
-                document.querySelectorAll(".tab-button").forEach((button) => {
-                    button.classList.remove("active");
-                });
+            // 썸네일 클릭 시 메인 이미지 변경
+            function changeMainImage(index) {
+                currentImageIndex = index;
+                updateMainImage();
+                updateActiveThumbnail();
+            }
 
-                // 선택한 탭 컨텐츠 표시
-                document.getElementById(tabId + "-tab").classList.remove("hidden");
+            // 썸네일 갤러리 생성
+            function createThumbnailGallery() {
+                const galleryContainer = document.getElementById("thumbnail-gallery");
+                galleryContainer.innerHTML = ""; // 기존 썸네일 비우기
 
-                // 선택한 탭 버튼 활성화
-                event.currentTarget.classList.add("active");
+                if (imageUrls.length === 0) {
+                    // 이미지가 없는 경우 기본 이미지 추가
+                    const defaultImage = "https://placehold.co/600x400";
+                    // imageUrls 배열 자체는 비워두고 기본 이미지만 표시
+                    const thumbnailItem = document.createElement("div");
+                    thumbnailItem.className = "thumbnail-item active";
+                    // 기본 이미지는 클릭해도 다른 이미지로 변경되지 않으므로 onclick 제거
+                    // thumbnailItem.onclick = () => changeMainImage(0);
+
+                    const thumbnailImg = document.createElement("img");
+                    thumbnailImg.className = "thumbnail-img";
+                    thumbnailImg.src = defaultImage;
+                    thumbnailImg.alt = "차량 이미지 없음";
+
+                    thumbnailItem.appendChild(thumbnailImg);
+                    galleryContainer.appendChild(thumbnailItem);
+                } else {
+                    // 이미지가 있는 경우 모든 이미지에 대한 썸네일 생성
+                    imageUrls.forEach((url, index) => {
+                        const thumbnailItem = document.createElement("div");
+                        thumbnailItem.className = `thumbnail-item ${index === 0 ? "active" : ""}`;
+                        thumbnailItem.onclick = () => changeMainImage(index);
+
+                        const thumbnailImg = document.createElement("img");
+                        thumbnailImg.className = "thumbnail-img";
+                        thumbnailImg.src = url;
+                        thumbnailImg.alt = `차량 이미지 ${index + 1}`;
+
+                        // 이미지 로드 실패 시 대체 이미지 표시
+                        thumbnailImg.onerror = function () {
+                            this.onerror = null; // 무한 루프 방지
+                            this.src = "https://placehold.co/160x120?text=Image+Error"; // 대체 이미지
+                            this.alt = "이미지 로드 실패";
+                        };
+
+                        thumbnailItem.appendChild(thumbnailImg);
+                        galleryContainer.appendChild(thumbnailItem);
+                    });
+                }
+                // 갤러리 생성 후 첫 번째 이미지를 메인으로 설정 및 썸네일 활성화
+                currentImageIndex = 0;
+                updateMainImage();
+                updateActiveThumbnail();
+            }
+
+            // 날짜 차이 계산 함수 (일 단위) - 더 이상 사용되지 않음
+            // function calculateDateDifference(startDate, endDate) { ... }
+
+            // 날짜 유효성 검사 및 총 금액 계산 (수동 일수 입력 기반)
+            function updateBookingDetails() {
+                const manualDaysInput = document.getElementById("manual-total-days");
+                // const totalDaysElement = document.getElementById("total-days"); // 이 줄은 이제 필요 없습니다.
+                const serviceFeeElement = document.getElementById("service-fee");
+                const totalPriceElement = document.getElementById("total-price");
+                const reservationButton = document.getElementById("reservation-button");
+
+                const days = parseInt(manualDaysInput.value, 10); // 입력된 일수를 정수로 파싱
+
+                // 일수 유효성 검사 (1 이상인지 확인)
+                if (!isNaN(days) && days >= 1) {
+                    // 총 대여일수 스팬 업데이트 (이 부분은 이제 HTML input 필드 옆의 '일' 단위 스팬이 담당합니다)
+                    // totalDaysElement.textContent = `${days}일`; // 이 줄은 삭제합니다.
+
+                    // 전역 dailyRate 변수 사용
+                    const currentDailyRate = window.dailyRate || 0; // dailyRate가 설정되지 않았으면 0 사용
+
+                    // 수수료 계산 (1일 요금의 10%)
+                    const dailyCommission = currentDailyRate * commissionRate;
+                    serviceFeeElement.textContent = `${dailyCommission.toLocaleString()}원`; // 1일 기준 수수료 표시
+
+                    // 총 대여 금액 (수수료 제외)
+                    const basePrice = days * currentDailyRate;
+                    // 총 수수료
+                    const totalCommission = days * dailyCommission;
+                    // 최종 총 금액 (기본 금액 + 총 수수료)
+                    const totalPrice = basePrice + totalCommission;
+
+                    totalPriceElement.textContent = `${totalPrice.toLocaleString()}원`;
+
+                    // 예약 버튼 활성화 (차량 상태가 Available이고 일수가 유효할 때)
+                    if (window.isCarAvailable === true) {
+                        // 차량 상태 확인을 위한 전역 변수 사용
+                        reservationButton.disabled = false;
+                        reservationButton.classList.remove("bg-gray-400", "cursor-not-allowed");
+                        reservationButton.classList.add("bg-blue-600", "hover:bg-blue-700", "text-white");
+                    } else {
+                        // 차량 상태가 Available이 아니면 비활성화
+                        reservationButton.disabled = true;
+                        reservationButton.classList.add("w-full", "py-3", "bg-gray-400", "text-white", "font-medium", "rounded-lg", "transition", "mb-3", "cursor-not-allowed");
+                        reservationButton.innerHTML = "예약 불가";
+                    }
+                } else {
+                    // 일수가 유효하지 않은 경우 (입력 필드가 비어있거나 1 미만)
+                    // totalDaysElement.textContent = "1일"; // 이 줄도 삭제합니다.
+                    serviceFeeElement.textContent = "0원";
+                    totalPriceElement.textContent = "0원";
+                    // 예약 버튼 비활성화
+                    reservationButton.disabled = true;
+                    reservationButton.classList.add("bg-gray-400", "cursor-not-allowed");
+                    reservationButton.classList.remove("bg-blue-600", "hover:bg-blue-700", "text-white");
+                }
             }
 
             window.addEventListener("DOMContentLoaded", function () {
@@ -313,10 +569,14 @@
                     const urlParams = new URLSearchParams(window.location.search);
                     const carId = urlParams.get("id");
 
+                    // 차량 가용 상태를 저장할 전역 변수
+                    window.isCarAvailable = false;
+
                     if (carId) {
                         fetch(`/api/cars/${carId}`)
                             .then((response) => {
                                 if (!response.ok) {
+                                    console.error(`HTTP error! status: ${response.status}`);
                                     throw new Error(`HTTP error! status: ${response.status}`);
                                 }
                                 return response.json();
@@ -326,7 +586,7 @@
                                     if (value === null || value === undefined || value === "None") {
                                         return "알 수 없음";
                                     }
-                                    return isNumber ? `${parseFloat(value).toFixed(1)}${suffix}` : `${value}${suffix}`;
+                                    return isNumber ? `${parseFloat(value)}${suffix}` : `${value}${suffix}`;
                                 };
 
                                 Array.from(document.getElementsByClassName("car-manufacturer")).forEach((el) => {
@@ -361,71 +621,91 @@
                                 });
 
                                 Array.from(document.getElementsByClassName("car-rating")).forEach((el) => {
-                                    el.innerHTML = getSafeValue(car.rating, "", true);
+                                    const rating = parseFloat(car.rating);
+                                    el.innerHTML = isNaN(rating) ? "평가 없음" : `${rating.toFixed(1)}`;
                                 });
 
-                                document.querySelector("#main-image").src = car.image_url && car.image_url !== "None" ? car.image_url : "https://placehold.co/600x400";
-                                document.querySelector("#car-daily-rate").innerHTML = getSafeValue(car.daily_rate.toLocaleString(), "원");
+                                window.dailyRate = typeof car.daily_rate === "number" ? car.daily_rate : 0;
+
+                                if (Array.isArray(car.image_url)) {
+                                    imageUrls = car.image_url;
+                                } else if (typeof car.image_url === "string" && car.image_url) {
+                                    imageUrls = [car.image_url];
+                                } else {
+                                    imageUrls = [];
+                                }
+
+                                createThumbnailGallery();
+
+                                document.querySelector("#car-daily-rate").innerHTML = `${window.dailyRate.toLocaleString()}원`;
+                                document.querySelector("#service-fee").innerHTML = `${(window.dailyRate * 0.1).toLocaleString()}원`;
                                 document.querySelector("#car-trim").innerHTML = getSafeValue(car.car_trim);
                                 document.querySelector("#car-color").innerHTML = getSafeValue(car.color);
+
                                 const reservationBtn = document.querySelector("#reservation-button");
-                                if (car.status == "Available") {
-                                    reservationBtn.disabled = false;
+                                reservationBtn.classList.remove("bg-blue-600", "hover:bg-blue-700", "text-white", "bg-gray-400", "cursor-not-allowed");
+                                reservationBtn.removeEventListener("click", handleReservationClick);
+
+                                if (car.status === "Available") {
+                                    window.isCarAvailable = true; // 차량 상태를 전역 변수에 저장
                                     reservationBtn.classList.add("bg-blue-600", "hover:bg-blue-700", "text-white", "font-medium", "rounded-lg", "transition", "mb-3");
-                                    reservationBtn.addEventListener("click", () => {
-                                        location.href = `/reservation?id=${car.id}`;
-                                    });
+                                    reservationBtn.addEventListener("click", handleReservationClick);
+                                    reservationBtn.innerHTML = "예약하기";
                                 } else {
+                                    window.isCarAvailable = false; // 차량 상태를 전역 변수에 저장
                                     reservationBtn.disabled = true;
                                     reservationBtn.classList.add("w-full", "py-3", "bg-gray-400", "text-white", "font-medium", "rounded-lg", "transition", "mb-3", "cursor-not-allowed");
                                     reservationBtn.innerHTML = "예약 불가";
                                 }
+
+                                // 수동 일수 입력 필드 이벤트 리스너 추가
+                                const manualDaysInput = document.getElementById("manual-total-days");
+                                manualDaysInput.addEventListener("input", updateBookingDetails);
+                                manualDaysInput.addEventListener("change", updateBookingDetails); // change 이벤트도 추가하여 숫자 위/아래 버튼 클릭 시에도 반응하도록
+
+                                // 초기 금액 계산을 위해 updateBookingDetails 호출
+                                updateBookingDetails();
                             })
                             .catch((error) => {
                                 console.error("차량 정보 로딩 실패: ", error);
+                                window.dailyRate = 0;
+                                window.isCarAvailable = false; // 에러 시 가용 상태 false
+                                document.querySelector("#car-daily-rate").innerHTML = `0원`;
+
+                                // 수동 일수 입력 필드 이벤트 리스너 추가 (에러 시에도 필요)
+                                const manualDaysInput = document.getElementById("manual-total-days");
+                                manualDaysInput.addEventListener("input", updateBookingDetails);
+                                manualDaysInput.addEventListener("change", updateBookingDetails);
+
+                                updateBookingDetails();
                             });
+                    } else {
+                        console.error("차량 ID가 URL에 없습니다.");
+                        window.dailyRate = 0;
+                        window.isCarAvailable = false; // ID 없으면 가용 상태 false
+                        document.querySelector("#car-daily-rate").innerHTML = `0원`;
+
+                        // 수동 일수 입력 필드 이벤트 리스너 추가 (ID 없을 때도 필요)
+                        const manualDaysInput = document.getElementById("manual-total-days");
+                        manualDaysInput.addEventListener("input", updateBookingDetails);
+                        manualDaysInput.addEventListener("change", updateBookingDetails);
+
+                        updateBookingDetails();
                     }
                 }
-
-                // 날짜 선택기 초기화
-                {
-                    // 오늘 날짜
-                    const today = new Date();
-                    const tomorrow = new Date(today);
-                    tomorrow.setDate(tomorrow.getDate() + 1);
-
-                    // 날짜 형식 변환 (YYYY-MM-DD)
-                    const formatDate = (date) => {
-                        const year = date.getFullYear();
-                        const month = String(date.getMonth() + 1).padStart(2, "0");
-                        const day = String(date.getDate()).padStart(2, "0");
-                        return `${year}-${month}-${day}`;
-                    };
-
-                    // 기본값 설정 (오늘과 내일)
-                    document.getElementById("start-date").value = formatDate(today);
-                    document.getElementById("end-date").value = formatDate(tomorrow);
-
-                    // 최소 날짜 설정 (오늘 이전 날짜 선택 불가)
-                    document.getElementById("start-date").min = formatDate(today);
-                    document.getElementById("end-date").min = formatDate(tomorrow);
-
-                    // 대여일 변경 시 반납일 최소 날짜 업데이트
-                    document.getElementById("start-date").addEventListener("change", function () {
-                        const startDate = new Date(this.value);
-                        const minEndDate = new Date(startDate);
-                        minEndDate.setDate(minEndDate.getDate() + 1);
-
-                        document.getElementById("end-date").min = formatDate(minEndDate);
-
-                        // 현재 선택된 반납일이 새로운 최소 날짜보다 이전이면 업데이트
-                        const currentEndDate = new Date(document.getElementById("end-date").value);
-                        if (currentEndDate < minEndDate) {
-                            document.getElementById("end-date").value = formatDate(minEndDate);
-                        }
-                    });
-                }
             });
+
+            // 예약 버튼 클릭 핸들러 함수 (중복 추가 방지를 위해 분리)
+            function handleReservationClick() {
+                const urlParams = new URLSearchParams(window.location.search);
+                const carId = urlParams.get("id");
+
+                if (carId) {
+                    location.href = `/reservation?id=${carId}`;
+                } else {
+                    console.error("차량 ID가 없어 예약 페이지로 이동할 수 없습니다.");
+                }
+            }
         </script>
     </body>
 </html>

@@ -95,7 +95,7 @@ pub struct ReservationInfo {
 #[derive(Serialize)]
 #[serde(crate = "rocket::serde")]
 pub struct ReservationCalendar {
-    pub reserved_days: Vec<u8>,
+    pub reserved_days: Vec<String>,
 }
 
 #[derive(Debug)]

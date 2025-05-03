@@ -574,7 +574,7 @@
                                 <div class="bg-white rounded-xl shadow-md overflow-hidden car-card transition duration-300" style="cursor: pointer" onclick="location.href='/detail?id=${car.id}'">
                                     <div class="relative">
                                         <img
-                                            src="${car.image_url || "https://placehold.co/600x400"}"
+                                            src="${car.image_url[0] || "https://placehold.co/600x400"}"
                                             class="w-full h-48 object-cover"
                                         />
                                     </div>

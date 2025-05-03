@@ -664,7 +664,7 @@
                     comission = car.daily_rate / 10;
 
                     // HTML 요소에 차량 정보 삽입
-                    document.getElementById("car-image").src = car.image_url || "https://placehold.co/600x400";
+                    document.getElementById("car-image").src = car.image_url[0] || "https://placehold.co/600x400";
                     document.getElementById("car-name").textContent = `${car.year} ${car.manufacturer} ${car.name}`;
                     document.getElementById("car-fuel-type").textContent = car.fuel_type;
                     document.getElementById("car-transmission").textContent = car.transmission;
@@ -736,9 +736,9 @@
                 }
             });
 
-            async function fetchReservedDays(carId, defaultRentalDate, defaulReturnDate) {
+            async function fetchReservedDays(carId, defaultRentalDate, defaultReturnDate) {
                 try {
-                    const res = await fetch(`/api/reservation/calendar?car_id=${carId}&default_rental_date=${defaultRentalDate}&default_return_date=${defaulReturnDate}`, {
+                    const res = await fetch(`/api/reservation/calendar?car_id=${carId}&default_rental_date=${defaultRentalDate}&default_return_date=${defaultReturnDate}`, {
                         method: "GET",
                         headers: {
                             "Content-Type": "application/json",
@@ -761,9 +761,30 @@
 
                 const urlParams = new URLSearchParams(window.location.search);
                 const carId = urlParams.get("id");
-                const defaultRentalDate = urlParams.get("rental_date");
-                const defaulReturnDate = urlParams.get("return_date");
-                const reservedDays = await fetchReservedDays(carId, defaultRentalDate, defaulReturnDate);
+
+                // URL에서 rental_date와 return_date를 가져옵니다.
+                let defaultRentalDate = urlParams.get("rental_date");
+                let defaultReturnDate = urlParams.get("return_date");
+
+                // 만약 URL에서 날짜를 가져오지 못했다면, 현재 달의 첫날과 마지막 날로 설정합니다.
+                if (!defaultRentalDate || !defaultReturnDate) {
+                    const firstDayOfMonth = new Date(year, month, 1);
+                    const lastDayOfMonth = new Date(year, month + 1, 0);
+
+                    // YYYY-MM-DD 형식으로 변환하는 헬퍼 함수
+                    const formatMonthDay = (date) => {
+                        const yyyy = date.getFullYear();
+                        const mm = String(date.getMonth() + 1).padStart(2, "0"); // 월은 0부터 시작하므로 +1
+                        const dd = String(date.getDate()).padStart(2, "0");
+                        return `${yyyy}-${mm}-${dd}`;
+                    };
+
+                    defaultRentalDate = formatMonthDay(firstDayOfMonth);
+                    defaultReturnDate = formatMonthDay(lastDayOfMonth);
+                }
+
+                const reservedDays = await fetchReservedDays(carId, defaultRentalDate, defaultReturnDate);
+                window.reservedDays = reservedDays; // 전역에 저장
 
                 const currentDate = new Date();
                 const today = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
@@ -796,11 +817,15 @@
                     const minimumReservationDate = new Date(today);
                     minimumReservationDate.setDate(minimumReservationDate.getDate() + 2);
 
+                    const y = date.getFullYear();
+                    const m = String(date.getMonth() + 1).padStart(2, "0");
+                    const d = String(date.getDate()).padStart(2, "0");
+                    const dateStr = `${y}-${m}-${d}`;
+
                     if (date < minimumReservationDate) {
                         dayElement.classList.add("disabled");
                     } else {
-                        // 실제 예약된 날 처리
-                        if (reservedDays.includes(i)) {
+                        if (reservedDays && reservedDays.includes(dateStr)) {
                             dayElement.classList.add("unavailable");
                         }
 
@@ -834,6 +859,7 @@
                             if (dayElement.classList.contains("unavailable") || dayElement.classList.contains("disabled")) {
                                 return;
                             }
+                            // 클릭된 날짜를 YYYY-MM-DD 형식으로 변환
                             const selectedDateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(i).padStart(2, "0")}`;
                             handleDateSelection(selectedDateStr);
                         });
@@ -852,12 +878,11 @@
                 }
             }
 
-            function handleDateSelection(dateStr) {
+            async function handleDateSelection(dateStr) {
                 const rentalDateInput = document.getElementById("rental-date");
                 const returnDateInput = document.getElementById("return-date");
 
-                const clickedDate = new Date(dateStr); // ← 문자열로 들어오니까 여기서 변환
-
+                const clickedDate = new Date(dateStr);
                 const year = clickedDate.getFullYear();
                 const month = String(clickedDate.getMonth() + 1).padStart(2, "0");
                 const day = String(clickedDate.getDate()).padStart(2, "0");
@@ -869,10 +894,34 @@
                 const rentalDate = rentalDateStr ? new Date(rentalDateStr) : null;
                 const returnDate = returnDateStr ? new Date(returnDateStr) : null;
 
+                const urlParams = new URLSearchParams(window.location.search);
+                const carId = urlParams.get("id");
+
                 if (!rentalDate || (rentalDate && returnDate)) {
                     rentalDateInput.value = normalizedDateStr;
                     returnDateInput.value = "";
                 } else if (clickedDate >= rentalDate) {
+                    const startStr = rentalDateStr;
+                    const endStr = normalizedDateStr;
+                    const reservedDays = await fetchReservedDays(carId, startStr, endStr);
+
+                    let hasReserved = false;
+                    let tempDate = new Date(rentalDate);
+                    while (tempDate <= clickedDate) {
+                        const y = tempDate.getFullYear();
+                        const m = String(tempDate.getMonth() + 1).padStart(2, "0");
+                        const d = String(tempDate.getDate()).padStart(2, "0");
+                        const tempStr = `${y}-${m}-${d}`;
+                        if (reservedDays.includes(tempStr)) {
+                            hasReserved = true;
+                            break;
+                        }
+                        tempDate.setDate(tempDate.getDate() + 1);
+                    }
+                    if (hasReserved) {
+                        alert("선택한 기간에 이미 예약된 날짜가 포함되어 있습니다.");
+                        return;
+                    }
                     returnDateInput.value = normalizedDateStr;
                 } else {
                     rentalDateInput.value = normalizedDateStr;

@@ -25,7 +25,7 @@ impl MySqlCarRepository {
 #[async_trait]
 impl CarRepository for MySqlCarRepository {
     async fn get_car_by_id(&self, id: i32) -> Result<Option<CarInfo>, Error> {
-        let sql = "SELECT id, plate_number, manufacturer, name, year, car_type, fuel_type, transmission, seat_num, color, car_trim, daily_rate, location, rating, description, status FROM cars WHERE id = ?";
+        let sql = "SELECT id, plate_number, manufacturer, name, year, car_type, fuel_type, transmission, seat_num, color, image_url, car_trim, daily_rate, location, rating, description, status, owner FROM cars WHERE id = ?";
         sqlx::query_as::<_, CarInfo>(sql)
             .bind(id)
             .fetch_optional(&self.pool)
