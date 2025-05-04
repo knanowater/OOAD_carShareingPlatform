@@ -66,8 +66,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     // API routes from various modules
                     routes::cars::api_get_cars,
                     routes::cars::api_get_car_by_id,
-                    routes::cars::api_add_car,    // routes::cars에서 가져옴
-                    routes::cars::api_update_car, // routes::cars에서 가져옴
+                    routes::cars::api_add_car,
+                    routes::cars::api_update_car,
+                    routes::cars::api_delete_car,
                     routes::reservations::api_reservation_request,
                     routes::reservations::api_reservations,
                     routes::reservations::api_get_reservation_info_by_reservation_id_payment_id,

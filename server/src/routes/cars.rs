@@ -1,9 +1,10 @@
+use crate::auth::AuthToken;
 use crate::models::car::{CarForm, CarListResponse, CarQuery};
 use crate::repositories::car_repository::{CarRepository, MySqlCarRepository};
 use rocket::State;
 use rocket::form::Form;
 use rocket::http::Status;
-use rocket::serde::json::Json;
+use rocket::serde::json::{Json, json};
 use rocket::{get, post};
 use server::CarInfo;
 use sqlx::MySqlPool;
@@ -51,6 +52,56 @@ pub async fn api_update_car(
         .update_car(car_info.into_inner())
         .await
         .map_err(|e| (Status::InternalServerError, e.to_string()))
+}
+
+#[delete("/api/car/<car_id>")]
+pub async fn api_delete_car(
+    car_id: i32,
+    auth_token: AuthToken,
+    pool: &State<MySqlPool>,
+) -> Result<String, (Status, String)> {
+    let repo = MySqlCarRepository::new(pool.inner().clone());
+    // 차량 정보 조회
+    let car = repo
+        .get_car_by_id(car_id)
+        .await
+        .map_err(|_| (Status::InternalServerError, "Error retrieving car".into()))?
+        .ok_or((
+            Status::NotFound,
+            format!("Car with ID {} not found", car_id),
+        ))?;
+
+    let user_id = auth_token
+        .0
+        .sub
+        .parse::<i32>()
+        .map_err(|_| (Status::Unauthorized, "Invalid token".into()))?;
+
+    if car.owner().unwrap() != user_id {
+        return Err((
+            Status::Forbidden,
+            "You do not have permission to delete this car.".into(),
+        ));
+    }
+
+    match repo.delete_car(car).await {
+        Ok(msg) => Ok(format!(
+            "{{\"status\": \"success\", \"message\": \"{}\"}}",
+            msg
+        )),
+        Err(e) => {
+            let err_msg = e.to_string();
+            let user_msg = if err_msg.contains("차량이 예약중입니다") {
+                "차량이 예약중입니다".to_string()
+            } else {
+                err_msg
+            };
+            Err((
+                Status::InternalServerError,
+                json!({"message": user_msg}).to_string(),
+            ))
+        }
+    }
 }
 
 #[get("/api/cars?<query..>")]

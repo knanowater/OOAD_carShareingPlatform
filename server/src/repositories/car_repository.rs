@@ -10,6 +10,7 @@ pub trait CarRepository {
     async fn get_cars(&self, query: CarQuery) -> Result<CarListResponse, Error>;
     async fn add_car(&self, car_info: CarInfo, images: Vec<TempFile<'_>>) -> Result<String, Error>;
     async fn update_car(&self, car_info: CarInfo) -> Result<String, Error>;
+    async fn delete_car(&self, car_info: CarInfo) -> Result<String, Error>;
 }
 
 pub struct MySqlCarRepository {
@@ -179,7 +180,7 @@ impl CarRepository for MySqlCarRepository {
             .bind(car_info.rating())
             .bind(&car_info.description())
             .bind(&car_info.status())
-            .bind("[]") // Temporarily set image_url as an empty JSON array
+            .bind("[]")
             .execute(&self.pool)
             .await?;
 
@@ -223,7 +224,7 @@ impl CarRepository for MySqlCarRepository {
             .execute(&self.pool)
             .await?;
 
-        Ok("Car added successfully".to_string())
+        Ok("차량이 성공적으로 추가되었습니다.".to_string())
     }
 
     async fn update_car(&self, car_info: CarInfo) -> Result<String, Error> {
@@ -248,7 +249,33 @@ impl CarRepository for MySqlCarRepository {
             .await;
 
         match result {
-            Ok(_) => Ok("Car updated successfully".to_string()),
+            Ok(_) => Ok("차량이 성공적으로 업데이트되었습니다.".to_string()),
+            Err(e) => Err(Error::from(e)),
+        }
+    }
+
+    async fn delete_car(&self, car_info: CarInfo) -> Result<String, Error> {
+        let reservation_exists = sqlx::query_scalar::<_, Option<i64>>(
+            "SELECT 1 FROM reservation WHERE car_id = ? LIMIT 1",
+        )
+        .bind(car_info.id())
+        .fetch_optional(&self.pool)
+        .await?;
+
+        if reservation_exists.is_some() {
+            return Err(Error::Io(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                "차량이 예약중입니다",
+            )));
+        }
+
+        let result = sqlx::query("DELETE FROM cars WHERE id = ?")
+            .bind(car_info.id())
+            .execute(&self.pool)
+            .await;
+
+        match result {
+            Ok(_) => Ok("차량이 성공적으로 삭제되었습니다.".to_string()),
             Err(e) => Err(Error::from(e)),
         }
     }

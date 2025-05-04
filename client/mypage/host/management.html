@@ -513,18 +513,12 @@
                     })</span>
                                             </div>
                                         </div>
-                                        <div class="dropdown relative">
-                                            <button class="text-gray-500 hover:text-gray-700">
-                                                <i class="fas fa-ellipsis-v"></i>
+                                        <div class="flex items-center">
+                                            <button class="text-red-600 bg-gray-100 hover:bg-gray-200 text-sm font-medium px-4 py-2 rounded" onclick="deleteCar(${car.id})">
+                                                삭제하기
                                             </button>
-                                            <div class="dropdown-content mt-1 py-1">
-                                                <a href="/mypage/host/edit_car/${car.id}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">수정하기</a>
-                                                <a href="/mypage/host/reservations/${car.id}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">예약 현황</a>
-                                                <button class="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100" onclick="deleteCar(${car.id})">삭제하기</button>
-                                            </div>
                                         </div>
                                     </div>
-
                                     <div class="mt-4 grid grid-cols-2 gap-4">
                                         <div>
                                             <p class="text-gray-500 text-sm">일일 대여료</p>
@@ -660,17 +654,43 @@
             // 차량 삭제 함수 (fetchUserDataAndCars 호출 방식으로 수정)
             async function deleteCar(carId) {
                 if (confirm("정말로 이 차량을 삭제하시겠습니까?")) {
-                    console.log(`차량 ID ${carId} 삭제 요청 (더미)`);
                     try {
-                        // TODO: 실제 DELETE 요청 로직 구현
+                        const token = localStorage.getItem("token");
+                        if (!token) {
+                            alert("로그인 후 다시 시도해주세요.");
+                            window.location.href = "/login";
+                            return;
+                        }
+                        const response = await fetch(`/api/car/${carId}`, {
+                            method: "DELETE",
+                            headers: {
+                                Authorization: `Bearer ${token}`,
+                            },
+                        });
 
-                        // 삭제 후 현재 페이지의 차량 목록 새로고침
-                        // 삭제 성공 로직 내에서 이 함수 호출
-                        // 현재 페이지의 첫 항목 인덱스를 전달
+                        if (!response.ok) {
+                            let errorMsg = `HTTP error! status: ${response.status}`;
+                            try {
+                                const errorData = await response.json();
+                                if (errorData && errorData.message) {
+                                    errorMsg = errorData.message;
+                                }
+                            } catch {
+                                try {
+                                    const text = await response.text();
+                                    if (text) errorMsg = text;
+                                } catch {}
+                            }
+                            throw new Error(errorMsg);
+                        }
+
+                        const result = await response.json();
+                        alert(result.message || "차량이 성공적으로 삭제되었습니다.");
+                        // 차량 목록 다시 로드
                         fetchUserDataAndCars((currentPage - 1) * itemsPerPage);
                     } catch (error) {
                         console.error("차량 삭제 오류:", error);
-                        alert(`차량 삭제 중 오류가 발생했습니다: ${error.message}`);
+                        alert(`차량 삭제에 실패했습니다: ${error.message}`);
                     }
                 }
             }

@@ -24,6 +24,7 @@ pub struct CarInfo {
     rating: f64,
     description: Option<String>,
     status: String,
+    owner: Option<i32>,
 }
 
 impl CarInfo {
@@ -46,6 +47,7 @@ impl CarInfo {
             rating: 0.0,
             description: None,
             status: String::new(),
+            owner: None,
         }
     }
     pub fn id(&self) -> Option<i32> {
@@ -99,6 +101,10 @@ impl CarInfo {
     pub fn set_status(&mut self, status: String) {
         self.status = status;
     }
+    pub fn set_owner(&mut self, owner: Option<i32>) {
+        self.owner = owner;
+    }
+
     pub fn plate_number(&self) -> &str {
         &self.plate_number
     }
@@ -144,6 +150,9 @@ impl CarInfo {
     pub fn status(&self) -> &str {
         &self.status
     }
+    pub fn owner(&self) -> &Option<i32> {
+        &self.owner
+    }
 }
 
 impl FromRow<'_, MySqlRow> for CarInfo {
@@ -166,6 +175,7 @@ impl FromRow<'_, MySqlRow> for CarInfo {
             rating: 0.0,
             description: None,
             status: String::new(),
+            owner: None,
         };
 
         car_info.set_plate_number(row.try_get("plate_number")?);
@@ -184,6 +194,7 @@ impl FromRow<'_, MySqlRow> for CarInfo {
         car_info.set_rating(row.try_get("rating")?);
         car_info.set_description(row.try_get("description")?);
         car_info.set_status(row.try_get("status")?);
+        car_info.set_owner(row.try_get("owner").ok());
         Ok(car_info)
     }
 }
