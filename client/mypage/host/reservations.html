@@ -164,6 +164,8 @@
                             <button class="status-filter px-4 py-2 rounded-full bg-blue-100 text-blue-600" data-status="scheduled"><i class="fas fa-calendar-check mr-1"></i> 이용 대기중</button>
                             <button class="status-filter px-4 py-2 rounded-full bg-yellow-100 text-yellow-600" data-status="in_use"><i class="fas fa-car mr-1"></i> 이용 중</button>
                             <button class="status-filter px-4 py-2 rounded-full bg-orange-100 text-orange-600" data-status="overdue"><i class="fas fa-exclamation-triangle mr-1"></i> 연체 중</button>
+                            <button class="status-filter px-4 py-2 rounded-full bg-green-100 text-green-600" data-status="completed"><i class="fas fa-check-circle mr-1"></i> 완료된 예약</button>
+                            <button class="status-filter px-4 py-2 rounded-full bg-red-100 text-red-600" data-status="canceled"><i class="fas fa-times-circle mr-1"></i> 취소된 예약</button>
                         </div>
                     </div>
 
@@ -273,6 +275,10 @@
                             section.style.display = "block";
                         } else if (status === "overdue" && sectionTitle.includes("연체 중")) {
                             section.style.display = "block";
+                        } else if (status === "completed" && sectionTitle.includes("완료된 예약")) {
+                            section.style.display = "block";
+                        } else if (status === "canceled" && sectionTitle.includes("취소된 예약")) {
+                            section.style.display = "block";
                         } else {
                             section.style.display = "none";
                         }
@@ -351,6 +357,8 @@
                     scheduled: { title: "이용 대기중", color: "blue", icon: "calendar-check", items: [] },
                     in_use: { title: "이용 중", color: "yellow", icon: "car", items: [] },
                     overdue: { title: "연체 중", color: "orange", icon: "exclamation-triangle", items: [] },
+                    completed: { title: "완료된 예약", color: "green", icon: "check-circle", items: [] },
+                    canceled: { title: "취소된 예약", color: "red", icon: "times-circle", items: [] },
                 };
 
                 reservations.forEach((reservation) => {
@@ -394,6 +402,8 @@
                     scheduled: "bg-blue-100 text-blue-600",
                     in_use: "bg-yellow-100 text-yellow-600",
                     overdue: "bg-orange-100 text-orange-600",
+                    completed: "bg-green-100 text-green-600",
+                    canceled: "bg-red-100 text-red-600",
                 };
 
                 const actions = {
@@ -402,13 +412,14 @@
                         <button onclick="acceptReservation('${reservation.reservation_id}')" class="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">수락</button>
                     `,
                     scheduled: `
-                        <button onclick="handleCancelRequest('${reservation.reservation_id}')" class="px-3 py-1 bg-red-500 text-white text-sm rounded hover:bg-red-600">취소 요청</button>
                     `,
                     in_use: `
-                        <button onclick="confirmReturn('${reservation.reservation_id}')" class="px-3 py-1 bg-green-500 text-white text-sm rounded hover:bg-green-600">반납 확인</button>
                     `,
                     overdue: `
-                        <button onclick="handleOverdue('${reservation.reservation_id}')" class="px-3 py-1 bg-red-500 text-white text-sm rounded hover:bg-red-600">연체 처리</button>
+                    `,
+                    completed: `
+                    `,
+                    canceled: `
                     `,
                 };
 
@@ -490,6 +501,8 @@
                     scheduled: "이용 대기중",
                     in_use: "이용 중",
                     overdue: "연체 중",
+                    completed: "이용 완료",
+                    canceled: "예약 취소",
                 };
                 return statusMap[status] || status;
             }
