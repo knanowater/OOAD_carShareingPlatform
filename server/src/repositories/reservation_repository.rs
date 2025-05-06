@@ -3,7 +3,7 @@ use crate::utils::generate_reservation_id;
 use chrono::{Local, Utc};
 use rocket::http::Status;
 use rocket::serde::json::Json;
-use sqlx::{Acquire, MySqlPool};
+use sqlx::{Acquire, MySqlPool, Row};
 
 pub struct ReservationRepository<'a> {
     pub pool: &'a MySqlPool,
@@ -426,11 +426,12 @@ impl<'a> ReservationRepository<'a> {
         let select_query = format!(
             r#"
             SELECT r.reservation_id, c.image_url AS car_image_url, c.manufacturer AS car_manufacturer,
-                c.name AS car_model, r.rental_date, r.return_date,
+                c.name AS car_model, c.year AS car_year, r.rental_date, r.return_date,
                 DATEDIFF(r.return_date, r.rental_date) AS rental_period_days,
                 COALESCE(c.location, '미정') AS pickup_location,
                 COALESCE(r.total_price, 0) AS total_price,
-                r.reservation_status
+                r.reservation_status,
+                '' AS user_name
             FROM reservation r
             JOIN cars c ON r.car_id = c.id
             {}
@@ -607,5 +608,83 @@ impl<'a> ReservationRepository<'a> {
         reserved_days.dedup();
 
         Ok(Json(ReservationCalendar { reserved_days }))
+    }
+
+    pub async fn get_host_reservations(
+        &self,
+        host_id: i32,
+        status: Option<String>,
+    ) -> Result<Json<ReservationsResponse>, Status> {
+        let mut conn = self.pool.acquire().await.map_err(|e| {
+            eprintln!("[get_host_reservations] DB 연결 실패: {}", e);
+            Status::InternalServerError
+        })?;
+
+        let mut query = String::from(
+            "SELECT r.*, c.name as car_name, c.year as car_year, c.manufacturer, 
+                    JSON_UNQUOTE(JSON_EXTRACT(c.image_url, '$[0]')) as car_image_url, c.location,
+                    u.name as user_name
+             FROM reservation r
+             JOIN cars c ON r.car_id = c.id
+             JOIN users u ON r.user_id = u.id
+             WHERE c.owner = ?",
+        );
+
+        let mut params: Vec<String> = vec![host_id.to_string()];
+
+        if let Some(s) = status {
+            if s != "all" {
+                query.push_str(" AND r.reservation_status = ?");
+                params.push(s);
+            }
+        }
+
+        query.push_str(" ORDER BY r.reservation_timestamp DESC");
+
+        let mut sql_query = sqlx::query(&query);
+        for param in params {
+            sql_query = sql_query.bind(param);
+        }
+
+        let rows = sql_query.fetch_all(&mut *conn).await.map_err(|e| {
+            eprintln!("[get_host_reservations] 쿼리 실행 실패: {}", e);
+            eprintln!("[get_host_reservations] 쿼리: {}", query);
+            Status::InternalServerError
+        })?;
+
+        let mut reservations = Vec::new();
+        for row in rows {
+            let image_url_blob: Option<Vec<u8>> = row.get("car_image_url");
+            let image_url = match image_url_blob {
+                Some(blob) => String::from_utf8(blob).unwrap_or_else(|_| "".to_string()),
+                None => "".to_string(),
+            };
+
+            let rental_date: chrono::NaiveDateTime = row.get("rental_date");
+            let return_date: chrono::NaiveDateTime = row.get("return_date");
+            let rental_period_days = (return_date.date() - rental_date.date()).num_days() as i32;
+
+            let details = ReservationDetails {
+                reservation_id: row.get("reservation_id"),
+                user_name: row.get("user_name"),
+                car_image_url: vec![image_url],
+                car_manufacturer: row.get("manufacturer"),
+                car_model: row.get("car_name"),
+                car_year: row.get("car_year"),
+                rental_date,
+                return_date,
+                rental_period_days,
+                pickup_location: row.get("location"),
+                total_price: row.get::<f64, _>("total_price"),
+                reservation_status: row.get("reservation_status"),
+            };
+
+            reservations.push(details);
+        }
+
+        Ok(Json(ReservationsResponse {
+            reservations,
+            total_pages: 1,
+        }))
     }
 }

@@ -74,3 +74,8 @@ pub async fn host_add_car_page() -> Option<NamedFile> {
 pub async fn host_management_page() -> Option<NamedFile> {
     serve_html("../client/mypage/host/management.html").await
 }
+
+#[get("/mypage/host/reservations")]
+pub async fn host_reservations_page() -> Option<NamedFile> {
+    serve_html("../client/mypage/host/reservations.html").await
+}

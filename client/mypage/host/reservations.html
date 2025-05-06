@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="ko">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>DriveShare - 내 차량 예약 현황</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script src="/scripts/script.js"></script>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+        <style>
+            .profile-gradient {
+                background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            }
+            .card-hover:hover {
+                transform: translateY(-3px);
+                box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            }
+            .active-tab {
+                border-bottom: 3px solid #3b82f6;
+                color: #3b82f6;
+                font-weight: 600;
+            }
+            .reservation-card:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            }
+            .status-badge {
+                font-size: 0.75rem;
+                padding: 0.25rem 0.5rem;
+                border-radius: 9999px;
+            }
+            .tab-content {
+                display: none;
+            }
+            .tab-content.active {
+                display: block;
+            }
+            .status-filter {
+                transition: all 0.3s ease;
+            }
+            .status-filter.active {
+                background-color: #3b82f6;
+                color: white;
+            }
+        </style>
+    </head>
+    <body class="font-sans antialiased text-gray-800 bg-gray-50">
+        <!-- 헤더 영역 -->
+        <header class="bg-white shadow-sm sticky top-0 z-50">
+            <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+                <div class="flex items-center" onclick="location.href='/'" style="cursor: pointer">
+                    <i class="fas fa-car text-blue-600 text-3xl mr-2"></i>
+                    <span class="text-2xl font-bold text-blue-600">DriveShare</span>
+                </div>
+                <nav class="hidden md:flex space-x-8" id="header-menu">
+                    <a href="/" class="text-gray-600 hover:text-blue-600">홈</a>
+                    <a href="/list" class="text-gray-600 hover:text-blue-600">차량 찾기</a>
+                    <a href="#" class="text-gray-600 hover:text-blue-600">이용 방법</a>
+                    <a href="#" class="text-gray-600 hover:text-blue-600">고객센터</a>
+                    <a href="/mypage" class="text-blue-600 font-medium" id="header-mypage">마이페이지</a>
+                </nav>
+                <div class="flex items-center space-x-4">
+                    <button class="px-4 py-2 rounded-full bg-blue-600 text-white hover:bg-blue-700 transition" onclick="location.href='/login'">로그인 / 회원가입</button>
+                    <button class="md:hidden text-gray-600">
+                        <i class="fas fa-bars text-xl"></i>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- 프로필 섹션 -->
+        <section class="profile-gradient text-white py-8 md:py-12">
+            <div class="container mx-auto px-4">
+                <div class="flex flex-col md:flex-row items-center justify-between">
+                    <div class="text-center md:text-left">
+                        <h1 class="text-2xl md:text-3xl font-bold mb-2">내 차량 예약 현황</h1>
+                        <p class="text-blue-100">내 차량에 대한 예약 요청을 확인하고 관리하세요</p>
+                    </div>
+                    <div class="mt-4 md:mt-0">
+                        <button class="px-4 py-2 bg-white text-blue-600 rounded-full hover:bg-blue-50 transition flex items-center" onclick="location.href='/mypage/host/management'">
+                            <i class="fas fa-car mr-2"></i>
+                            내 차량 관리
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 메인 컨텐츠 영역 -->
+        <main class="container mx-auto px-4 py-8">
+            <div class="flex flex-col lg:flex-row gap-8">
+                <!-- 사이드바 -->
+                <aside class="w-full lg:w-1/4">
+                    <div class="bg-white rounded-xl shadow-md p-6 mb-6">
+                        <h3 class="font-bold text-lg mb-4">내 정보</h3>
+                        <ul class="space-y-3">
+                            <li class="flex items-center text-gray-700">
+                                <i class="fas fa-user-circle text-blue-500 mr-3 w-5 text-center"></i>
+                                <span>개인정보 관리</span>
+                            </li>
+                            <li class="flex items-center text-gray-700">
+                                <i class="fas fa-id-card text-blue-500 mr-3 w-5 text-center"></i>
+                                <span>운전면허 정보</span>
+                            </li>
+                            <li class="flex items-center text-gray-700">
+                                <i class="fas fa-credit-card text-blue-500 mr-3 w-5 text-center"></i>
+                                <span>결제 수단 관리</span>
+                            </li>
+                            <li class="flex items-center text-gray-700">
+                                <i class="fas fa-lock text-blue-500 mr-3 w-5 text-center"></i>
+                                <span>비밀번호 변경</span>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="bg-white rounded-xl shadow-md p-6 mb-6">
+                        <h3 class="font-bold text-lg mb-4">호스트 메뉴</h3>
+                        <ul class="space-y-3">
+                            <li class="flex items-center text-gray-700 cursor-pointer" onclick="location.href='/mypage/host/add_car'">
+                                <i class="fas fa-car text-blue-500 mr-3 w-5 text-center"></i>
+                                <span>내 차량 등록하기</span>
+                            </li>
+                            <li class="flex items-center text-gray-700 cursor-pointer" onclick="location.href='/mypage/host/management'">
+                                <i class="fas fa-list-alt text-blue-500 mr-3 w-5 text-center"></i>
+                                <span>내 차량 관리</span>
+                            </li>
+                            <li class="flex items-center text-blue-600 font-medium cursor-pointer">
+                                <i class="fas fa-calendar-check text-blue-500 mr-3 w-5 text-center"></i>
+                                <span>예약 현황</span>
+                            </li>
+                            <li class="flex items-center text-gray-700 cursor-pointer">
+                                <i class="fas fa-chart-line text-blue-500 mr-3 w-5 text-center"></i>
+                                <span>수익 현황</span>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="bg-white rounded-xl shadow-md p-6">
+                        <h3 class="font-bold text-lg mb-4">고객 지원</h3>
+                        <ul class="space-y-3">
+                            <li class="flex items-center text-gray-700">
+                                <i class="fas fa-question-circle text-blue-500 mr-3 w-5 text-center"></i>
+                                <span>도움말 센터</span>
+                            </li>
+                            <li class="flex items-center text-gray-700">
+                                <i class="fas fa-headset text-blue-500 mr-3 w-5 text-center"></i>
+                                <span>1:1 문의</span>
+                            </li>
+                            <li class="flex items-center text-gray-700">
+                                <i class="fas fa-exclamation-triangle text-blue-500 mr-3 w-5 text-center"></i>
+                                <span>신고하기</span>
+                            </li>
+                        </ul>
+                    </div>
+                </aside>
+
+                <!-- 메인 컨텐츠 -->
+                <div class="w-full lg:w-3/4">
+                    <!-- 상태 필터 탭 -->
+                    <div class="bg-white rounded-xl shadow-md p-6 mb-6">
+                        <div class="flex flex-wrap gap-2">
+                            <button class="status-filter px-4 py-2 rounded-full bg-blue-100 text-blue-600 active" data-status="all">전체 예약</button>
+                            <button class="status-filter px-4 py-2 rounded-full bg-gray-100 text-gray-600" data-status="pending"><i class="fas fa-clock mr-1"></i> 호스트 수락 대기중</button>
+                            <button class="status-filter px-4 py-2 rounded-full bg-blue-100 text-blue-600" data-status="scheduled"><i class="fas fa-calendar-check mr-1"></i> 이용 대기중</button>
+                            <button class="status-filter px-4 py-2 rounded-full bg-yellow-100 text-yellow-600" data-status="in_use"><i class="fas fa-car mr-1"></i> 이용 중</button>
+                            <button class="status-filter px-4 py-2 rounded-full bg-orange-100 text-orange-600" data-status="overdue"><i class="fas fa-exclamation-triangle mr-1"></i> 연체 중</button>
+                        </div>
+                    </div>
+
+                    <!-- 예약 현황 카드 리스트 -->
+                    <div class="space-y-4"></div>
+                </div>
+            </div>
+        </main>
+
+        <!-- 푸터 영역 -->
+        <footer class="bg-gray-900 text-white py-12">
+            <div class="container mx-auto px-4">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                    <div>
+                        <div class="flex items-center mb-4">
+                            <i class="fas fa-car text-blue-400 text-2xl mr-2"></i>
+                            <span class="text-xl font-bold">DriveShare</span>
+                        </div>
+                        <p class="text-gray-400 mb-4">국내 최고의 카셰어링 플랫폼</p>
+                        <div class="flex space-x-4">
+                            <a href="#" class="text-gray-400 hover:text-white"><i class="fab fa-facebook-f"></i></a>
+                            <a href="#" class="text-gray-400 hover:text-white"><i class="fab fa-instagram"></i></a>
+                            <a href="#" class="text-gray-400 hover:text-white"><i class="fab fa-twitter"></i></a>
+                            <a href="#" class="text-gray-400 hover:text-white"><i class="fab fa-youtube"></i></a>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h3 class="font-bold text-lg mb-4">이용안내</h3>
+                        <ul class="space-y-2">
+                            <li><a href="#" class="text-gray-400 hover:text-white">이용 방법</a></li>
+                            <li><a href="#" class="text-gray-400 hover:text-white">요금 안내</a></li>
+                            <li><a href="#" class="text-gray-400 hover:text-white">보험 안내</a></li>
+                            <li><a href="#" class="text-gray-400 hover:text-white">자주 묻는 질문</a></li>
+                        </ul>
+                    </div>
+
+                    <div>
+                        <h3 class="font-bold text-lg mb-4">호스트 안내</h3>
+                        <ul class="space-y-2">
+                            <li><a href="#" class="text-gray-400 hover:text-white">호스트 가이드</a></li>
+                            <li><a href="#" class="text-gray-400 hover:text-white">호스트 등록하기</a></li>
+                            <li><a href="#" class="text-gray-400 hover:text-white">수익 계산기</a></li>
+                            <li><a href="#" class="text-gray-400 hover:text-white">호스트 지원</a></li>
+                        </ul>
+                    </div>
+
+                    <div>
+                        <h3 class="font-bold text-lg mb-4">고객센터</h3>
+                        <ul class="space-y-2">
+                            <li class="text-gray-400">평일 09:00 ~ 18:00</li>
+                            <li class="text-gray-400">(점심시간 12:00 ~ 13:00)</li>
+                            <li class="mt-4"><a href="tel:1670-1234" class="text-blue-400 hover:text-blue-300">1670-1234</a></li>
+                            <li><a href="mailto:help@driveshare.co.kr" class="text-blue-400 hover:text-blue-300">help@driveshare.co.kr</a></li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="border-t border-gray-800 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center">
+                    <div class="text-gray-500 text-sm mb-4 md:mb-0">© 2023 DriveShare Inc. All rights reserved.</div>
+                    <div class="flex space-x-6">
+                        <a href="#" class="text-gray-500 hover:text-white text-sm">이용약관</a>
+                        <a href="#" class="text-gray-500 hover:text-white text-sm">개인정보처리방침</a>
+                        <a href="#" class="text-gray-500 hover:text-white text-sm">위치기반서비스 이용약관</a>
+                    </div>
+                </div>
+            </div>
+        </footer>
+
+        <script>
+            // 상태 필터 탭 기능
+            document.addEventListener("DOMContentLoaded", function () {
+                const statusFilters = document.querySelectorAll(".status-filter");
+                const reservationSections = document.querySelectorAll(".bg-white.rounded-xl.shadow-md.overflow-hidden");
+
+                // 초기 상태 설정 (전체 보기)
+                showReservations("all");
+
+                statusFilters.forEach((filter) => {
+                    filter.addEventListener("click", function () {
+                        // 모든 필터에서 active 클래스만 제거
+                        statusFilters.forEach((f) => {
+                            f.classList.remove("active");
+                        });
+
+                        // 클릭한 필터에 active 클래스 추가
+                        this.classList.add("active");
+
+                        // 선택된 상태의 예약만 보여주기
+                        const selectedStatus = this.getAttribute("data-status");
+                        showReservations(selectedStatus);
+                    });
+                });
+
+                // 예약 상태에 따라 보여주기/숨기기 함수
+                function showReservations(status) {
+                    reservationSections.forEach((section) => {
+                        const sectionTitle = section.querySelector("h3").textContent.trim().toLowerCase();
+
+                        if (status === "all") {
+                            section.style.display = "block";
+                        } else if (status === "pending" && sectionTitle.includes("호스트 수락 대기중")) {
+                            section.style.display = "block";
+                        } else if (status === "scheduled" && sectionTitle.includes("이용 대기중")) {
+                            section.style.display = "block";
+                        } else if (status === "in_use" && sectionTitle.includes("이용 중")) {
+                            section.style.display = "block";
+                        } else if (status === "overdue" && sectionTitle.includes("연체 중")) {
+                            section.style.display = "block";
+                        } else {
+                            section.style.display = "none";
+                        }
+                    });
+                }
+
+                // 예약 수락/거절 기능
+                document.querySelectorAll('[data-action="accept"]').forEach((btn) => {
+                    btn.addEventListener("click", function () {
+                        const reservationId = this.getAttribute("data-id");
+                        if (confirm("정말 이 예약을 수락하시겠습니까?")) {
+                            alert("예약이 수락되었습니다.");
+                            // 여기에 API 호출 로직 추가
+                        }
+                    });
+                });
+
+                document.querySelectorAll('[data-action="reject"]').forEach((btn) => {
+                    btn.addEventListener("click", function () {
+                        const reservationId = this.getAttribute("data-id");
+                        if (confirm("정말 이 예약을 거절하시겠습니까?")) {
+                            alert("예약이 거절되었습니다.");
+                            // 여기에 API 호출 로직 추가
+                        }
+                    });
+                });
+            });
+
+            let currentStatus = "all";
+
+            // 페이지 로드 시 예약 데이터 가져오기
+            document.addEventListener("DOMContentLoaded", async function () {
+                await loadReservations(currentStatus);
+                setupFilterHandlers();
+            });
+
+            // 예약 데이터 로드 함수
+            async function loadReservations(status) {
+                const token = localStorage.getItem("token");
+                if (!token) {
+                    window.location.href = "/login";
+                    return;
+                }
+
+                try {
+                    const params = new URLSearchParams();
+                    if (status !== "all") {
+                        params.append("status", status);
+                    }
+                    const response = await fetch(`/api/host/reservations?${params.toString()}`, {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
+                    });
+
+                    if (!response.ok) {
+                        throw new Error("예약 데이터 로드 실패");
+                    }
+
+                    const data = await response.json();
+                    renderReservations(data.reservations);
+                } catch (error) {
+                    console.error("예약 데이터 로드 중 오류:", error);
+                    alert("예약 데이터를 불러오는데 실패했습니다.");
+                }
+            }
+
+            // 예약 데이터 렌더링 함수
+            function renderReservations(reservations) {
+                const mainContent = document.querySelector(".space-y-4");
+                mainContent.innerHTML = ""; // 기존 내용 초기화
+
+                // 상태별로 예약 그룹화
+                const groupedReservations = {
+                    pending: { title: "호스트 수락 대기중", color: "gray", icon: "clock", items: [] },
+                    scheduled: { title: "이용 대기중", color: "blue", icon: "calendar-check", items: [] },
+                    in_use: { title: "이용 중", color: "yellow", icon: "car", items: [] },
+                    overdue: { title: "연체 중", color: "orange", icon: "exclamation-triangle", items: [] },
+                };
+
+                reservations.forEach((reservation) => {
+                    if (groupedReservations[reservation.reservation_status]) {
+                        groupedReservations[reservation.reservation_status].items.push(reservation);
+                    }
+                });
+
+                // 각 상태별 섹션 렌더링
+                Object.entries(groupedReservations).forEach(([status, group]) => {
+                    if ((currentStatus === "all" || currentStatus === status) && group.items.length > 0) {
+                        const section = createReservationSection(group.title, group.color, group.icon, group.items);
+                        mainContent.appendChild(section);
+                    }
+                });
+            }
+
+            // 예약 섹션 생성 함수
+            function createReservationSection(title, color, icon, items) {
+                const section = document.createElement("div");
+                section.className = "bg-white rounded-xl shadow-md overflow-hidden";
+                section.innerHTML = `
+                    <div class="border-b border-gray-200 px-6 py-4 flex justify-between items-center">
+                        <h3 class="font-bold text-lg flex items-center">
+                            <span class="w-3 h-3 rounded-full bg-${color}-400 mr-2"></span>
+                            ${title}
+                        </h3>
+                        <span class="text-sm text-gray-500">${items.length}건</span>
+                    </div>
+                    <div class="divide-y divide-gray-100">
+                        ${items.map((item) => createReservationCard(item)).join("")}
+                    </div>
+                `;
+                return section;
+            }
+
+            // 예약 카드 생성 함수
+            function createReservationCard(reservation) {
+                const statusClass = {
+                    pending: "bg-gray-100 text-gray-600",
+                    scheduled: "bg-blue-100 text-blue-600",
+                    in_use: "bg-yellow-100 text-yellow-600",
+                    overdue: "bg-orange-100 text-orange-600",
+                };
+
+                const actions = {
+                    pending: `
+                        <button onclick="rejectReservation('${reservation.reservation_id}')" class="px-3 py-1 bg-red-500 text-white text-sm rounded hover:bg-red-600">거절</button>
+                        <button onclick="acceptReservation('${reservation.reservation_id}')" class="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">수락</button>
+                    `,
+                    scheduled: `
+                        <button onclick="handleCancelRequest('${reservation.reservation_id}')" class="px-3 py-1 bg-red-500 text-white text-sm rounded hover:bg-red-600">취소 요청</button>
+                    `,
+                    in_use: `
+                        <button onclick="confirmReturn('${reservation.reservation_id}')" class="px-3 py-1 bg-green-500 text-white text-sm rounded hover:bg-green-600">반납 확인</button>
+                    `,
+                    overdue: `
+                        <button onclick="handleOverdue('${reservation.reservation_id}')" class="px-3 py-1 bg-red-500 text-white text-sm rounded hover:bg-red-600">연체 처리</button>
+                    `,
+                };
+
+                console.log(reservation);
+
+                return `
+                    <div class="p-6 hover:bg-gray-50 transition">
+                        <div class="flex flex-col md:flex-row md:items-center">
+                            <img src="/${reservation.car_image_url[0] || "https://via.placeholder.com/150"}" 
+                                 alt="차량 이미지" 
+                                 class="w-full md:w-32 h-24 object-cover rounded-lg mb-3 md:mb-0 md:mr-6" />
+                            <div class="flex-1">
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <h3 class="font-bold text-lg">${reservation.car_model}</h3>
+                                        <p class="text-gray-500 text-sm">${reservation.car_year}년식</p>
+                                    </div>
+                                    <span class="${statusClass[reservation.status]} status-badge">${getStatusText(reservation.reservation_status)}</span>
+                                </div>
+                                <div class="mt-2 text-sm">
+                                    <p class="text-gray-600"><i class="fas fa-user mr-2 text-blue-500"></i>${reservation.user_name}</p>
+                                    <p class="text-gray-600"><i class="fas fa-calendar-alt mr-2 text-blue-500"></i>${formatDate(reservation.rental_date)} ~ ${formatDate(reservation.return_date)}</p>
+                                    ${
+                                        reservation.status === "overdue"
+                                            ? `<p class="text-orange-500"><i class="fas fa-exclamation-circle mr-2"></i>추가 연체료 ${formatPrice(reservation.overdue_fee)}원 발생</p>`
+                                            : ""
+                                    }
+                                </div>
+                            </div>
+                            <div class="mt-3 md:mt-0 md:ml-4">
+                                <p class="font-bold text-lg text-right">${formatPrice(reservation.total_price)}원</p>
+                                <div class="flex space-x-2 mt-3 justify-end">
+                                    ${actions[reservation.reservation_status]}
+                                    <button onclick="showReservationDetail('${
+                                        reservation.reservation_id
+                                    }')" class="px-3 py-1 bg-gray-200 text-gray-700 text-sm rounded hover:bg-gray-300">상세 보기</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // 필터 핸들러 설정
+            function setupFilterHandlers() {
+                const statusFilters = document.querySelectorAll(".status-filter");
+
+                statusFilters.forEach((filter) => {
+                    filter.addEventListener("click", async function () {
+                        statusFilters.forEach((f) => {
+                            f.classList.remove("active");
+                        });
+
+                        this.classList.add("active");
+                        currentStatus = this.getAttribute("data-status");
+                        await loadReservations(currentStatus);
+                    });
+                });
+            }
+
+            // 유틸리티 함수들
+            function formatDate(dateStr) {
+                const date = new Date(dateStr);
+                return date.toLocaleDateString("ko-KR", {
+                    year: "numeric",
+                    month: "2-digit",
+                    day: "2-digit",
+                });
+            }
+
+            function formatPrice(price) {
+                return price.toLocaleString();
+            }
+
+            function getStatusText(status) {
+                const statusMap = {
+                    pending: "호스트 수락 대기중",
+                    scheduled: "이용 대기중",
+                    in_use: "이용 중",
+                    overdue: "연체 중",
+                };
+                return statusMap[status] || status;
+            }
+
+            // 액션 핸들러 함수들
+            async function acceptReservation(reservationId) {
+                if (confirm("예약을 수락하시겠습니까?")) {
+                    try {
+                        const response = await fetch(`/api/host/reservations/${reservationId}/accept`, {
+                            method: "POST",
+                            headers: {
+                                Authorization: `Bearer ${localStorage.getItem("token")}`,
+                            },
+                        });
+
+                        if (response.ok) {
+                            alert("예약이 수락되었습니다.");
+                            await loadReservations(currentStatus);
+                        } else {
+                            throw new Error("예약 수락 실패");
+                        }
+                    } catch (error) {
+                        console.error("예약 수락 중 오류:", error);
+                        alert("예약 수락에 실패했습니다.");
+                    }
+                }
+            }
+
+            // 나머지 액션 핸들러들도 비슷한 패턴으로 구현
+            async function rejectReservation(reservationId) {
+                /* ... */
+            }
+            async function handleCancelRequest(reservationId) {
+                /* ... */
+            }
+            async function confirmReturn(reservationId) {
+                /* ... */
+            }
+            async function handleOverdue(reservationId) {
+                /* ... */
+            }
+            async function showReservationDetail(reservationId) {
+                /* ... */
+            }
+        </script>
+    </body>
+</html>

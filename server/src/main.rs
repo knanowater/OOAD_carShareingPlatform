@@ -63,6 +63,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     routes::pages::car_detail_page,
                     routes::pages::host_add_car_page,
                     routes::pages::host_management_page,
+                    routes::pages::host_reservations_page,
                     // API routes from various modules
                     routes::cars::api_get_cars,
                     routes::cars::api_get_car_by_id,
@@ -77,6 +78,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     routes::reservations::api_get_reservation_calendar,
                     routes::reservations::cancel_reservation_due_to_payment_failed,
                     routes::reservations::api_overdue_fee_info,
+                    routes::reservations::api_get_host_reservations,
                     routes::users::api_mypage,
                     // Auth routes (from auth module)
                     api_signup,

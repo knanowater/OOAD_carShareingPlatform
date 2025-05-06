@@ -141,3 +141,18 @@ pub async fn api_get_reservation_calendar(
     repo.get_reservation_calendar(car_id, default_rental_date, default_return_date)
         .await
 }
+
+#[get("/api/host/reservations?<status>")]
+pub async fn api_get_host_reservations(
+    pool: &State<MySqlPool>,
+    auth_token: AuthToken,
+    status: Option<String>,
+) -> Result<Json<ReservationsResponse>, Status> {
+    let host_id = auth_token
+        .0
+        .sub
+        .parse::<i32>()
+        .map_err(|_| Status::Unauthorized)?;
+    let repo = ReservationRepository::new(pool);
+    repo.get_host_reservations(host_id, status).await
+}
