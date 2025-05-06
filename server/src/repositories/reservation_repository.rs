@@ -431,7 +431,8 @@ impl<'a> ReservationRepository<'a> {
                 COALESCE(c.location, '미정') AS pickup_location,
                 COALESCE(r.total_price, 0) AS total_price,
                 r.reservation_status,
-                '' AS user_name
+                '' AS user_name,
+                '' AS user_email
             FROM reservation r
             JOIN cars c ON r.car_id = c.id
             {}
@@ -623,7 +624,8 @@ impl<'a> ReservationRepository<'a> {
         let mut query = String::from(
             "SELECT r.*, c.name as car_name, c.year as car_year, c.manufacturer, 
                     JSON_UNQUOTE(JSON_EXTRACT(c.image_url, '$[0]')) as car_image_url, c.location,
-                    u.name as user_name
+                    u.name as user_name,
+                    u.email as user_email
              FROM reservation r
              JOIN cars c ON r.car_id = c.id
              JOIN users u ON r.user_id = u.id
@@ -667,6 +669,7 @@ impl<'a> ReservationRepository<'a> {
             let details = ReservationDetails {
                 reservation_id: row.get("reservation_id"),
                 user_name: row.get("user_name"),
+                user_email: row.get("user_email"),
                 car_image_url: vec![image_url],
                 car_manufacturer: row.get("manufacturer"),
                 car_model: row.get("car_name"),

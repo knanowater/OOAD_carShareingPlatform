@@ -18,6 +18,7 @@ pub struct CreateReservationRequest {
 pub struct ReservationDetails {
     pub reservation_id: String,
     pub user_name: String,
+    pub user_email: String,
     #[sqlx(json)]
     pub car_image_url: Vec<String>,
     pub car_manufacturer: String,

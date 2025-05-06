@@ -12,7 +12,7 @@ async fn update_overdue_reservations(pool: &MySqlPool) -> Result<(), sqlx::Error
         "UPDATE reservation
         SET reservation_status = 'overdue'
         WHERE return_date < ?
-          AND reservation_status IN ('scheduled', 'in use')",
+          AND reservation_status IN ('scheduled', 'in_use')",
         now
     )
     .execute(&mut *conn)

@@ -423,14 +423,15 @@
                             <div class="flex-1">
                                 <div class="flex justify-between items-start">
                                     <div>
-                                        <h3 class="font-bold text-lg">${reservation.car_model}</h3>
+                                        <h3 class="font-bold text-lg">${reservation.car_manufacturer} ${reservation.car_model}</h3>
                                         <p class="text-gray-500 text-sm">${reservation.car_year}년식</p>
                                     </div>
-                                    <span class="${statusClass[reservation.status]} status-badge">${getStatusText(reservation.reservation_status)}</span>
+                                    <span class="${statusClass[reservation.reservation_status]} status-badge">${getStatusText(reservation.reservation_status)}</span>
                                 </div>
                                 <div class="mt-2 text-sm">
                                     <p class="text-gray-600"><i class="fas fa-user mr-2 text-blue-500"></i>${reservation.user_name}</p>
                                     <p class="text-gray-600"><i class="fas fa-calendar-alt mr-2 text-blue-500"></i>${formatDate(reservation.rental_date)} ~ ${formatDate(reservation.return_date)}</p>
+                                    <p class="text-gray-600"><a href="mailto:${reservation.user_email}"><i class="fas fa-envelope mr-2 text-blue-500"></i>${reservation.user_email}</a></p>
                                     ${
                                         reservation.status === "overdue"
                                             ? `<p class="text-orange-500"><i class="fas fa-exclamation-circle mr-2"></i>추가 연체료 ${formatPrice(reservation.overdue_fee)}원 발생</p>`
