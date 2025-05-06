@@ -266,6 +266,8 @@
                         return "연체 중";
                     case "canceled":
                         return "취소됨";
+                    case "rejected":
+                        return "거절됨";
                     default:
                         return status;
                 }
@@ -310,6 +312,8 @@
                         return "연체 중";
                     case "canceled":
                         return "취소됨";
+                    case "rejected":
+                        return "거절됨";
                     default:
                         return status;
                 }
@@ -328,6 +332,8 @@
                     case "overdue": // 연체 중
                         return "bg-orange-100 text-orange-700";
                     case "canceled": // 취소됨
+                        return "bg-red-100 text-red-700";
+                    case "rejected": // 거절됨
                         return "bg-red-100 text-red-700";
                     default:
                         return "bg-gray-100 text-gray-800";
