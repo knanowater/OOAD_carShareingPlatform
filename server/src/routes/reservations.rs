@@ -176,3 +176,23 @@ pub async fn api_accept_reservation(
         message: "예약이 수락되었습니다.".to_string(),
     }))
 }
+
+#[post("/api/host/reservations/<reservation_id>/reject")]
+pub async fn api_reject_reservation(
+    pool: &State<MySqlPool>,
+    auth_token: AuthToken,
+    reservation_id: String,
+) -> Result<Json<ReservationActionResponse>, (Status, String)> {
+    let host_id = auth_token
+        .0
+        .sub
+        .parse::<i32>()
+        .map_err(|e| (Status::Unauthorized, e.to_string()))?;
+    let repo = ReservationRepository::new(pool);
+    repo.reject_reservation(host_id, reservation_id)
+        .await
+        .map_err(|(status, message)| (status, message))?;
+    Ok(Json(ReservationActionResponse {
+        message: "예약이 거절되었습니다.".to_string(),
+    }))
+}

@@ -791,4 +791,80 @@ impl<'a> ReservationRepository<'a> {
             }
         }
     }
+
+    pub async fn reject_reservation(
+        &self,
+        host_id: i32,
+        reservation_id: String,
+    ) -> Result<Json<ReservationActionResponse>, (Status, String)> {
+        let mut conn = self
+            .pool
+            .acquire()
+            .await
+            .map_err(|e| (Status::InternalServerError, e.to_string()))?;
+
+        let mut tx = conn
+            .begin()
+            .await
+            .map_err(|e| (Status::InternalServerError, e.to_string()))?;
+
+        let reservation = sqlx::query!(
+            "SELECT car_id, reservation_status FROM reservation WHERE reservation_id = ?",
+            reservation_id
+        )
+        .fetch_optional(&mut *tx)
+        .await
+        .map_err(|e| (Status::InternalServerError, e.to_string()))?;
+
+        let car_owner = if let Some(reservation) = &reservation {
+            sqlx::query_scalar!("SELECT owner FROM cars WHERE id = ?", reservation.car_id)
+                .fetch_optional(&mut *tx)
+                .await
+                .map_err(|e| (Status::InternalServerError, e.to_string()))?
+        } else {
+            tx.rollback().await.ok();
+            return Err((Status::NotFound, "Reservation not found".to_string()));
+        };
+
+        match car_owner {
+            Some(owner) if owner != host_id => {
+                tx.rollback().await.ok();
+                return Err((Status::Forbidden, "Host does not own the car".to_string()));
+            }
+            None => {
+                tx.rollback().await.ok();
+                return Err((Status::NotFound, "Car not found".to_string()));
+            }
+            _ => {}
+        }
+
+        match reservation {
+            Some(reservation) => {
+                if reservation.reservation_status != "pending" {
+                    tx.rollback().await.ok();
+                    return Err((Status::BadRequest, "Reservation is not pending".to_string()));
+                }
+
+                sqlx::query!(
+                    "UPDATE reservation SET reservation_status = 'rejected' WHERE reservation_id = ?",
+                    reservation_id
+                )
+                .execute(&mut *tx)
+                .await
+                .map_err(|e| (Status::InternalServerError, e.to_string()))?;
+
+                tx.commit()
+                    .await
+                    .map_err(|e| (Status::InternalServerError, e.to_string()))?;
+
+                Ok(Json(ReservationActionResponse {
+                    message: "예약이 거절되었습니다.".to_string(),
+                }))
+            }
+            None => {
+                tx.rollback().await.ok();
+                Err((Status::NotFound, "Reservation not found".to_string()))
+            }
+        }
+    }
 }

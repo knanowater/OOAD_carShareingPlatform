@@ -520,7 +520,26 @@
 
             // 나머지 액션 핸들러들도 비슷한 패턴으로 구현
             async function rejectReservation(reservationId) {
-                /* ... */
+                if (confirm("예약을 거절하시겠습니까?")) {
+                    try {
+                        const response = await fetch(`/api/host/reservations/${reservationId}/reject`, {
+                            method: "POST",
+                            headers: {
+                                Authorization: `Bearer ${localStorage.getItem("token")}`,
+                            },
+                        });
+
+                        if (response.ok) {
+                            alert("예약이 거절되었습니다.");
+                            await loadReservations(currentStatus);
+                        } else {
+                            throw new Error("예약 거절 실패");
+                        }
+                    } catch (error) {
+                        console.error("예약 거절 중 오류:", error);
+                        alert("예약 거절에 실패했습니다.");
+                    }
+                }
             }
             async function handleCancelRequest(reservationId) {
                 /* ... */

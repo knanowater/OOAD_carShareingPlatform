@@ -80,6 +80,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     routes::reservations::api_overdue_fee_info,
                     routes::reservations::api_get_host_reservations,
                     routes::reservations::api_accept_reservation,
+                    routes::reservations::api_reject_reservation,
                     routes::users::api_mypage,
                     // Auth routes (from auth module)
                     api_signup,
