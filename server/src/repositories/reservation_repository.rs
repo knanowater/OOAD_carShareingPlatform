@@ -62,7 +62,8 @@ impl<'a> ReservationRepository<'a> {
         let reservation_id = generate_reservation_id();
         let now = Local::now().naive_local();
 
-        let insert_res = sqlx::query!(
+        // 예약 테이블 삽입
+        match sqlx::query!(
             r#"
             INSERT INTO reservation 
             (user_id, car_id, reservation_timestamp, rental_date, return_date, total_price, request, reservation_status, reservation_id)
@@ -78,9 +79,17 @@ impl<'a> ReservationRepository<'a> {
             reservation_id,
         )
         .execute(&mut *tx)
-        .await;
+        .await {
+            Ok(_) => {},
+            Err(e) => {
+                tx.rollback().await.ok();
+                eprintln!("예약 정보 저장 실패: {}", e);
+                return Err((Status::InternalServerError, format!("예약 정보 저장 실패: {}", e)));
+            }
+        }
 
-        let insert_log_res = sqlx::query!(
+        // 예약 로그 테이블 삽입
+        match sqlx::query!(
             r#"
             INSERT INTO reservation_log 
             (user_id, car_id, reservation_timestamp, rental_date, return_date, total_price, request, reservation_status, reservation_id)
@@ -96,20 +105,26 @@ impl<'a> ReservationRepository<'a> {
             reservation_id,
         )
         .execute(&mut *tx)
-        .await;
+        .await {
+            Ok(_) => {},
+            Err(e) => {
+                tx.rollback().await.ok();
+                eprintln!("예약 로그 저장 실패: {}", e);
+                return Err((Status::InternalServerError, format!("예약 로그 저장 실패: {}", e)));
+            }
+        }
 
-        if let Err(e) = insert_res {
-            tx.rollback().await.ok();
-            return Err((Status::InternalServerError, format!("예약 실패: {}", e)));
+        // 트랜잭션 커밋
+        match tx.commit().await {
+            Ok(_) => Ok(reservation_id),
+            Err(e) => {
+                eprintln!("트랜잭션 커밋 실패: {}", e);
+                Err((
+                    Status::InternalServerError,
+                    format!("트랜잭션 커밋 실패: {}", e),
+                ))
+            }
         }
-        if let Err(e) = insert_log_res {
-            tx.rollback().await.ok();
-            return Err((
-                Status::InternalServerError,
-                format!("로그 저장 실패: {}", e),
-            ));
-        }
-        Ok(reservation_id)
     }
     pub async fn cancel_due_to_payment_failure(
         &self,
@@ -433,7 +448,7 @@ impl<'a> ReservationRepository<'a> {
                 r.reservation_status,
                 '' AS user_name,
                 '' AS user_email
-            FROM reservation r
+            FROM reservation_log r
             JOIN cars c ON r.car_id = c.id
             {}
             ORDER BY r.id DESC
@@ -777,6 +792,14 @@ impl<'a> ReservationRepository<'a> {
                 .await
                 .map_err(|e| (Status::InternalServerError, e.to_string()))?;
 
+                sqlx::query!(
+                    "UPDATE reservation_log SET reservation_status = 'scheduled' WHERE reservation_id = ?",
+                    reservation_id
+                )
+                .execute(&mut *tx)
+                .await
+                .map_err(|e| (Status::InternalServerError, e.to_string()))?;
+
                 tx.commit()
                     .await
                     .map_err(|e| (Status::InternalServerError, e.to_string()))?;
@@ -847,6 +870,14 @@ impl<'a> ReservationRepository<'a> {
 
                 sqlx::query!(
                     "UPDATE reservation SET reservation_status = 'rejected' WHERE reservation_id = ?",
+                    reservation_id
+                )
+                .execute(&mut *tx)
+                .await
+                .map_err(|e| (Status::InternalServerError, e.to_string()))?;
+
+                sqlx::query!(
+                    "UPDATE reservation_log SET reservation_status = 'rejected' WHERE reservation_id = ?",
                     reservation_id
                 )
                 .execute(&mut *tx)
