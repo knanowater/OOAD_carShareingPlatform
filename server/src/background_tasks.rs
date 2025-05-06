@@ -8,19 +8,45 @@ async fn update_overdue_reservations(pool: &MySqlPool) -> Result<(), sqlx::Error
     let now = Utc::now().naive_utc();
     let mut conn = pool.acquire().await?;
 
-    let result = sqlx::query!(
-        "UPDATE reservation
-        SET reservation_status = 'overdue'
-        WHERE return_date < ?
-          AND reservation_status IN ('scheduled', 'in_use')",
+    // 먼저 업데이트가 필요한 예약 ID들을 조회
+    let overdue_reservations = sqlx::query!(
+        "SELECT reservation_id FROM reservation 
+        WHERE return_date < ? 
+        AND reservation_status IN ('scheduled', 'in_use')",
         now
     )
-    .execute(&mut *conn)
+    .fetch_all(&mut *conn)
     .await?;
+
+    // reservation 테이블 업데이트
+    for reservation in &overdue_reservations {
+        sqlx::query!(
+            "UPDATE reservation
+            SET reservation_status = 'overdue'
+            WHERE reservation_id = ?
+            AND reservation_status IN ('scheduled', 'in_use')",
+            reservation.reservation_id
+        )
+        .execute(&mut *conn)
+        .await?;
+    }
+
+    // reservation_log 테이블 업데이트
+    for reservation in &overdue_reservations {
+        sqlx::query!(
+            "UPDATE reservation_log
+            SET reservation_status = 'overdue'
+            WHERE reservation_id = ?
+            AND reservation_status IN ('scheduled', 'in_use')",
+            reservation.reservation_id
+        )
+        .execute(&mut *conn)
+        .await?;
+    }
 
     println!(
         "Updated {} overdue reservations at {}",
-        result.rows_affected(),
+        overdue_reservations.len(),
         now
     );
     Ok(())
