@@ -47,7 +47,7 @@ pub struct ReservationActionRequest {
 
 #[derive(Serialize)]
 #[serde(crate = "rocket::serde")]
-pub struct CancelApiResponse {
+pub struct ReservationActionResponse {
     pub message: String,
 }
 
@@ -59,7 +59,7 @@ pub struct ReturnApiResponse {
     pub overdue_fee: Option<i32>,
 }
 
-#[derive(Serialize, FromRow)] // DB에서 직접 읽어올 경우 FromRow 필요
+#[derive(Serialize, FromRow)]
 #[serde(crate = "rocket::serde")]
 pub struct OverdueFeeInfo {
     pub reservation_id: String,

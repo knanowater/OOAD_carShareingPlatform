@@ -84,7 +84,7 @@ pub async fn api_cancel_reservation(
     pool: &State<MySqlPool>,
     auth_token: AuthToken,
     cancel_request: Json<ReservationActionRequest>,
-) -> Result<Json<CancelApiResponse>, Status> {
+) -> Result<Json<ReservationActionResponse>, Status> {
     let user_id = auth_token
         .0
         .sub
@@ -155,4 +155,24 @@ pub async fn api_get_host_reservations(
         .map_err(|_| Status::Unauthorized)?;
     let repo = ReservationRepository::new(pool);
     repo.get_host_reservations(host_id, status).await
+}
+
+#[post("/api/host/reservations/<reservation_id>/accept")]
+pub async fn api_accept_reservation(
+    pool: &State<MySqlPool>,
+    auth_token: AuthToken,
+    reservation_id: String,
+) -> Result<Json<ReservationActionResponse>, (Status, String)> {
+    let host_id = auth_token
+        .0
+        .sub
+        .parse::<i32>()
+        .map_err(|e| (Status::Unauthorized, e.to_string()))?;
+    let repo = ReservationRepository::new(pool);
+    repo.accept_reservation(host_id, reservation_id)
+        .await
+        .map_err(|(status, message)| (status, message))?;
+    Ok(Json(ReservationActionResponse {
+        message: "예약이 수락되었습니다.".to_string(),
+    }))
 }
