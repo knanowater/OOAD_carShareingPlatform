@@ -159,13 +159,16 @@
                     <!-- 상태 필터 탭 -->
                     <div class="bg-white rounded-xl shadow-md p-6 mb-6">
                         <div class="flex flex-wrap gap-2">
-                            <button class="status-filter px-4 py-2 rounded-full bg-blue-100 text-blue-600 active" data-status="all">전체 예약</button>
+                            <button class="status-filter px-4 py-2 rounded-full bg-blue-100 text-blue-600 active" data-status="all">진행중인 예약</button>
                             <button class="status-filter px-4 py-2 rounded-full bg-gray-100 text-gray-600" data-status="pending"><i class="fas fa-clock mr-1"></i> 호스트 수락 대기중</button>
                             <button class="status-filter px-4 py-2 rounded-full bg-blue-100 text-blue-600" data-status="scheduled"><i class="fas fa-calendar-check mr-1"></i> 이용 대기중</button>
                             <button class="status-filter px-4 py-2 rounded-full bg-yellow-100 text-yellow-600" data-status="in_use"><i class="fas fa-car mr-1"></i> 이용 중</button>
                             <button class="status-filter px-4 py-2 rounded-full bg-orange-100 text-orange-600" data-status="overdue"><i class="fas fa-exclamation-triangle mr-1"></i> 연체 중</button>
+                        </div>
+                        <div class="flex flex-wrap gap-2 mt-2">
                             <button class="status-filter px-4 py-2 rounded-full bg-green-100 text-green-600" data-status="completed"><i class="fas fa-check-circle mr-1"></i> 완료된 예약</button>
                             <button class="status-filter px-4 py-2 rounded-full bg-red-100 text-red-600" data-status="canceled"><i class="fas fa-times-circle mr-1"></i> 취소된 예약</button>
+                            <button class="status-filter px-4 py-2 rounded-full bg-red-100 text-red-600" data-status="rejected"><i class="fas fa-times-circle mr-1"></i> 거절한 예약</button>
                         </div>
                     </div>
 
@@ -279,7 +282,9 @@
                             section.style.display = "block";
                         } else if (status === "canceled" && sectionTitle.includes("취소된 예약")) {
                             section.style.display = "block";
-                        } else {
+                        } else if (status === "rejected" && sectionTitle.includes("거절한 예약")) {
+                            section.style.display = "block";
+                        }  else {
                             section.style.display = "none";
                         }
                     });
@@ -359,6 +364,7 @@
                     overdue: { title: "연체 중", color: "orange", icon: "exclamation-triangle", items: [] },
                     completed: { title: "완료된 예약", color: "green", icon: "check-circle", items: [] },
                     canceled: { title: "취소된 예약", color: "red", icon: "times-circle", items: [] },
+                    rejected: { title: "거절한 예약", color: "red", icon: "times-circle", items: [] },
                 };
 
                 reservations.forEach((reservation) => {
@@ -404,6 +410,7 @@
                     overdue: "bg-orange-100 text-orange-600",
                     completed: "bg-green-100 text-green-600",
                     canceled: "bg-red-100 text-red-600",
+                    rejected: "bg-red-100 text-red-600",
                 };
 
                 const actions = {
@@ -420,6 +427,8 @@
                     completed: `
                     `,
                     canceled: `
+                    `,
+                    rejected: `
                     `,
                 };
 
@@ -503,6 +512,7 @@
                     overdue: "연체 중",
                     completed: "이용 완료",
                     canceled: "예약 취소",
+                    rejected: "거절한 예약",
                 };
                 return statusMap[status] || status;
             }

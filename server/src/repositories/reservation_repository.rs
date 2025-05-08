@@ -296,16 +296,26 @@ impl<'a> ReservationRepository<'a> {
             }
         }
 
-        sqlx::query!(
-            "UPDATE reservation SET reservation_status = ?, return_date_actual = ?, overdue_fee = ? WHERE reservation_id = ?",
-            if overdue_fee > 0 { "overdue" } else { "completed" },
-            now,
-            overdue_fee,
-            reservation_id
-        )
-        .execute(&mut *tx)
-        .await
-        .map_err(|_| Status::InternalServerError)?;
+        if overdue_fee > 0 {
+            sqlx::query!(
+                "UPDATE reservation SET reservation_status = ?, return_date_actual = ?, overdue_fee = ? WHERE reservation_id = ?",
+                "overdue",
+                now,
+                overdue_fee,
+                reservation_id
+            )
+            .execute(&mut *tx)
+            .await
+            .map_err(|_| Status::InternalServerError)?;
+        } else {
+            sqlx::query!(
+                "DELETE FROM reservation WHERE reservation_id = ?",
+                reservation_id
+            )
+            .execute(&mut *tx)
+            .await
+            .map_err(|_| Status::InternalServerError)?;
+        }
 
         sqlx::query!(
             "UPDATE cars SET status = 'Available' WHERE id = ?",
@@ -661,27 +671,44 @@ impl<'a> ReservationRepository<'a> {
             Status::InternalServerError
         })?;
 
-        let mut query = String::from(
-            "SELECT r.*, c.name as car_name, c.year as car_year, c.manufacturer, 
-                    JSON_UNQUOTE(JSON_EXTRACT(c.image_url, '$[0]')) as car_image_url, c.location,
-                    u.name as user_name,
-                    u.email as user_email
-             FROM reservation r
-             JOIN cars c ON r.car_id = c.id
-             JOIN users u ON r.user_id = u.id
-             WHERE c.owner = ?",
-        );
-
         let mut params: Vec<String> = vec![host_id.to_string()];
-
-        if let Some(s) = status {
-            if s != "all" {
-                query.push_str(" AND r.reservation_status = ?");
-                params.push(s);
+        let mut query = match status.as_deref() {
+            Some("completed") | Some("canceled") | Some("rejected") => {
+                params.push(status.unwrap());
+                String::from(
+                    "SELECT rl.*, c.name as car_name, c.year as car_year, c.manufacturer, 
+                            JSON_UNQUOTE(JSON_EXTRACT(c.image_url, '$[0]')) as car_image_url, c.location,
+                            u.name as user_name,
+                            u.email as user_email
+                     FROM reservation_log rl
+                     JOIN cars c ON rl.car_id = c.id
+                     JOIN users u ON rl.user_id = u.id
+                     WHERE c.owner = ? AND rl.reservation_status = ?"
+                )
             }
-        }
+            _ => {
+                let mut base_query = String::from(
+                    "SELECT r.*, c.name as car_name, c.year as car_year, c.manufacturer, 
+                            JSON_UNQUOTE(JSON_EXTRACT(c.image_url, '$[0]')) as car_image_url, c.location,
+                            u.name as user_name,
+                            u.email as user_email
+                     FROM reservation r
+                     JOIN cars c ON r.car_id = c.id
+                     JOIN users u ON r.user_id = u.id
+                     WHERE c.owner = ?"
+                );
 
-        query.push_str(" ORDER BY r.reservation_timestamp DESC");
+                if let Some(s) = status {
+                    if s != "all" {
+                        base_query.push_str(" AND r.reservation_status = ?");
+                        params.push(s);
+                    }
+                }
+                base_query
+            }
+        };
+
+        query.push_str(" ORDER BY reservation_timestamp DESC");
 
         let mut sql_query = sqlx::query(&query);
         for param in params {
@@ -894,7 +921,7 @@ impl<'a> ReservationRepository<'a> {
                 }
 
                 sqlx::query!(
-                    "UPDATE reservation SET reservation_status = 'rejected' WHERE reservation_id = ?",
+                    "DELETE FROM reservation WHERE reservation_id = ?",
                     reservation_id
                 )
                 .execute(&mut *tx)
