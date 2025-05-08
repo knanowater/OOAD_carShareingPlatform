@@ -161,7 +161,7 @@ pub async fn api_get_host_reservations(
 pub async fn api_accept_reservation(
     pool: &State<MySqlPool>,
     auth_token: AuthToken,
-    reservation_id: String,
+    reservation_id: &str,
 ) -> Result<Json<ReservationActionResponse>, (Status, String)> {
     let host_id = auth_token
         .0
@@ -169,7 +169,7 @@ pub async fn api_accept_reservation(
         .parse::<i32>()
         .map_err(|e| (Status::Unauthorized, e.to_string()))?;
     let repo = ReservationRepository::new(pool);
-    repo.accept_reservation(host_id, reservation_id)
+    repo.accept_reservation(host_id, reservation_id.to_string())
         .await
         .map_err(|(status, message)| (status, message))?;
     Ok(Json(ReservationActionResponse {
@@ -181,7 +181,7 @@ pub async fn api_accept_reservation(
 pub async fn api_reject_reservation(
     pool: &State<MySqlPool>,
     auth_token: AuthToken,
-    reservation_id: String,
+    reservation_id: &str,
 ) -> Result<Json<ReservationActionResponse>, (Status, String)> {
     let host_id = auth_token
         .0
@@ -189,7 +189,7 @@ pub async fn api_reject_reservation(
         .parse::<i32>()
         .map_err(|e| (Status::Unauthorized, e.to_string()))?;
     let repo = ReservationRepository::new(pool);
-    repo.reject_reservation(host_id, reservation_id)
+    repo.reject_reservation(host_id, reservation_id.to_string())
         .await
         .map_err(|(status, message)| (status, message))?;
     Ok(Json(ReservationActionResponse {
