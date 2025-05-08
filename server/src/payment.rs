@@ -177,6 +177,18 @@ pub mod reservation_service {
             eprintln!("reservation 테이블 업데이트 실패: {}", e);
             Status::InternalServerError
         })?;
+
+        sqlx::query!(
+            "UPDATE reservation_log SET reservation_status = 'completed' WHERE reservation_id = ?",
+            reservation_id
+        )
+        .execute(&mut *conn)
+        .await
+        .map_err(|e| {
+            eprintln!("reservation_log 테이블 업데이트 실패: {}", e);
+            Status::InternalServerError
+        })?;
+
         Ok(())
     }
 }
