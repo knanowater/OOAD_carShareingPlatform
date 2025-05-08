@@ -1,7 +1,6 @@
-use crate::models::car::{CarListResponse, CarQuery};
+use crate::models::car::{CarInfo, CarListResponse, CarQuery};
 use async_trait::async_trait;
 use rocket::fs::TempFile;
-use server::CarInfo;
 use sqlx::{Error, MySqlPool};
 
 #[async_trait]

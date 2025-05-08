@@ -11,7 +11,6 @@ mod models;
 mod payment;
 mod repositories;
 mod routes;
-mod utils;
 
 // 필요한 모듈 및 함수 임포트
 use dotenvy::dotenv;

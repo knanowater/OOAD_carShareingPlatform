@@ -1,12 +1,19 @@
+use crate::repositories::user_repository::{create_user, find_user_by_email, verify_password};
 use jsonwebtoken::{DecodingKey, Validation, decode};
 use jsonwebtoken::{EncodingKey, Header, encode};
 use rocket::http::Status;
 use rocket::request::{self, Outcome, Request};
 use rocket::serde::json::Json;
 use serde::{Deserialize, Serialize};
-use server::{ApiResponse, create_user, find_user_by_email, verify_password};
 use sqlx::MySqlPool;
 use std::env;
+
+#[derive(serde::Serialize)]
+pub struct ApiResponse {
+    pub status: String,
+    pub message: String,
+    pub data: Option<String>,
+}
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {

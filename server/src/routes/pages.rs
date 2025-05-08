@@ -1,6 +1,10 @@
-use crate::utils::serve_html;
 use rocket::fs::NamedFile;
-use rocket::get; // serve_html 함수 임포트
+use rocket::get;
+use std::path::Path;
+
+async fn serve_html(path: &str) -> Option<NamedFile> {
+    NamedFile::open(Path::new(path)).await.ok()
+}
 
 // 각 페이지 라우트 정의
 #[get("/")]

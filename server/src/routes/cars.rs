@@ -1,12 +1,11 @@
 use crate::auth::AuthToken;
-use crate::models::car::{CarForm, CarListResponse, CarQuery};
+use crate::models::car::{CarForm, CarInfo, CarListResponse, CarQuery};
 use crate::repositories::car_repository::{CarRepository, MySqlCarRepository};
 use rocket::State;
 use rocket::form::Form;
 use rocket::http::Status;
 use rocket::serde::json::{Json, json};
 use rocket::{get, post};
-use server::CarInfo;
 use sqlx::MySqlPool;
 
 #[post("/api/add_car", data = "<form>")]
