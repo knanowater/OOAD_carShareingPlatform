@@ -1,5 +1,5 @@
 use crate::models::reservation::*;
-use chrono::{Local, Utc};
+use chrono::{Datelike, Local, NaiveDate, Utc};
 use lazy_static::lazy_static;
 use rand::{RngCore, SeedableRng, rngs::StdRng};
 use rocket::http::Status;
@@ -87,6 +87,26 @@ impl<'a> ReservationRepository<'a> {
         let reservation_id = generate_reservation_id();
         let now = Local::now().naive_local();
 
+        let return_date = {
+            if let Ok(date) = chrono::NaiveDate::parse_from_str(&data.return_date, "%Y-%m-%d") {
+                format!("{} 23:59:59", date)
+            } else if let Ok(dt) =
+                chrono::NaiveDateTime::parse_from_str(&data.return_date, "%Y-%m-%dT%H:%M:%S%.fZ")
+            {
+                format!("{} 23:59:59", dt.date())
+            } else if let Ok(dt) =
+                chrono::NaiveDateTime::parse_from_str(&data.return_date, "%Y-%m-%d %H:%M:%S")
+            {
+                format!("{} 23:59:59", dt.date())
+            } else {
+                // fallback: 앞 10글자만 사용
+                format!(
+                    "{} 23:59:59",
+                    &data.return_date[..10.min(data.return_date.len())]
+                )
+            }
+        };
+
         // 예약 테이블 삽입
         match sqlx::query!(
             r#"
@@ -98,7 +118,7 @@ impl<'a> ReservationRepository<'a> {
             data.car_id,
             now,
             data.rental_date,
-            data.return_date,
+            return_date,
             data.total_price,
             data.request,
             reservation_id,
@@ -124,7 +144,7 @@ impl<'a> ReservationRepository<'a> {
             data.car_id,
             now,
             data.rental_date,
-            data.return_date,
+            return_date,
             data.total_price,
             data.request,
             reservation_id,
@@ -627,8 +647,19 @@ impl<'a> ReservationRepository<'a> {
             .await
             .map_err(|_| Status::InternalServerError)?;
 
-        let start_date = default_rental_date.0;
-        let end_date = default_return_date.0;
+        // 해당 월의 첫날과 마지막 날 계산
+        let date = default_rental_date.0;
+        let start_date = date.with_day(1).unwrap(); // 해당 월의 1일
+        let end_date = date
+            .with_day(
+                date.with_month(date.month() + 1)
+                    .unwrap_or(date)
+                    .with_day(1)
+                    .unwrap()
+                    .signed_duration_since(date.with_day(1).unwrap())
+                    .num_days() as u32,
+            )
+            .unwrap(); // 해당 월의 마지막 날
 
         let reservations = sqlx::query!(
             r#"
@@ -648,8 +679,7 @@ impl<'a> ReservationRepository<'a> {
 
         for res in reservations {
             let mut day = res.rental_date;
-            // 예약 구간 전체를 포함 (반납일 전날까지)
-            while day < res.return_date {
+            while day <= res.return_date {
                 reserved_days.push(day.format("%Y-%m-%d").to_string());
                 day += chrono::Duration::days(1);
             }
