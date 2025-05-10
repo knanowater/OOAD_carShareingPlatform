@@ -61,7 +61,8 @@
             <div class="bg-white rounded-xl shadow-md p-6 mb-8">
                 <div class="flex flex-wrap gap-2 mb-6">
                     <button class="filter-active px-4 py-2 rounded-full text-sm transition" onclick="filterReservations('all')">전체 보기</button>
-                    <button class="bg-gray-100 px-4 py-2 rounded-full text-sm hover:bg-gray-200 transition" onclick="filterReservations('upcoming')">이용 예정</button>
+                    <button class="bg-gray-100 px-4 py-2 rounded-full text-sm hover:bg-gray-200 transition" onclick="filterReservations('pending')">수락 대기중</button>
+                    <button class="bg-gray-100 px-4 py-2 rounded-full text-sm hover:bg-gray-200 transition" onclick="filterReservations('scheduled')">이용 대기중</button>
                     <button class="bg-gray-100 px-4 py-2 rounded-full text-sm hover:bg-gray-200 transition" onclick="filterReservations('completed')">이용 완료</button>
                     <button class="bg-gray-100 px-4 py-2 rounded-full text-sm hover:bg-gray-200 transition" onclick="filterReservations('canceled')">취소된 예약</button>
                     <button class="bg-gray-100 px-4 py-2 rounded-full text-sm hover:bg-gray-200 transition" onclick="filterReservations('rejected')">거절된 예약</button>
@@ -383,7 +384,7 @@
                 switch (status.toLowerCase()) {
                     case "pending": // 호스트 수락 대기중
                         return "bg-gray-100 text-gray-600";
-                    case "scheduled": // 이용 예정
+                    case "scheduled": // 이용 대기중
                         return "bg-blue-100 text-blue-700";
                     case "in_use": // 이용 중
                         return "bg-yellow-100 text-yellow-800";
