@@ -653,7 +653,7 @@
                     return;
                 }
 
-                if (returnDate <= rentalDate) {
+                if (returnDate < rentalDate) {
                     alert("반납일은 대여일보다 이후여야 합니다.");
                     return;
                 }
@@ -695,9 +695,8 @@
                     rentalDateInput.value = formattedDate;
                     rentalDateInput.min = formattedDate;
 
-                    // 반납일은 대여일 +1일로 설정
+                    // 반납일은 대여일과 같게 설정
                     const returnDate = new Date(today);
-                    returnDate.setDate(returnDate.getDate() + 1);
                     returnDateInput.value = new Intl.DateTimeFormat("en-CA").format(returnDate);
                     returnDateInput.min = formattedDate;
                 }

@@ -736,9 +736,9 @@
                 }
             });
 
-            async function fetchReservedDays(carId, defaultRentalDate, defaultReturnDate) {
+            async function fetchReservedDays(carId, defaultRentalDate) {
                 try {
-                    const res = await fetch(`/api/reservation/calendar?car_id=${carId}&default_rental_date=${defaultRentalDate}&default_return_date=${defaultReturnDate}`, {
+                    const res = await fetch(`/api/reservation/calendar?car_id=${carId}&default_rental_date=${defaultRentalDate}`, {
                         method: "GET",
                         headers: {
                             "Content-Type": "application/json",
@@ -783,7 +783,7 @@
                     defaultReturnDate = formatMonthDay(lastDayOfMonth);
                 }
 
-                const reservedDays = await fetchReservedDays(carId, defaultRentalDate, defaultReturnDate);
+                const reservedDays = await fetchReservedDays(carId, defaultRentalDate);
                 window.reservedDays = reservedDays; // 전역에 저장
 
                 const currentDate = new Date();
@@ -902,8 +902,7 @@
                     returnDateInput.value = "";
                 } else if (clickedDate >= rentalDate) {
                     const startStr = rentalDateStr;
-                    const endStr = normalizedDateStr;
-                    const reservedDays = await fetchReservedDays(carId, startStr, endStr);
+                    const reservedDays = await fetchReservedDays(carId, startStr);
 
                     let hasReserved = false;
                     let tempDate = new Date(rentalDate);

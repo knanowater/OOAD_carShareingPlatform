@@ -64,8 +64,8 @@ impl CarRepository for MySqlCarRepository {
                     WHERE NOT (
                         return_date < ? OR rental_date > ?
                     )
-                )"
-                .to_string(),
+                ) AND status != 'Unavailable'"
+                    .to_string(),
             );
             query_params.push(rental.clone());
             query_params.push(return_.clone());

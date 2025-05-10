@@ -1,5 +1,5 @@
 use crate::models::reservation::*;
-use chrono::{Datelike, Local, NaiveDate, Utc};
+use chrono::{Datelike, Local, Utc};
 use lazy_static::lazy_static;
 use rand::{RngCore, SeedableRng, rngs::StdRng};
 use rocket::http::Status;
@@ -639,7 +639,6 @@ impl<'a> ReservationRepository<'a> {
         &self,
         car_id: i32,
         default_rental_date: MyDate,
-        default_return_date: MyDate,
     ) -> Result<Json<ReservationCalendar>, Status> {
         let mut conn = self
             .pool
