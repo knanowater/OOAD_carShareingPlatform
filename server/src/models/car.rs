@@ -30,6 +30,7 @@ pub struct CarQuery {
 
 #[derive(FromForm)]
 pub struct CarForm<'r> {
+    pub id: i32,
     pub plate_number: String,
     pub manufacturer: String,
     pub name: String,
@@ -42,6 +43,7 @@ pub struct CarForm<'r> {
     pub daily_rate: f64,
     pub location: String,
     pub description: String,
+    pub deleted_images: Option<String>,
     #[field(name = "images")]
     pub images: Vec<TempFile<'r>>,
 }
@@ -66,6 +68,7 @@ pub struct CarInfo {
     description: Option<String>,
     status: String,
     owner: Option<i32>,
+    deleted_images: Option<String>,
 }
 
 impl CarInfo {
@@ -89,12 +92,18 @@ impl CarInfo {
             description: None,
             status: String::new(),
             owner: None,
+            deleted_images: None,
         }
     }
 
     pub fn id(&self) -> Option<i32> {
         self.id
     }
+
+    pub fn set_id(&mut self, id: i32) {
+        self.id = Some(id);
+    }
+
     pub fn set_plate_number(&mut self, plate_number: String) {
         self.plate_number = plate_number;
     }
@@ -146,6 +155,9 @@ impl CarInfo {
     pub fn set_owner(&mut self, owner: Option<i32>) {
         self.owner = owner;
     }
+    pub fn set_deleted_images(&mut self, deleted_images: Option<String>) {
+        self.deleted_images = deleted_images;
+    }
 
     pub fn plate_number(&self) -> &str {
         &self.plate_number
@@ -195,6 +207,9 @@ impl CarInfo {
     pub fn owner(&self) -> &Option<i32> {
         &self.owner
     }
+    pub fn deleted_images(&self) -> Option<&str> {
+        self.deleted_images.as_deref()
+    }
 }
 
 impl FromRow<'_, MySqlRow> for CarInfo {
@@ -218,6 +233,7 @@ impl FromRow<'_, MySqlRow> for CarInfo {
             description: None,
             status: String::new(),
             owner: None,
+            deleted_images: None,
         };
 
         car_info.set_plate_number(row.try_get("plate_number")?);
@@ -237,6 +253,7 @@ impl FromRow<'_, MySqlRow> for CarInfo {
         car_info.set_description(row.try_get("description")?);
         car_info.set_status(row.try_get("status")?);
         car_info.set_owner(row.try_get("owner").ok());
+        car_info.set_deleted_images(row.try_get("deleted_images").ok());
         Ok(car_info)
     }
 }

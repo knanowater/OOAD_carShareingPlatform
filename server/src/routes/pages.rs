@@ -74,6 +74,12 @@ pub async fn host_add_car_page() -> Option<NamedFile> {
     serve_html("../client/mypage/host/add_car.html").await
 }
 
+#[allow(unused_variables)]
+#[get("/mypage/host/edit_car/<id>")]
+pub async fn host_edit_car_page(id: String) -> Option<NamedFile> {
+    serve_html("../client/mypage/host/edit_car.html").await
+}
+
 #[get("/mypage/host/management")]
 pub async fn host_management_page() -> Option<NamedFile> {
     serve_html("../client/mypage/host/management.html").await

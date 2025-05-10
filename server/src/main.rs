@@ -61,6 +61,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     routes::pages::car_management_page,
                     routes::pages::car_detail_page,
                     routes::pages::host_add_car_page,
+                    routes::pages::host_edit_car_page,
                     routes::pages::host_management_page,
                     routes::pages::host_reservations_page,
                     // API routes from various modules

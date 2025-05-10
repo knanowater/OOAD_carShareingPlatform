@@ -37,16 +37,35 @@ pub async fn api_add_car(
     })
 }
 
-#[post("/api/update_car", format = "json", data = "<car_info>")]
+#[post("/api/update_car", data = "<form>")]
 pub async fn api_update_car(
-    car_info: Json<CarInfo>,
+    mut form: Form<CarForm<'_>>,
     pool: &State<MySqlPool>,
 ) -> Result<String, (Status, String)> {
     let car_repo = MySqlCarRepository::new(pool.inner().clone());
-    car_repo
-        .update_car(car_info.into_inner())
-        .await
-        .map_err(|e| (Status::InternalServerError, e.to_string()))
+
+    let mut car_info = CarInfo::new();
+    car_info.set_id(form.id);
+    car_info.set_plate_number(form.plate_number.clone());
+    car_info.set_manufacturer(form.manufacturer.clone());
+    car_info.set_name(form.name.clone());
+    car_info.set_year(form.year);
+    car_info.set_car_type(form.car_type.clone());
+    car_info.set_fuel_type(form.fuel_type.clone());
+    car_info.set_transmission(form.transmission.clone());
+    car_info.set_seat_num(form.seat_num);
+    car_info.set_car_trim(Some(form.car_trim.clone()));
+    car_info.set_daily_rate(form.daily_rate);
+    car_info.set_location(form.location.clone());
+    car_info.set_rating(0.0);
+    car_info.set_description(Some(form.description.clone()));
+    car_info.set_status("Available".to_string());
+    car_info.set_deleted_images(form.deleted_images.clone());
+    let images = std::mem::take(&mut form.images);
+    car_repo.update_car(car_info, images).await.map_err(|e| {
+        eprintln!("Error updating car: {:?}", e);
+        (Status::InternalServerError, e.to_string())
+    })
 }
 
 #[delete("/api/car/<car_id>")]

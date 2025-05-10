@@ -8,7 +8,11 @@ pub trait CarRepository: Sync + Send {
     async fn get_car_by_id(&self, id: i32) -> Result<Option<CarInfo>, Error>;
     async fn get_cars(&self, query: CarQuery) -> Result<CarListResponse, Error>;
     async fn add_car(&self, car_info: CarInfo, images: Vec<TempFile<'_>>) -> Result<String, Error>;
-    async fn update_car(&self, car_info: CarInfo) -> Result<String, Error>;
+    async fn update_car(
+        &self,
+        car_info: CarInfo,
+        images: Vec<TempFile<'_>>,
+    ) -> Result<String, Error>;
     async fn delete_car(&self, car_info: CarInfo) -> Result<String, Error>;
 }
 
@@ -225,8 +229,19 @@ impl CarRepository for MySqlCarRepository {
         Ok("차량이 성공적으로 추가되었습니다.".to_string())
     }
 
-    async fn update_car(&self, car_info: CarInfo) -> Result<String, Error> {
-        let result = sqlx::query("UPDATE cars SET plate_number = ?, manufacturer = ?, name = ?, year = ?, car_type = ?, fuel_type = ?, transmission = ?, seat_num = ?, color = ?, car_trim = ?, daily_rate = ?, location = ?, rating = ?, description = ?, status = ? WHERE id = ?")
+    async fn update_car(
+        &self,
+        car_info: CarInfo,
+        images: Vec<TempFile<'_>>,
+    ) -> Result<String, Error> {
+        let car_id = car_info.id().ok_or_else(|| {
+            Error::Io(std::io::Error::new(
+                std::io::ErrorKind::InvalidInput,
+                "차량 ID가 없습니다",
+            ))
+        })?;
+
+        sqlx::query("UPDATE cars SET plate_number = ?, manufacturer = ?, name = ?, year = ?, car_type = ?, fuel_type = ?, transmission = ?, seat_num = ?, color = ?, car_trim = ?, daily_rate = ?, location = ?, rating = ?, description = ?, status = ? WHERE id = ?")
             .bind(&car_info.plate_number())
             .bind(&car_info.manufacturer())
             .bind(&car_info.name())
@@ -242,14 +257,77 @@ impl CarRepository for MySqlCarRepository {
             .bind(car_info.rating())
             .bind(&car_info.description())
             .bind(&car_info.status())
-            .bind(car_info.id())
+            .bind(car_id)
             .execute(&self.pool)
-            .await;
+            .await?;
 
-        match result {
-            Ok(_) => Ok("차량이 성공적으로 업데이트되었습니다.".to_string()),
-            Err(e) => Err(Error::from(e)),
+        // 기존 이미지 URL 가져오기
+        let existing_images: Vec<String> = sqlx::query_scalar::<_, String>(
+            "SELECT CAST(image_url AS CHAR) FROM cars WHERE id = ?",
+        )
+        .bind(car_id)
+        .fetch_one(&self.pool)
+        .await
+        .map(|json_str| serde_json::from_str(&json_str).unwrap_or_else(|_| Vec::new()))?;
+
+        // 삭제된 이미지 처리
+        let mut image_urls = existing_images;
+        if let Some(deleted_images_str) = car_info.deleted_images() {
+            if let Ok(deleted_images) = serde_json::from_str::<Vec<String>>(deleted_images_str) {
+                // car_images 테이블에서 삭제
+                for image_path in &deleted_images {
+                    // 파일 시스템에서 이미지 삭제
+                    if let Err(e) = std::fs::remove_file(image_path) {
+                        eprintln!("Error deleting file {}: {}", image_path, e);
+                    }
+
+                    // 데이터베이스에서 이미지 정보 삭제
+                    sqlx::query("DELETE FROM car_images WHERE car_id = ? AND image_path = ?")
+                        .bind(car_id)
+                        .bind(image_path)
+                        .execute(&self.pool)
+                        .await?;
+                }
+                // image_urls에서 제거
+                image_urls.retain(|url| !deleted_images.contains(url));
+            }
         }
+
+        if !images.is_empty() {
+            use chrono::Utc;
+            use std::fs;
+            let image_dir = "static/car_images";
+            fs::create_dir_all(image_dir).ok();
+
+            for (idx, mut image) in images.into_iter().enumerate() {
+                let filename = format!("car_{}_{}_{}.jpg", car_id, Utc::now().timestamp(), idx);
+                let save_path = format!("{}/{}", image_dir, filename);
+                image.copy_to(&save_path).await.map_err(|e| Error::Io(e))?;
+
+                let is_main = image_urls.is_empty() && idx == 0;
+                sqlx::query(
+                    "INSERT INTO car_images (car_id, image_path, is_main) VALUES (?, ?, ?)",
+                )
+                .bind(car_id as i64)
+                .bind(&save_path)
+                .bind(is_main)
+                .execute(&self.pool)
+                .await?;
+
+                image_urls.push(save_path);
+            }
+        }
+
+        // image_urls가 비어있지 않은 경우에만 업데이트
+        let image_urls_json = serde_json::to_string(&image_urls)
+            .map_err(|e| Error::Io(std::io::Error::new(std::io::ErrorKind::Other, e)))?;
+        sqlx::query("UPDATE cars SET image_url = ? WHERE id = ?")
+            .bind(image_urls_json)
+            .bind(car_id as i64)
+            .execute(&self.pool)
+            .await?;
+
+        Ok("차량이 성공적으로 업데이트되었습니다.".to_string())
     }
 
     async fn delete_car(&self, car_info: CarInfo) -> Result<String, Error> {
@@ -267,6 +345,13 @@ impl CarRepository for MySqlCarRepository {
             )));
         }
 
+        // 먼저 car_images 테이블에서 이미지 삭제
+        sqlx::query("DELETE FROM car_images WHERE car_id = ?")
+            .bind(car_info.id())
+            .execute(&self.pool)
+            .await?;
+
+        // 그 다음 cars 테이블에서 차량 삭제
         let result = sqlx::query("DELETE FROM cars WHERE id = ?")
             .bind(car_info.id())
             .execute(&self.pool)
