@@ -281,12 +281,10 @@ impl<'a> ReservationRepository<'a> {
         let reservation = match reservation {
             Ok(Some(reservation)) => reservation,
             Ok(None) => {
-                // 롤백 후 NotFound 반환
                 tx.rollback().await.ok();
                 return Err(Status::NotFound);
             }
             Err(_) => {
-                // 롤백 후 InternalServerError 반환
                 tx.rollback().await.ok();
                 return Err(Status::InternalServerError);
             }
@@ -335,6 +333,14 @@ impl<'a> ReservationRepository<'a> {
             .execute(&mut *tx)
             .await
             .map_err(|_| Status::InternalServerError)?;
+
+            sqlx::query!(
+                "UPDATE reservation_log SET reservation_status = 'completed' WHERE reservation_id = ?",
+                reservation_id
+            )
+            .execute(&mut *tx)
+            .await
+            .map_err(|_| Status::InternalServerError)?;
         }
 
         sqlx::query!(
@@ -343,7 +349,7 @@ impl<'a> ReservationRepository<'a> {
         )
         .execute(&mut *tx)
         .await
-        .ok(); // optional rollback
+        .ok();
 
         tx.commit().await.map_err(|_| Status::InternalServerError)?;
 
