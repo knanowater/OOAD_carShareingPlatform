@@ -11,9 +11,18 @@ use sqlx::MySqlPool;
 #[post("/api/add_car", data = "<form>")]
 pub async fn api_add_car(
     mut form: Form<CarForm<'_>>,
+    auth_token: AuthToken,
     pool: &State<MySqlPool>,
 ) -> Result<String, (Status, String)> {
     let car_repo = MySqlCarRepository::new(pool.inner().clone());
+
+    // 사용자 ID 가져오기
+    let user_id = auth_token
+        .0
+        .sub
+        .parse::<i32>()
+        .map_err(|_| (Status::Unauthorized, "Invalid token".into()))?;
+
     // CarForm -> CarInfo 수동 변환
     let mut car_info = CarInfo::new();
     car_info.set_plate_number(form.plate_number.clone());
@@ -30,6 +39,7 @@ pub async fn api_add_car(
     car_info.set_rating(0.0);
     car_info.set_description(Some(form.description.clone()));
     car_info.set_status("Available".to_string());
+    car_info.set_owner(Some(user_id)); // 소유자 ID 설정
     let images = std::mem::take(&mut form.images);
     car_repo.add_car(car_info, images).await.map_err(|e| {
         eprintln!("Error adding car: {:?}", e);
@@ -45,7 +55,10 @@ pub async fn api_update_car(
     let car_repo = MySqlCarRepository::new(pool.inner().clone());
 
     let mut car_info = CarInfo::new();
-    car_info.set_id(form.id);
+    car_info.set_id(
+        form.id
+            .ok_or_else(|| (Status::BadRequest, "차량 ID가 필요합니다".to_string()))?,
+    );
     car_info.set_plate_number(form.plate_number.clone());
     car_info.set_manufacturer(form.manufacturer.clone());
     car_info.set_name(form.name.clone());

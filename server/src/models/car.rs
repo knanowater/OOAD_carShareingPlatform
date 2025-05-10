@@ -30,7 +30,7 @@ pub struct CarQuery {
 
 #[derive(FromForm)]
 pub struct CarForm<'r> {
-    pub id: i32,
+    pub id: Option<i32>,
     pub plate_number: String,
     pub manufacturer: String,
     pub name: String,

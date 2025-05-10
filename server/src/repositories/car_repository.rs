@@ -167,7 +167,7 @@ impl CarRepository for MySqlCarRepository {
     }
 
     async fn add_car(&self, car_info: CarInfo, images: Vec<TempFile<'_>>) -> Result<String, Error> {
-        let result = sqlx::query("INSERT INTO cars (plate_number, manufacturer, name, year, car_type, fuel_type, transmission, seat_num, color, car_trim, daily_rate, location, rating, description, status, image_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+        let result = sqlx::query("INSERT INTO cars (plate_number, manufacturer, name, year, car_type, fuel_type, transmission, seat_num, color, car_trim, daily_rate, location, rating, description, status, image_url, owner) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
             .bind(&car_info.plate_number())
             .bind(&car_info.manufacturer())
             .bind(&car_info.name())
@@ -184,6 +184,7 @@ impl CarRepository for MySqlCarRepository {
             .bind(&car_info.description())
             .bind(&car_info.status())
             .bind("[]")
+            .bind(car_info.owner())
             .execute(&self.pool)
             .await?;
 
