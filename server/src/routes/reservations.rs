@@ -29,7 +29,7 @@ pub async fn api_reservation_request(
 
 #[delete("/api/reservations/cancel/<id>")]
 pub async fn cancel_reservation_due_to_payment_failed(
-    id: String,
+    id: &str,
     pool: &State<MySqlPool>,
     auth_token: AuthToken,
 ) -> Result<Status, Status> {
@@ -39,7 +39,8 @@ pub async fn cancel_reservation_due_to_payment_failed(
         .parse::<i32>()
         .map_err(|_| Status::Unauthorized)?;
     let repo = ReservationRepository::new(pool);
-    repo.cancel_due_to_payment_failure(id, user_id).await
+    repo.cancel_due_to_payment_failure(id.to_string(), user_id)
+        .await
 }
 
 #[post("/api/return", data = "<return_request>")]

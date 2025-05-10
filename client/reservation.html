@@ -535,18 +535,23 @@
                         const startDate = new Date(rentalDateInput.value);
                         const endDate = new Date(returnDateInput.value);
 
-                        if (isNaN(startDate) || isNaN(endDate) || startDate >= endDate) {
+                        if (isNaN(startDate) || isNaN(endDate)) {
                             return 0; // 유효하지 않은 경우 0 반환
                         }
 
+                        if (startDate > endDate) {
+                            return 0; // 시작일이 종료일보다 늦은 경우 0 반환
+                        }
+
                         const timeDiff = endDate.getTime() - startDate.getTime();
-                        const days = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1;
+                        const days = Math.floor(timeDiff / (1000 * 3600 * 24)) + 1;
                         return days;
                     };
                     const dailyRate = daily_rate;
                     const rentalDays = calculateRentalPeriod();
                     const rentalFee = dailyRate * rentalDays;
                     const totalPrice = rentalFee + dailyRate / 10;
+                    console.log(totalPrice);
 
                     const authToken = localStorage.getItem("token");
                     let reservationId = null;
