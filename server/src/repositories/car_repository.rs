@@ -4,7 +4,7 @@ use rocket::fs::TempFile;
 use sqlx::{Error, MySqlPool};
 
 #[async_trait]
-pub trait CarRepository {
+pub trait CarRepository: Sync + Send {
     async fn get_car_by_id(&self, id: i32) -> Result<Option<CarInfo>, Error>;
     async fn get_cars(&self, query: CarQuery) -> Result<CarListResponse, Error>;
     async fn add_car(&self, car_info: CarInfo, images: Vec<TempFile<'_>>) -> Result<String, Error>;
@@ -214,7 +214,6 @@ impl CarRepository for MySqlCarRepository {
 
         println!("{:?}", image_urls);
 
-        // Update the cars table with the JSON-encoded image URLs
         let image_urls_json = serde_json::to_string(&image_urls)
             .map_err(|e| Error::Io(std::io::Error::new(std::io::ErrorKind::Other, e)))?;
         sqlx::query("UPDATE cars SET image_url = ? WHERE id = ?")

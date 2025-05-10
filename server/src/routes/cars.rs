@@ -14,8 +14,7 @@ pub async fn api_add_car(
     pool: &State<MySqlPool>,
 ) -> Result<String, (Status, String)> {
     let car_repo = MySqlCarRepository::new(pool.inner().clone());
-
-    // CarForm -> CarInfo 변환
+    // CarForm -> CarInfo 수동 변환
     let mut car_info = CarInfo::new();
     car_info.set_plate_number(form.plate_number.clone());
     car_info.set_manufacturer(form.manufacturer.clone());
@@ -31,12 +30,9 @@ pub async fn api_add_car(
     car_info.set_rating(0.0);
     car_info.set_description(Some(form.description.clone()));
     car_info.set_status("Available".to_string());
-
-    // images 소유권 이동
     let images = std::mem::take(&mut form.images);
-
     car_repo.add_car(car_info, images).await.map_err(|e| {
-        eprintln!("Error adding car: {:?}", e); // 에러 로그 출력
+        eprintln!("Error adding car: {:?}", e);
         (Status::InternalServerError, e.to_string())
     })
 }

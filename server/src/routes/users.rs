@@ -16,9 +16,7 @@ pub async fn api_mypage(
         eprintln!("Failed to parse user ID from token subject");
         (Status::Unauthorized, "Invalid token".to_string())
     })?;
-
     let user_repo = MySqlUserRepository::new(pool.inner().clone());
-
     user_repo
         .get_user_by_id(user_id)
         .await

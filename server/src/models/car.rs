@@ -91,6 +91,7 @@ impl CarInfo {
             owner: None,
         }
     }
+
     pub fn id(&self) -> Option<i32> {
         self.id
     }

@@ -58,8 +58,7 @@ async fn cancel_rental_if_failed_to_host_confirm(pool: &MySqlPool) -> Result<(),
 
     for reservation in &overdue_reservations {
         sqlx::query!(
-            "UPDATE reservation
-            SET reservation_status = 'canceled'
+            "DELETE FROM reservation
             WHERE reservation_id = ?",
             reservation.reservation_id
         )

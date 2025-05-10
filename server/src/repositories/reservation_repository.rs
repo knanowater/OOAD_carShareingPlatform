@@ -7,6 +7,7 @@ use rocket::serde::json::Json;
 use sqlx::{Acquire, MySqlPool, Row};
 use std::env;
 use std::sync::Mutex;
+use async_trait::async_trait;
 
 lazy_static! {
     static ref RNG: Mutex<StdRng> = {
@@ -30,20 +31,34 @@ pub fn generate_reservation_id() -> String {
     format!("RSV-{}-{}", timestamp, random_part)
 }
 
-pub struct ReservationRepository<'a> {
+#[async_trait]
+pub trait ReservationRepository: Sync + Send {
+    async fn create_reservation(&self, user_id: i32, data: CreateReservationRequest) -> Result<String, (Status, String)>;
+    async fn cancel_due_to_payment_failure(&self, reservation_id: String, user_id: i32) -> Result<Status, Status>;
+    async fn return_car(&self, user_id: i32, reservation_id: String) -> Result<Json<ReturnApiResponse>, Status>;
+    async fn cancel_reservation(&self, user_id: i32, reservation_id: String) -> Result<Json<ReservationActionResponse>, Status>;
+    async fn get_user_reservations(&self, user_id: i32, page: Option<u64>, limit: Option<u64>, status: Option<String>, start_date: Option<String>, end_date: Option<String>, car_type: Option<String>) -> Result<Json<ReservationsResponse>, Status>;
+    async fn get_overdue_fee_info(&self, user_id: i32, reservation_id: String) -> Result<Json<OverdueFeeInfo>, Status>;
+    async fn get_reservation_info_by_reservation_id_payment_id(&self, user_id: i32, reservation_id: String, payment_id: String) -> Result<Json<ReservationInfo>, Status>;
+    async fn get_reservation_calendar(&self, car_id: i32, default_rental_date: MyDate) -> Result<Json<ReservationCalendar>, Status>;
+    async fn get_host_reservations(&self, host_id: i32, status: Option<String>) -> Result<Json<ReservationsResponse>, Status>;
+    async fn accept_reservation(&self, host_id: i32, reservation_id: String) -> Result<Json<ReservationActionResponse>, (Status, String)>;
+    async fn reject_reservation(&self, host_id: i32, reservation_id: String) -> Result<Json<ReservationActionResponse>, (Status, String)>;
+}
+
+pub struct MySqlReservationRepository<'a> {
     pub pool: &'a MySqlPool,
 }
 
-impl<'a> ReservationRepository<'a> {
+impl<'a> MySqlReservationRepository<'a> {
     pub fn new(pool: &'a MySqlPool) -> Self {
         Self { pool }
     }
+}
 
-    pub async fn create_reservation(
-        &self,
-        user_id: i32,
-        data: CreateReservationRequest,
-    ) -> Result<String, (Status, String)> {
+#[async_trait]
+impl<'a> ReservationRepository for MySqlReservationRepository<'a> {
+    async fn create_reservation(&self, user_id: i32, data: CreateReservationRequest) -> Result<String, (Status, String)> {
         let mut conn = self
             .pool
             .acquire()
@@ -171,7 +186,8 @@ impl<'a> ReservationRepository<'a> {
             }
         }
     }
-    pub async fn cancel_due_to_payment_failure(
+
+    async fn cancel_due_to_payment_failure(
         &self,
         reservation_id: String,
         user_id: i32,
@@ -256,7 +272,7 @@ impl<'a> ReservationRepository<'a> {
         }
     }
 
-    pub async fn return_car(
+    async fn return_car(
         &self,
         user_id: i32,
         reservation_id: String,
@@ -369,7 +385,7 @@ impl<'a> ReservationRepository<'a> {
         }))
     }
 
-    pub async fn cancel_reservation(
+    async fn cancel_reservation(
         &self,
         user_id: i32,
         reservation_id: String,
@@ -442,7 +458,7 @@ impl<'a> ReservationRepository<'a> {
         }))
     }
 
-    pub async fn get_user_reservations(
+    async fn get_user_reservations(
         &self,
         user_id: i32,
         page: Option<u64>,
@@ -539,7 +555,7 @@ impl<'a> ReservationRepository<'a> {
         }))
     }
 
-    pub async fn get_overdue_fee_info(
+    async fn get_overdue_fee_info(
         &self,
         user_id: i32,
         reservation_id: String,
@@ -589,7 +605,7 @@ impl<'a> ReservationRepository<'a> {
         }
     }
 
-    pub async fn get_reservation_info_by_reservation_id_payment_id(
+    async fn get_reservation_info_by_reservation_id_payment_id(
         &self,
         user_id: i32,
         reservation_id: String,
@@ -641,7 +657,7 @@ impl<'a> ReservationRepository<'a> {
         }
     }
 
-    pub async fn get_reservation_calendar(
+    async fn get_reservation_calendar(
         &self,
         car_id: i32,
         default_rental_date: MyDate,
@@ -696,7 +712,7 @@ impl<'a> ReservationRepository<'a> {
         Ok(Json(ReservationCalendar { reserved_days }))
     }
 
-    pub async fn get_host_reservations(
+    async fn get_host_reservations(
         &self,
         host_id: i32,
         status: Option<String>,
@@ -793,7 +809,7 @@ impl<'a> ReservationRepository<'a> {
         }))
     }
 
-    pub async fn accept_reservation(
+    async fn accept_reservation(
         &self,
         host_id: i32,
         reservation_id: String,
@@ -902,7 +918,7 @@ impl<'a> ReservationRepository<'a> {
         }
     }
 
-    pub async fn reject_reservation(
+    async fn reject_reservation(
         &self,
         host_id: i32,
         reservation_id: String,

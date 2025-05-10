@@ -5,7 +5,7 @@ use sqlx::mysql::MySqlQueryResult;
 use sqlx::{Error, MySqlPool};
 
 #[async_trait]
-pub trait UserRepository {
+pub trait UserRepository: Sync + Send {
     async fn get_user_by_id(&self, id: i32) -> Result<Option<User>, Error>;
 }
 

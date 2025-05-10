@@ -3,7 +3,7 @@ use std::i32;
 use crate::auth::AuthToken;
 use crate::models::reservation::ReservationQuery;
 use crate::models::reservation::*;
-use crate::repositories::reservation_repository::ReservationRepository;
+use crate::repositories::reservation_repository::{MySqlReservationRepository, ReservationRepository};
 use rocket::http::Status;
 use rocket::serde::json::{Json, json};
 use rocket::{State, delete, get, post};
@@ -20,10 +20,11 @@ pub async fn api_reservation_request(
         .sub
         .parse::<i32>()
         .map_err(|_| (Status::Unauthorized, "Invalid token".into()))?;
-    let repo = ReservationRepository::new(pool);
+    let repo = MySqlReservationRepository::new(pool.inner());
     let reservation_id = repo
         .create_reservation(user_id, reservation_data.into_inner())
-        .await?;
+        .await
+        .map_err(|(status, msg)| (status, msg))?;
     Ok(Json(json!({ "reservation_id": reservation_id })))
 }
 
@@ -38,7 +39,7 @@ pub async fn cancel_reservation_due_to_payment_failed(
         .sub
         .parse::<i32>()
         .map_err(|_| Status::Unauthorized)?;
-    let repo = ReservationRepository::new(pool);
+    let repo = MySqlReservationRepository::new(pool.inner());
     repo.cancel_due_to_payment_failure(id.to_string(), user_id)
         .await
 }
@@ -54,7 +55,7 @@ pub async fn api_return_car(
         .sub
         .parse::<i32>()
         .map_err(|_| Status::Unauthorized)?;
-    let repo = ReservationRepository::new(pool);
+    let repo = MySqlReservationRepository::new(pool.inner());
     repo.return_car(user_id, return_request.into_inner().reservation_id)
         .await
 }
@@ -75,7 +76,7 @@ pub async fn api_reservations(
         .sub
         .parse::<i32>()
         .map_err(|_| Status::Unauthorized)?;
-    let repo = ReservationRepository::new(pool);
+    let repo = MySqlReservationRepository::new(pool.inner());
     repo.get_user_reservations(user_id, page, limit, status, start_date, end_date, car_type)
         .await
 }
@@ -91,7 +92,7 @@ pub async fn api_cancel_reservation(
         .sub
         .parse::<i32>()
         .map_err(|_| Status::Unauthorized)?;
-    let repo = ReservationRepository::new(pool);
+    let repo = MySqlReservationRepository::new(pool.inner());
     repo.cancel_reservation(user_id, cancel_request.into_inner().reservation_id)
         .await
 }
@@ -107,7 +108,7 @@ pub async fn api_overdue_fee_info(
         .sub
         .parse::<i32>()
         .map_err(|_| Status::Unauthorized)?;
-    let repo = ReservationRepository::new(pool);
+    let repo = MySqlReservationRepository::new(pool.inner());
     repo.get_overdue_fee_info(user_id, reservation_id).await
 }
 
@@ -122,7 +123,7 @@ pub async fn api_get_reservation_info_by_reservation_id_payment_id(
         .sub
         .parse::<i32>()
         .map_err(|_| Status::Unauthorized)?;
-    let repo = ReservationRepository::new(pool);
+    let repo = MySqlReservationRepository::new(pool.inner());
     repo.get_reservation_info_by_reservation_id_payment_id(
         user_id,
         reservation_payment_query.reservation_id.clone(),
@@ -137,7 +138,7 @@ pub async fn api_get_reservation_calendar(
     car_id: i32,
     default_rental_date: MyDate,
 ) -> Result<Json<ReservationCalendar>, Status> {
-    let repo = ReservationRepository::new(pool);
+    let repo = MySqlReservationRepository::new(pool.inner());
     repo.get_reservation_calendar(car_id, default_rental_date)
         .await
 }
@@ -153,7 +154,7 @@ pub async fn api_get_host_reservations(
         .sub
         .parse::<i32>()
         .map_err(|_| Status::Unauthorized)?;
-    let repo = ReservationRepository::new(pool);
+    let repo = MySqlReservationRepository::new(pool.inner());
     repo.get_host_reservations(host_id, status).await
 }
 
@@ -168,7 +169,7 @@ pub async fn api_accept_reservation(
         .sub
         .parse::<i32>()
         .map_err(|e| (Status::Unauthorized, e.to_string()))?;
-    let repo = ReservationRepository::new(pool);
+    let repo = MySqlReservationRepository::new(pool.inner());
     repo.accept_reservation(host_id, reservation_id.to_string())
         .await
         .map_err(|(status, message)| (status, message))?;
@@ -188,7 +189,7 @@ pub async fn api_reject_reservation(
         .sub
         .parse::<i32>()
         .map_err(|e| (Status::Unauthorized, e.to_string()))?;
-    let repo = ReservationRepository::new(pool);
+    let repo = MySqlReservationRepository::new(pool.inner());
     repo.reject_reservation(host_id, reservation_id.to_string())
         .await
         .map_err(|(status, message)| (status, message))?;
