@@ -43,6 +43,7 @@ pub struct CarForm<'r> {
     pub daily_rate: f64,
     pub location: String,
     pub description: String,
+    pub color: String,
     pub deleted_images: Option<String>,
     #[field(name = "images")]
     pub images: Vec<TempFile<'r>>,

@@ -40,6 +40,7 @@ pub async fn api_add_car(
     car_info.set_description(Some(form.description.clone()));
     car_info.set_status("Available".to_string());
     car_info.set_owner(Some(user_id)); // 소유자 ID 설정
+    car_info.set_color(Some(form.color.clone()));
     let images = std::mem::take(&mut form.images);
     car_repo.add_car(car_info, images).await.map_err(|e| {
         eprintln!("Error adding car: {:?}", e);
@@ -74,6 +75,7 @@ pub async fn api_update_car(
     car_info.set_description(Some(form.description.clone()));
     car_info.set_status("Available".to_string());
     car_info.set_deleted_images(form.deleted_images.clone());
+    car_info.set_color(Some(form.color.clone()));
     let images = std::mem::take(&mut form.images);
     car_repo.update_car(car_info, images).await.map_err(|e| {
         eprintln!("Error updating car: {:?}", e);

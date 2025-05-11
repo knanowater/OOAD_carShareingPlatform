@@ -367,16 +367,26 @@
                                             readonly
                                         />
                                     </div>
-                                </div>
-                                <div class="mt-4">
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">위치</label>
-                                    <input
-                                        type="text"
-                                        placeholder="예: 서울 강남구 역삼동"
-                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
-                                        id="location"
-                                        required
-                                    />
+                                    <div>
+                                        <label for="car-color" class="block text-sm font-medium text-gray-700 mb-1">차량 색상</label>
+                                        <input
+                                            type="text"
+                                            placeholder="예: 빨강색"
+                                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                            id="car-color"
+                                            required
+                                        />
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">위치</label>
+                                        <input
+                                            type="text"
+                                            placeholder="예: 서울 강남구 역삼동"
+                                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                            id="location"
+                                            required
+                                        />
+                                    </div>
                                 </div>
                             </div>
 
@@ -565,6 +575,7 @@
                     document.getElementById('daily_rate').value = carData.daily_rate || '';
                     document.getElementById('plate_number').value = carData.plate_number || '';
                     document.getElementById('location').value = carData.location || '';
+                    document.getElementById('car-color').value = carData.color || '';
                     document.getElementById('car-description').value = carData.description || '';
 
                     // 이미지 처리
@@ -714,6 +725,7 @@
                 formData.append("car_trim", document.getElementById("car-trim").value);
                 formData.append("daily_rate", parseInt(document.getElementById("daily_rate").value));
                 formData.append("location", document.getElementById("location").value);
+                formData.append("color", document.getElementById("car-color").value);
                 formData.append("description", document.getElementById("car-description").value);
                 formData.append("rating", carRating);
                 formData.append("status", carStatus);
