@@ -22,9 +22,9 @@ pub struct PaymentInfo {
     cvc: String,
     cardholder_name: String,
     reservation_id: String, // 어떤 예약에 대한 결제인지 식별
-    total_amount: i32,      // 결제할 총 금액
-    payment_method: String, // 결제 방법 추가
-    payment_type: String,   // 결제 유형 추가 ('reservation', 'overdue' 등)
+    total_amount: i32,
+    payment_method: String,
+    payment_type: String, // 결제 유형 ('reservation', 'overdue')
 }
 
 #[derive(Serialize)]
@@ -49,7 +49,7 @@ pub async fn process_payment(
 ) -> Result<Json<PaymentResult>, Status> {
     let payment = payment_info.into_inner();
 
-    // 간단한 유효성 검사
+    // 유효성 검사
     if payment.card_number.len() < 16
         || payment.expiry_date.len() != 5
         || payment.cvc.len() < 3

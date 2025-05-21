@@ -2,11 +2,13 @@ use rocket::fs::NamedFile;
 use rocket::get;
 use std::path::Path;
 
+// GRASP - Pure Fabrication 패턴
 async fn serve_html(path: &str) -> Option<NamedFile> {
     NamedFile::open(Path::new(path)).await.ok()
 }
 
 // 각 페이지 라우트 정의
+// GRASP - Controller 패턴
 #[get("/")]
 pub async fn index_page() -> Option<NamedFile> {
     serve_html("../client/index.html").await

@@ -4,21 +4,25 @@ use bcrypt::{DEFAULT_COST, hash, verify as bcrypt_verify};
 use sqlx::mysql::MySqlQueryResult;
 use sqlx::{Error, MySqlPool};
 
+// GRASP - Interface, Information Expert 패턴
 #[async_trait]
 pub trait UserRepository: Sync + Send {
     async fn get_user_by_id(&self, id: i32) -> Result<Option<User>, Error>;
 }
 
+// GRASP - Creator 패턴
 pub struct MySqlUserRepository {
     pool: MySqlPool,
 }
 
 impl MySqlUserRepository {
+    // GRASP - Creator 패턴
     pub fn new(pool: MySqlPool) -> Self {
         MySqlUserRepository { pool }
     }
 }
 
+// GRASP - Information Expert 패턴
 #[async_trait]
 impl UserRepository for MySqlUserRepository {
     async fn get_user_by_id(&self, id: i32) -> Result<Option<User>, Error> {

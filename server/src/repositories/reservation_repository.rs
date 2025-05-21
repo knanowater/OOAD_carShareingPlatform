@@ -1,4 +1,5 @@
 use crate::models::reservation::*;
+use async_trait::async_trait;
 use chrono::{Datelike, Local, Utc};
 use lazy_static::lazy_static;
 use rand::{RngCore, SeedableRng, rngs::StdRng};
@@ -7,7 +8,6 @@ use rocket::serde::json::Json;
 use sqlx::{Acquire, MySqlPool, Row};
 use std::env;
 use std::sync::Mutex;
-use async_trait::async_trait;
 
 lazy_static! {
     static ref RNG: Mutex<StdRng> = {
@@ -33,24 +33,77 @@ pub fn generate_reservation_id() -> String {
 
 #[async_trait]
 pub trait ReservationRepository: Sync + Send {
-    async fn create_reservation(&self, user_id: i32, data: CreateReservationRequest) -> Result<String, (Status, String)>;
-    async fn cancel_due_to_payment_failure(&self, reservation_id: String, user_id: i32) -> Result<Status, Status>;
-    async fn return_car(&self, user_id: i32, reservation_id: String) -> Result<Json<ReturnApiResponse>, Status>;
-    async fn cancel_reservation(&self, user_id: i32, reservation_id: String) -> Result<Json<ReservationActionResponse>, Status>;
-    async fn get_user_reservations(&self, user_id: i32, page: Option<u64>, limit: Option<u64>, status: Option<String>, start_date: Option<String>, end_date: Option<String>, car_type: Option<String>) -> Result<Json<ReservationsResponse>, Status>;
-    async fn get_overdue_fee_info(&self, user_id: i32, reservation_id: String) -> Result<Json<OverdueFeeInfo>, Status>;
-    async fn get_reservation_info_by_reservation_id_payment_id(&self, user_id: i32, reservation_id: String, payment_id: String) -> Result<Json<ReservationInfo>, Status>;
-    async fn get_reservation_calendar(&self, car_id: i32, default_rental_date: MyDate) -> Result<Json<ReservationCalendar>, Status>;
-    async fn get_host_reservations(&self, host_id: i32, status: Option<String>) -> Result<Json<ReservationsResponse>, Status>;
-    async fn accept_reservation(&self, host_id: i32, reservation_id: String) -> Result<Json<ReservationActionResponse>, (Status, String)>;
-    async fn reject_reservation(&self, host_id: i32, reservation_id: String) -> Result<Json<ReservationActionResponse>, (Status, String)>;
+    // GRASP - Information Expert 패턴
+    async fn create_reservation(
+        &self,
+        user_id: i32,
+        data: CreateReservationRequest,
+    ) -> Result<String, (Status, String)>;
+    async fn cancel_due_to_payment_failure(
+        &self,
+        reservation_id: String,
+        user_id: i32,
+    ) -> Result<Status, Status>;
+    async fn return_car(
+        &self,
+        user_id: i32,
+        reservation_id: String,
+    ) -> Result<Json<ReturnApiResponse>, Status>;
+    async fn cancel_reservation(
+        &self,
+        user_id: i32,
+        reservation_id: String,
+    ) -> Result<Json<ReservationActionResponse>, Status>;
+    async fn get_user_reservations(
+        &self,
+        user_id: i32,
+        page: Option<u64>,
+        limit: Option<u64>,
+        status: Option<String>,
+        start_date: Option<String>,
+        end_date: Option<String>,
+        car_type: Option<String>,
+    ) -> Result<Json<ReservationsResponse>, Status>;
+    async fn get_overdue_fee_info(
+        &self,
+        user_id: i32,
+        reservation_id: String,
+    ) -> Result<Json<OverdueFeeInfo>, Status>;
+    async fn get_reservation_info_by_reservation_id_payment_id(
+        &self,
+        user_id: i32,
+        reservation_id: String,
+        payment_id: String,
+    ) -> Result<Json<ReservationInfo>, Status>;
+    async fn get_reservation_calendar(
+        &self,
+        car_id: i32,
+        default_rental_date: MyDate,
+    ) -> Result<Json<ReservationCalendar>, Status>;
+    async fn get_host_reservations(
+        &self,
+        host_id: i32,
+        status: Option<String>,
+    ) -> Result<Json<ReservationsResponse>, Status>;
+    async fn accept_reservation(
+        &self,
+        host_id: i32,
+        reservation_id: String,
+    ) -> Result<Json<ReservationActionResponse>, (Status, String)>;
+    async fn reject_reservation(
+        &self,
+        host_id: i32,
+        reservation_id: String,
+    ) -> Result<Json<ReservationActionResponse>, (Status, String)>;
 }
 
+// GRASP - Creator 패턴
 pub struct MySqlReservationRepository<'a> {
     pub pool: &'a MySqlPool,
 }
 
 impl<'a> MySqlReservationRepository<'a> {
+    // GRASP - Creator 패턴
     pub fn new(pool: &'a MySqlPool) -> Self {
         Self { pool }
     }
@@ -58,7 +111,11 @@ impl<'a> MySqlReservationRepository<'a> {
 
 #[async_trait]
 impl<'a> ReservationRepository for MySqlReservationRepository<'a> {
-    async fn create_reservation(&self, user_id: i32, data: CreateReservationRequest) -> Result<String, (Status, String)> {
+    async fn create_reservation(
+        &self,
+        user_id: i32,
+        data: CreateReservationRequest,
+    ) -> Result<String, (Status, String)> {
         let mut conn = self
             .pool
             .acquire()

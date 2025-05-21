@@ -3,6 +3,7 @@ use async_trait::async_trait;
 use rocket::fs::TempFile;
 use sqlx::{Error, MySqlPool};
 
+// GRASP - Protected Variations 패턴: 인터페이스를 통해 구현 세부사항 변경으로부터 코드를 보호
 #[async_trait]
 pub trait CarRepository: Sync + Send {
     async fn get_car_by_id(&self, id: i32) -> Result<Option<CarInfo>, Error>;
@@ -16,17 +17,20 @@ pub trait CarRepository: Sync + Send {
     async fn delete_car(&self, car_info: CarInfo) -> Result<String, Error>;
 }
 
+// GRASP - Pure Fabrication 패턴: 도메인과 직접 관련 없는 데이터 접근 책임을 별도 객체로 분리
 pub struct MySqlCarRepository {
     pool: MySqlPool,
 }
 
 impl MySqlCarRepository {
+    // GRASP - Creator 패턴: MySqlCarRepository 자신의 인스턴스를 생성
     pub fn new(pool: MySqlPool) -> Self {
         MySqlCarRepository { pool }
     }
 }
 
 #[async_trait]
+// GRASP - Information Expert 패턴: 데이터 접근에 필요한 지식을 가진 객체가 해당 책임을 수행
 impl CarRepository for MySqlCarRepository {
     async fn get_car_by_id(&self, id: i32) -> Result<Option<CarInfo>, Error> {
         let sql = "SELECT id, plate_number, manufacturer, name, year, car_type, fuel_type, transmission, seat_num, color, image_url, car_trim, daily_rate, location, rating, description, status, owner FROM cars WHERE id = ?";
@@ -36,6 +40,7 @@ impl CarRepository for MySqlCarRepository {
             .await
     }
 
+    // GRASP - High Cohesion 패턴: 차량 관련 쿼리 로직이 한 클래스에 응집
     async fn get_cars(&self, query: CarQuery) -> Result<CarListResponse, Error> {
         let start_index = query.start.unwrap_or(0);
         let requested_limit = query.limit.unwrap_or(6);
@@ -166,6 +171,7 @@ impl CarRepository for MySqlCarRepository {
         }
     }
 
+    // GRASP - Polymorphism 패턴: CarRepository 인터페이스 메서드 구현을 통한 다형성
     async fn add_car(&self, car_info: CarInfo, images: Vec<TempFile<'_>>) -> Result<String, Error> {
         let result = sqlx::query("INSERT INTO cars (plate_number, manufacturer, name, year, car_type, fuel_type, transmission, seat_num, color, car_trim, daily_rate, location, rating, description, status, image_url, owner) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
             .bind(&car_info.plate_number())
@@ -331,6 +337,7 @@ impl CarRepository for MySqlCarRepository {
         Ok("차량이 성공적으로 업데이트되었습니다.".to_string())
     }
 
+    // GRASP - Low Coupling 패턴: 예약이 있는 차량 삭제를 막는 비즈니스 로직을 리포지토리에서 처리
     async fn delete_car(&self, car_info: CarInfo) -> Result<String, Error> {
         let reservation_exists = sqlx::query_scalar::<_, Option<i64>>(
             "SELECT 1 FROM reservation WHERE car_id = ? LIMIT 1",

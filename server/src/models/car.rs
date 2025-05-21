@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::mysql::MySqlRow;
 use sqlx::{FromRow, Row};
 
+// GRASP - Information Expert 패턴: 차량 목록에 대한 정보를 캡슐화
 #[derive(Serialize)]
 #[serde(crate = "rocket::serde")] // Json 응답을 위해 필요할 수 있음
 pub struct CarListResponse {
@@ -11,6 +12,7 @@ pub struct CarListResponse {
     pub cars: Vec<CarInfo>, // server::CarInfo 사용
 }
 
+// GRASP - Pure Fabrication 패턴: 도메인 모델과 직접 관련 없는 쿼리 파라미터를 위한 구조체
 #[derive(FromForm, Deserialize)]
 #[serde(crate = "rocket::serde")] // 쿼리 파라미터 디시리얼라이즈를 위해 필요할 수 있음
 pub struct CarQuery {
@@ -28,6 +30,7 @@ pub struct CarQuery {
     pub owner_id: Option<i32>,
 }
 
+// GRASP - Information Expert 패턴: 폼 데이터를 위한 특수 객체
 #[derive(FromForm)]
 pub struct CarForm<'r> {
     pub id: Option<i32>,
@@ -49,6 +52,7 @@ pub struct CarForm<'r> {
     pub images: Vec<TempFile<'r>>,
 }
 
+// GRASP - Information Expert 패턴: 차량 정보를 관리하는 핵심 도메인 객체
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct CarInfo {
     id: Option<i32>,
@@ -72,7 +76,9 @@ pub struct CarInfo {
     deleted_images: Option<String>,
 }
 
+// GRASP - Information Expert & Creator 패턴: CarInfo 객체가 자신의 데이터를 생성하고 관리
 impl CarInfo {
+    // GRASP - Creator 패턴: 자신의 인스턴스를 생성하는 팩토리 메서드
     pub fn new() -> Self {
         CarInfo {
             id: None,
@@ -97,10 +103,12 @@ impl CarInfo {
         }
     }
 
+    // GRASP - Information Expert 패턴: 자신의 데이터에 대한 접근자 메서드들
     pub fn id(&self) -> Option<i32> {
         self.id
     }
 
+    // GRASP - Information Expert 패턴: 자신의 데이터를 수정하는 메서드들 (캡슐화)
     pub fn set_id(&mut self, id: i32) {
         self.id = Some(id);
     }
@@ -213,6 +221,7 @@ impl CarInfo {
     }
 }
 
+// GRASP - Protected Variations 패턴: 데이터베이스 행에서 객체로의 변환을 추상화하여 DB 스키마 변화로부터 보호
 impl FromRow<'_, MySqlRow> for CarInfo {
     fn from_row(row: &MySqlRow) -> Result<Self, sqlx::Error> {
         let mut car_info = CarInfo {

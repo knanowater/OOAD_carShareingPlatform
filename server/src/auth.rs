@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::MySqlPool;
 use std::env;
 
+// GRASP - Information Expert 패턴
 #[derive(serde::Serialize)]
 pub struct ApiResponse {
     pub status: String,
@@ -15,6 +16,7 @@ pub struct ApiResponse {
     pub data: Option<String>,
 }
 
+// GRASP - Information Expert 패턴
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
     pub sub: String,   // 사용자 ID
@@ -24,6 +26,7 @@ pub struct Claims {
     pub exp: usize,    // 만료 시간 (Unix timestamp)
 }
 
+// GRASP - Information Expert 패턴
 // 회원 가입 요청을 처리하는 구조체
 #[derive(Deserialize)]
 pub struct CreateUserRequest {
@@ -32,6 +35,7 @@ pub struct CreateUserRequest {
     pub password: String,
 }
 
+// GRASP - Information Expert 패턴
 // 로그인 요청을 처리하는 구조체
 #[derive(Deserialize)]
 pub struct LoginRequest {
@@ -39,6 +43,7 @@ pub struct LoginRequest {
     pub password: String,
 }
 
+// GRASP - Controller 패턴
 // 회원 가입 엔드포인트
 #[post("/api/signup", format = "json", data = "<user_info>")]
 pub async fn api_signup(
@@ -87,6 +92,7 @@ pub async fn api_signup(
     }
 }
 
+// GRASP - Controller 패턴
 // 로그인 엔드포인트
 #[post("/api/login", format = "json", data = "<login_info>")]
 pub async fn api_login(
@@ -144,6 +150,7 @@ pub async fn api_login(
     }
 }
 
+// GRASP - Controller 패턴
 // 로그아웃 엔드포인트
 #[get("/api/logout")]
 pub async fn api_logout() -> Json<ApiResponse> {
@@ -154,6 +161,7 @@ pub async fn api_logout() -> Json<ApiResponse> {
     })
 }
 
+// GRASP - Information Expert 패턴
 #[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]
 pub struct User {
     pub id: i32,
@@ -163,6 +171,7 @@ pub struct User {
     pub role: String,
 }
 
+// GRASP - Pure Fabrication 패턴
 pub struct AuthToken(pub Claims);
 #[rocket::async_trait]
 impl<'r> request::FromRequest<'r> for AuthToken {
@@ -193,6 +202,8 @@ impl<'r> request::FromRequest<'r> for AuthToken {
     }
 }
 
+// GRASP - Controller 패턴
+// 관리자 권한 확인 엔드포인트
 #[get("/api/isAdmin")]
 pub async fn api_is_admin(auth_token: AuthToken) -> Result<Json<bool>, Status> {
     Ok(Json(auth_token.0.role.to_lowercase() == "admin"))

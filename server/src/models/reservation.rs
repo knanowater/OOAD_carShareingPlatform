@@ -3,6 +3,7 @@ use rocket::form::{self, FromFormField, ValueField};
 use rocket::serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 
+// GRASP - Information Expert 패턴
 #[derive(Deserialize, Serialize)]
 #[serde(crate = "rocket::serde")]
 pub struct CreateReservationRequest {
@@ -13,6 +14,7 @@ pub struct CreateReservationRequest {
     pub total_price: f32,
 }
 
+// GRASP - Information Expert 패턴
 #[derive(Serialize, FromRow)]
 #[serde(crate = "rocket::serde")]
 pub struct ReservationDetails {
@@ -32,6 +34,7 @@ pub struct ReservationDetails {
     pub reservation_status: String,
 }
 
+// GRASP - Information Expert 패턴
 #[derive(Serialize)]
 #[serde(crate = "rocket::serde")]
 pub struct ReservationsResponse {
@@ -39,18 +42,21 @@ pub struct ReservationsResponse {
     pub total_pages: u64,
 }
 
+// GRASP - Information Expert 패턴
 #[derive(Deserialize)]
 #[serde(crate = "rocket::serde")]
 pub struct ReservationActionRequest {
     pub reservation_id: String,
 }
 
+// GRASP - Information Expert 패턴
 #[derive(Serialize)]
 #[serde(crate = "rocket::serde")]
 pub struct ReservationActionResponse {
     pub message: String,
 }
 
+// GRASP - Information Expert 패턴
 #[derive(Serialize)]
 #[serde(crate = "rocket::serde")]
 pub struct ReturnApiResponse {
@@ -59,6 +65,7 @@ pub struct ReturnApiResponse {
     pub overdue_fee: Option<i32>,
 }
 
+// GRASP - Information Expert 패턴
 #[derive(Serialize, FromRow)]
 #[serde(crate = "rocket::serde")]
 pub struct OverdueFeeInfo {
@@ -72,12 +79,14 @@ pub struct OverdueFeeInfo {
     pub total_overdue_fee: i32,
 }
 
+// GRASP - Information Expert 패턴
 #[derive(Debug, FromForm)]
 pub struct ReservationQuery {
     pub reservation_id: String,
     pub payment_id: String,
 }
 
+// GRASP - Information Expert 패턴
 #[derive(Debug, Serialize, Deserialize, FromRow)]
 pub struct ReservationInfo {
     pub car_id: i32,
@@ -96,12 +105,14 @@ pub struct ReservationInfo {
     pub reservation_status: String,
 }
 
+// GRASP - Information Expert 패턴
 #[derive(Serialize)]
 #[serde(crate = "rocket::serde")]
 pub struct ReservationCalendar {
     pub reserved_days: Vec<String>,
 }
 
+// GRASP - Information Expert 패턴
 #[derive(Debug)]
 pub struct MyDate(pub NaiveDate);
 

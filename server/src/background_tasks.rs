@@ -4,6 +4,7 @@ use rocket::tokio;
 use rocket::tokio::time::{Duration, sleep};
 use sqlx::MySqlPool;
 
+// 예약이 시작되었는지 확인하고, 예약 상태를 'in_use'로 업데이트
 async fn start_rental_if_due(pool: &MySqlPool) -> Result<(), sqlx::Error> {
     let now = Utc::now().naive_utc();
     let mut conn = pool.acquire().await?;
@@ -43,6 +44,7 @@ async fn start_rental_if_due(pool: &MySqlPool) -> Result<(), sqlx::Error> {
     Ok(())
 }
 
+// 예약이 호스트의 확인을 기다리는 중에 시간 초과된 경우 예약을 취소
 async fn cancel_rental_if_failed_to_host_confirm(pool: &MySqlPool) -> Result<(), sqlx::Error> {
     let now = Utc::now().naive_utc();
     let mut conn = pool.acquire().await?;
@@ -81,6 +83,7 @@ async fn cancel_rental_if_failed_to_host_confirm(pool: &MySqlPool) -> Result<(),
     Ok(())
 }
 
+// 시간 초과 예약을 overdue로 업데이트
 async fn update_overdue_reservations(pool: &MySqlPool) -> Result<(), sqlx::Error> {
     let now = Utc::now().naive_utc();
     let mut conn = pool.acquire().await?;

@@ -3,12 +3,15 @@ use std::i32;
 use crate::auth::AuthToken;
 use crate::models::reservation::ReservationQuery;
 use crate::models::reservation::*;
-use crate::repositories::reservation_repository::{MySqlReservationRepository, ReservationRepository};
+use crate::repositories::reservation_repository::{
+    MySqlReservationRepository, ReservationRepository,
+};
 use rocket::http::Status;
 use rocket::serde::json::{Json, json};
 use rocket::{State, delete, get, post};
 use sqlx::MySqlPool;
 
+// GRASP - Controller 패턴
 #[post("/api/reservations/request", data = "<reservation_data>")]
 pub async fn api_reservation_request(
     pool: &State<MySqlPool>,
@@ -20,7 +23,9 @@ pub async fn api_reservation_request(
         .sub
         .parse::<i32>()
         .map_err(|_| (Status::Unauthorized, "Invalid token".into()))?;
+    // GRASP - Creator 패턴
     let repo = MySqlReservationRepository::new(pool.inner());
+    // GRASP - Information Expert 패턴
     let reservation_id = repo
         .create_reservation(user_id, reservation_data.into_inner())
         .await
@@ -28,6 +33,7 @@ pub async fn api_reservation_request(
     Ok(Json(json!({ "reservation_id": reservation_id })))
 }
 
+// GRASP - Controller 패턴
 #[delete("/api/reservations/cancel/<id>")]
 pub async fn cancel_reservation_due_to_payment_failed(
     id: &str,
@@ -39,7 +45,9 @@ pub async fn cancel_reservation_due_to_payment_failed(
         .sub
         .parse::<i32>()
         .map_err(|_| Status::Unauthorized)?;
+    // GRASP - Creator 패턴
     let repo = MySqlReservationRepository::new(pool.inner());
+    // GRASP - Information Expert 패턴
     repo.cancel_due_to_payment_failure(id.to_string(), user_id)
         .await
 }

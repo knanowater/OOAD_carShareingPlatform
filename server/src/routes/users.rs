@@ -7,6 +7,7 @@ use rocket::http::Status;
 use rocket::serde::json::Json;
 use sqlx::MySqlPool;
 
+// GRASP - Controller 패턴
 #[get("/api/mypage")]
 pub async fn api_mypage(
     auth_token: AuthToken,
@@ -16,7 +17,9 @@ pub async fn api_mypage(
         eprintln!("Failed to parse user ID from token subject");
         (Status::Unauthorized, "Invalid token".to_string())
     })?;
+    // GRASP - Creator 패턴
     let user_repo = MySqlUserRepository::new(pool.inner().clone());
+    // GRASP - Information Expert 패턴
     user_repo
         .get_user_by_id(user_id)
         .await
