@@ -6,10 +6,11 @@ extern crate rocket_include_static_resources;
 
 mod auth;
 mod background_tasks;
+mod controllers;
 mod models;
 mod payment;
 mod repositories;
-mod routes;
+mod services;
 
 use auth::{api_is_admin, api_login, api_logout, api_signup};
 use dotenvy::dotenv;
@@ -42,45 +43,45 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             "/",
             routes![
                 favicon,
-                routes::pages::index_page,
-                routes::pages::login_page,
-                routes::pages::signup_page,
-                routes::pages::list_page,
-                routes::pages::reservation_page,
-                routes::pages::reservation_success_page,
-                routes::pages::mypage_page,
-                routes::pages::mypage_reservations_page,
-                routes::pages::overdue_fee_page,
-                routes::pages::admin_dashboard_page,
-                routes::pages::car_management_page,
-                routes::pages::car_detail_page,
-                routes::pages::host_add_car_page,
-                routes::pages::host_edit_car_page,
-                routes::pages::host_management_page,
-                routes::pages::host_reservations_page,
-                routes::cars::api_get_cars,
-                routes::cars::api_get_car_by_id,
-                routes::cars::api_add_car,
-                routes::cars::api_update_car,
-                routes::cars::api_delete_car,
-                routes::reservations::api_reservation_request,
-                routes::reservations::api_reservations,
-                routes::reservations::api_get_reservation_info_by_reservation_id_payment_id,
-                routes::reservations::api_return_car,
-                routes::reservations::api_cancel_reservation,
-                routes::reservations::api_get_reservation_calendar,
-                routes::reservations::cancel_reservation_due_to_payment_failed,
-                routes::reservations::api_overdue_fee_info,
-                routes::reservations::api_get_host_reservations,
-                routes::reservations::api_accept_reservation,
-                routes::reservations::api_reject_reservation,
-                routes::users::api_mypage,
-                // Auth routes
+                controllers::pages::index_page,
+                controllers::pages::login_page,
+                controllers::pages::signup_page,
+                controllers::pages::list_page,
+                controllers::pages::reservation_page,
+                controllers::pages::reservation_success_page,
+                controllers::pages::mypage_page,
+                controllers::pages::mypage_reservations_page,
+                controllers::pages::overdue_fee_page,
+                controllers::pages::admin_dashboard_page,
+                controllers::pages::car_management_page,
+                controllers::pages::car_detail_page,
+                controllers::pages::host_add_car_page,
+                controllers::pages::host_edit_car_page,
+                controllers::pages::host_management_page,
+                controllers::pages::host_reservations_page,
+                controllers::cars::api_get_cars,
+                controllers::cars::api_get_car_by_id,
+                controllers::cars::api_add_car,
+                controllers::cars::api_update_car,
+                controllers::cars::api_delete_car,
+                controllers::reservations::api_reservation_request,
+                controllers::reservations::api_reservations,
+                controllers::reservations::api_get_reservation_info_by_reservation_id_payment_id,
+                controllers::reservations::api_return_car,
+                controllers::reservations::api_cancel_reservation,
+                controllers::reservations::api_get_reservation_calendar,
+                controllers::reservations::cancel_reservation_due_to_payment_failed,
+                controllers::reservations::api_overdue_fee_info,
+                controllers::reservations::api_get_host_reservations,
+                controllers::reservations::api_accept_reservation,
+                controllers::reservations::api_reject_reservation,
+                controllers::users::api_mypage,
+                // Auth controllers
                 api_signup,
                 api_login,
                 api_logout,
                 api_is_admin,
-                // Payment routes
+                // Payment controllers
                 process_payment,
             ],
         )

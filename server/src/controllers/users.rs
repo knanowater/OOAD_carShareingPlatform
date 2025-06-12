@@ -1,13 +1,13 @@
 use crate::auth::AuthToken;
 use crate::models::user::User;
-use crate::repositories::user_repository::{MySqlUserRepository, UserRepository};
+use crate::services::user_service::UserService;
 use rocket::State;
 use rocket::get;
 use rocket::http::Status;
 use rocket::serde::json::Json;
 use sqlx::MySqlPool;
 
-// GRASP - Controller 패턴
+// GRASP - Controller 패턴: HTTP 요청/응답만 처리, 비즈니스 로직은 서비스에 위임
 #[get("/api/mypage")]
 pub async fn api_mypage(
     auth_token: AuthToken,
@@ -17,20 +17,16 @@ pub async fn api_mypage(
         eprintln!("Failed to parse user ID from token subject");
         (Status::Unauthorized, "Invalid token".to_string())
     })?;
-    // GRASP - Creator 패턴
-    let user_repo = MySqlUserRepository::new(pool.inner().clone());
-    // GRASP - Information Expert 패턴
-    user_repo
+
+    // GRASP - Low Coupling: 서비스 레이어를 통한 비즈니스 로직 처리
+    let user_service = UserService::new(pool.inner().clone());
+    user_service
         .get_user_by_id(user_id)
         .await
-        .map(|user_opt| {
+        .map_err(|e| (Status::InternalServerError, e))
+        .and_then(|user_opt| {
             user_opt
                 .map(Json)
                 .ok_or((Status::NotFound, "User not found".to_string()))
         })
-        .map_err(|e| {
-            eprintln!("Database error: {}", e);
-            (Status::InternalServerError, "Database error".to_string())
-        })
-        .and_then(std::convert::identity)
 }
