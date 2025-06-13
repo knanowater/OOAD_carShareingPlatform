@@ -83,6 +83,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 api_is_admin,
                 // Payment controllers
                 process_payment,
+                // Hello page
+                controllers::pages::hello_page,
             ],
         )
         .mount("/scripts", FileServer::from("../client/scripts"))

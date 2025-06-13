@@ -91,3 +91,8 @@ pub async fn host_management_page() -> Option<NamedFile> {
 pub async fn host_reservations_page() -> Option<NamedFile> {
     serve_html("../client/mypage/host/reservations.html").await
 }
+
+#[get("/hello")]
+pub async fn hello_page() -> &'static str {
+    "hello world!"
+}
